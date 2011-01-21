@@ -12,7 +12,7 @@ author:             Erlend Hamberg
 maintainer:         ehamberg@gmail.com
 stability:          experimental
 tested-with:        GHC==7.0.1
-homepage:           http://wiki.github.com/ehamberg/simpleea/
+homepage:           http://www.github.com/ehamberg/simpleea/
 cabal-version:       >=1.2
 
 
