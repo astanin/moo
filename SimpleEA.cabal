@@ -3,8 +3,8 @@ category:			AI
 build-type:         Simple
 version:            0.1
 synopsis:           Simple evolutionary algorithm framework.
-description:        Simple framework for running an evolutionary algorithm with
-                    provided selection, recombination, and mutation operators.
+description:        Simple framework for running an evolutionary algorithm by
+                    providing selection, recombination, and mutation operators.
 license:            BSD3
 License-file:       LICENSE
 category:           Control
@@ -20,3 +20,7 @@ Library
     build-depends:      base >=4, MonadRandom
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils
+
+source-repository head
+  type:     git
+  location: git://github.com/ehamberg/simpleea.git

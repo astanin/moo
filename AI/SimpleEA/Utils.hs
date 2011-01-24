@@ -1,7 +1,7 @@
 {- |
 
-utilitify functions that makes it easier to write the genetic
-operators.
+Utilitify functions that makes it easier to write the genetic operators and
+functions for doing calculations on the EA data.
 
 -}
 
@@ -11,7 +11,7 @@ module AI.SimpleEA.Utils (
   , minFitnesses
   , stdDeviations
   , randomGenomes
-  , rouletteSelect
+  , fitPropSelect
   , tournamentSelect
   , sigmaScale
   , rankScale
@@ -22,9 +22,7 @@ module AI.SimpleEA.Utils (
 import Control.Monad (liftM)
 import Control.Monad.Random
 import Data.List (genericLength, zip4, sortBy, nub, elemIndices, sort)
-
-type Fitness = Double
-type Genome a = [a]
+import AI.SimpleEA
 
 -- |Returns the average fitnesses for a list of generations.
 avgFitnesses :: [[(Genome a, Fitness)]] -> [Fitness]
@@ -75,10 +73,11 @@ rankScale fs = map (\n -> max'-fromIntegral n) ranks
     where ranks = (concatMap (`elemIndices` fs) . reverse . nub . sort) fs
           max'  = fromIntegral $ maximum ranks + 1
 
--- |Roulette wheel selection: select a random item from a list of (item, score)
--- where each item's chance of being selected is proportional to its score
-rouletteSelect :: [(a, Fitness)] -> Rand StdGen a
-rouletteSelect xs = do
+-- |Fitness-proportionate selection: select a random item from a list of (item,
+-- score) where each item's chance of being selected is proportional to its
+-- score
+fitPropSelect :: [(a, Fitness)] -> Rand StdGen a
+fitPropSelect xs = do
     let xs' = zip (map fst xs) (scanl1 (+) $ map snd xs)
     let sumScores = (snd . last) xs'
     rand <- getRandomR (0.0, sumScores)
@@ -98,7 +97,8 @@ tournamentSelect xs size = do
 elite :: [(a, Fitness)] -> [a]
 elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
 
--- |takes a list of generations and returns a string intended for plotting with gnuplot.
+-- |takes a list of generations and returns a string intended for plotting with
+-- gnuplot.
 getPlottingData :: [[(Genome a, Fitness)]] -> String
 getPlottingData gs = concatMap conc (zip4 ns fs ms ds)
     where ns = [0..] :: [Int]

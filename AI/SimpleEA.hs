@@ -4,7 +4,10 @@ License      : BSD3
 Stability    : experimental
 Portability  : portable
 
-A framework for simple evolutionary algorithms.
+A framework for simple evolutionary algorithms. Provided with a function for
+evaluating a genome's fitness, a function for probabilistic selection among a
+pool of genomes, and recombination and mutation operators, 'runEA' will run an
+EA that lazily produces an infinite list of generations.
 
 'AI.SimpleEA.Utils' contains utilitify functions that makes it easier to write
 the genetic operators.
@@ -17,6 +20,8 @@ module AI.SimpleEA (
   , SelectionFunction
   , RecombinationOp
   , MutationOp
+  , Fitness
+  , Genome
   -- * Example Program
   -- $SimpleEAExample
 ) where
@@ -78,18 +83,14 @@ generations ::
   Rand StdGen [[(Genome a, Fitness)]]
 generations pop selFun fitFun recOp mutOp = do
     -- first, select parents for the new generation
-    newGen <- selFun pop --`debug` "\nselecting...\n"
+    newGen <- selFun pop
 
     -- then take two parents and create offspring by using the recombination
     -- operator, sending along recP -- the probability for recombination
-
-    newGen  <- doRecombinations newGen recOp --`debug` "\nrecombining...\n"
-
+    newGen  <- doRecombinations newGen recOp
+    
     -- mutate genomes with probability mutP
-    newGen <- mapM mutOp newGen --`debug` "\nmutating...\n"
-
-    -- FIXME: check if new generation is larger than previous, and if so, do
-    -- another selection round
+    newGen <- mapM mutOp newGen
 
     let fitnessVals = map (`fitFun` newGen) newGen
     nextGens <- generations (zip newGen fitnessVals) selFun fitFun recOp mutOp
@@ -134,8 +135,8 @@ selection. 'sigmaScale' is defined in 'SimpleEA.Utils'.
 >              if length gs' >= length gs
 >                 then return gs'
 >                 else do
->                     p1 <- rouletteSelect scaled
->                     p2 <- rouletteSelect scaled
+>                     p1 <- fitPropSelect scaled
+>                     p2 <- fitPropSelect scaled
 >                     let newPop = p1:p2:gs'
 >                     select' newPop
 
