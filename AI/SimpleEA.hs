@@ -1,3 +1,5 @@
+{-# Language BangPatterns #-}
+
 {- |
 Copyright    : 2010-2011 Erlend Hamberg
 License      : BSD3
@@ -81,7 +83,7 @@ generations ::
   RecombinationOp a ->
   MutationOp a ->
   Rand StdGen [[(Genome a, Fitness)]]
-generations pop selFun fitFun recOp mutOp = do
+generations !pop selFun fitFun recOp mutOp = do
     -- first, select parents for the new generation
     newGen <- selFun pop
 
