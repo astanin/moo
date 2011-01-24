@@ -71,8 +71,8 @@ runEA ::
   StdGen ->
   [[(Genome a,Fitness)]]
 runEA startPop fitFun selFun recOp mutOp g =
-    evalRand (generations p selFun fitFun recOp mutOp) g
-        where p = zip startPop (map (`fitFun` startPop) startPop)
+  let p = zip startPop (map (`fitFun` startPop) startPop)
+  in evalRand (generations p selFun fitFun recOp mutOp) g
 
 generations ::
   [(Genome a, Fitness)] ->
