@@ -85,11 +85,10 @@ generations pop selFun fitFun recOp mutOp = do
     -- first, select parents for the new generation
     newGen <- selFun pop
 
-    -- then take two parents and create offspring by using the recombination
-    -- operator, sending along recP -- the probability for recombination
+    -- then create offspring by using the recombination operator
     newGen  <- doRecombinations newGen recOp
-    
-    -- mutate genomes with probability mutP
+
+    -- mutate genomes using the mutation operator
     newGen <- mapM mutOp newGen
 
     let fitnessVals = map (`fitFun` newGen) newGen
@@ -99,7 +98,7 @@ generations pop selFun fitFun recOp mutOp = do
 
 doRecombinations :: [Genome a] -> RecombinationOp a -> Rand StdGen [Genome a]
 doRecombinations []      _   = return []
-doRecombinations [_]     _   = error "generation cardinality must be even"
+doRecombinations [_]     _   = error "odd number of parents"
 doRecombinations (a:b:r) rec = do
     (a',b') <- rec (a,b)
     rest    <- doRecombinations r rec
@@ -126,7 +125,9 @@ in the string.
 >numOnes g _ = (fromIntegral . length . filter (=='1')) g
 
 The @select@ function is our 'SelectionFunction'. It uses sigma-scaled, fitness-proportionate
-selection. 'sigmaScale' is defined in 'SimpleEA.Utils'.
+selection. 'sigmaScale' is defined in 'SimpleEA.Utils'. By first taking the four
+best genomes (by using the @elite@ function) we get elitism, making sure that
+maximum fitness never decreases.
 
 >select :: SelectionFunction Char
 >select gs = select' (take 4 $ elite gs)
