@@ -101,7 +101,7 @@ elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
 -- gnuplot.
 getPlottingData :: [[(Genome a, Fitness)]] -> String
 getPlottingData gs = concatMap conc (zip4 ns fs ms ds)
-    where ns = [0..] :: [Int]
+    where ns = [1..] :: [Int]
           fs = avgFitnesses gs
           ms = maxFitnesses gs
           ds = stdDeviations gs
