@@ -13,7 +13,7 @@ maintainer:         ehamberg@gmail.com
 stability:          experimental
 tested-with:        GHC==7.0.1
 homepage:           http://www.github.com/ehamberg/simpleea/
-cabal-version:       >=1.2
+cabal-version:       >=1.6
 
 
 Library
