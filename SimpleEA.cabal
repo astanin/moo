@@ -1,13 +1,13 @@
 name:               SimpleEA
 category:			AI
 build-type:         Simple
-version:            0.1
+version:            0.1.1
 synopsis:           Simple evolutionary algorithm framework.
 description:        Simple framework for running an evolutionary algorithm by
                     providing selection, recombination, and mutation operators.
 license:            BSD3
 License-file:       LICENSE
-category:           Control
+category:           AI
 author:             Erlend Hamberg
 maintainer:         ehamberg@gmail.com
 stability:          experimental
