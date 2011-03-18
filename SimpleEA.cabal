@@ -1,26 +1,31 @@
 name:               SimpleEA
-category:			AI
+category:           AI
 build-type:         Simple
 version:            0.1.1
-synopsis:           Simple evolutionary algorithm framework.
+synopsis:           Simple evolutionary algorithm framework using Mersenne twister.
 description:        Simple framework for running an evolutionary algorithm by
                     providing selection, recombination, and mutation operators.
+                    .
+                    This variant of the library uses Mersenne twister which is
+                    faster than the standard Haskell pseudorandom number generator.
 license:            BSD3
 License-file:       LICENSE
 category:           AI
 author:             Erlend Hamberg
-maintainer:         ehamberg@gmail.com
+maintainer:         Sergey Astanin <s.astanin@gmail.com>
 stability:          experimental
 tested-with:        GHC==7.0.1
-homepage:           http://www.github.com/ehamberg/simpleea/
+homepage:           http://www.github.com/sergeyastanin/simpleea/
 cabal-version:       >=1.6
 
 
 Library
-    build-depends:      base >=4 && < 5, MonadRandom
+    build-depends:      base >=4 && < 5
+                      , monad-mersenne-random
+                      , mersenne-random-pure64
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils
 
 source-repository head
   type:     git
-  location: git://github.com/ehamberg/simpleea.git
+  location: git://github.com/sergeyastanin/simpleea.git

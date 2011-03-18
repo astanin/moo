@@ -11,6 +11,7 @@ module AI.SimpleEA.Utils (
   , minFitnesses
   , stdDeviations
   , randomGenomes
+  , getRandomGenomes
   , fitPropSelect
   , tournamentSelect
   , sigmaScale
@@ -19,8 +20,10 @@ module AI.SimpleEA.Utils (
   , getPlottingData
 ) where
 
-import Control.Monad (liftM)
-import Control.Monad.Random
+import Control.Monad (liftM, replicateM)
+import Control.Monad.Mersenne.Random
+import System.Random.Mersenne.Pure64
+import AI.SimpleEA.Rand
 import Data.List (genericLength, zip4, sortBy, nub, elemIndices, sort)
 import AI.SimpleEA
 
@@ -48,15 +51,24 @@ stdDev p =
           mean    = sum p/len
           sqDiffs = map (\n -> (n-mean)**2) p
 
--- |Returns an infinite list of random genomes of length @len@ made of elements
--- in the range @[from,to]@
-randomGenomes :: (Random a, Enum a) => Int -> a -> a -> StdGen -> [Genome a]
-randomGenomes len from to = do
-    l <- randomRs (from,to)
-    return $ nLists len l
-    where nLists :: Int -> [a] -> [[a]]
-          nLists _ [] = []
-          nLists n ls = take n ls : nLists n (drop n ls)
+-- | Generate @n@ random genomes of length @len@ made of elements
+-- in the range @(from,to). Return a list of genomes and a new state of
+-- random number generator.
+randomGenomes :: (Enum a) => PureMT -> Int -> Int -> (a, a) ->  ([Genome a], PureMT)
+randomGenomes rng n len (from, to) =
+    let lo = fromEnum from
+        hi = fromEnum to
+    in flip runRandom rng $
+         (nLists len . map toEnum) `liftM` replicateM (n*len) (getIntR (lo,hi))
+  where nLists :: Int -> [a] -> [[a]]
+        nLists _ [] = []
+        nLists n ls = let (h,t) = splitAt n ls in h : nLists n t
+
+-- | Monadic version of 'randomGenomes'.
+getRandomGenomes :: (Enum a) => Int -> Int ->  (a, a) -> Rand ([Genome a])
+getRandomGenomes n len range = Rand $ \rng ->
+                               let (gs, rng') = randomGenomes rng n len range
+                               in  R gs rng'
 
 -- |Applies sigma scaling to a list of fitness values. In sigma scaling, the
 -- standard deviation of the population fitness is used to scale the fitness
@@ -76,28 +88,26 @@ rankScale fs = map (\n -> max'-fromIntegral n) ranks
 -- |Fitness-proportionate selection: select a random item from a list of (item,
 -- score) where each item's chance of being selected is proportional to its
 -- score
-fitPropSelect :: [(a, Fitness)] -> Rand StdGen a
+fitPropSelect :: [(a, Fitness)] -> Rand a
 fitPropSelect xs = do
     let xs' = zip (map fst xs) (scanl1 (+) $ map snd xs)
     let sumScores = (snd . last) xs'
-    rand <- getRandomR (0.0, sumScores)
+    rand <- (sumScores*) `liftM` getDouble
     return $ (fst . head . dropWhile ((rand >) . snd)) xs'
 
 -- |Performs tournament selection amoing @size@ individuals and returns the winner
-tournamentSelect :: [(a, Fitness)] -> Int -> Rand StdGen a
+tournamentSelect :: [(a, Fitness)] -> Int -> Rand a
 tournamentSelect xs size = do
-    let l = length xs
-    rs <- liftM (take size . nub) $ getRandomRs (0,l-1)
-    let contestants = map (xs!!) rs
+    contestants <- randomSample size xs
     let winner = head $ elite contestants
     return winner
 
--- |takes a list of (genome,fitness) pairs and returns a list of genomes sorted
+-- |Takes a list of (genome,fitness) pairs and returns a list of genomes sorted
 -- by fitness (descending)
 elite :: [(a, Fitness)] -> [a]
 elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
 
--- |takes a list of generations and returns a string intended for plotting with
+-- |Takes a list of generations and returns a string intended for plotting with
 -- gnuplot.
 getPlottingData :: [[(Genome a, Fitness)]] -> String
 getPlottingData gs = concatMap conc (zip4 ns fs ms ds)
