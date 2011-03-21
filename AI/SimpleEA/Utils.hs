@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {- |
 
-Utilitify functions that makes it easier to write the genetic operators and
-functions for doing calculations on the EA data.
+Some common genetic operators and utilities to work with GA data.
 
 -}
 
@@ -11,7 +10,7 @@ module AI.SimpleEA.Utils (
     randomGenomes
   , getRandomGenomes
   -- * Selection
-  , fitPropSelect
+  , rouletteSelect
   , tournamentSelect
   , sigmaScale
   , rankScale
@@ -25,7 +24,7 @@ module AI.SimpleEA.Utils (
   , getPlottingData
 ) where
 
-import Control.Monad (liftM, replicateM)
+import Control.Monad (liftM, replicateM, when)
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import AI.SimpleEA.Rand
@@ -67,7 +66,7 @@ variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
             in  (n + 1, sa', qa')
 
 -- | Generate @n@ random genomes of length @len@ made of elements
--- in the range @(from,to). Return a list of genomes and a new state of
+-- in the range @(from,to)@. Return a list of genomes and a new state of
 -- random number generator.
 randomGenomes :: (Enum a) => PureMT -> Int -> Int -> (a, a) ->  ([Genome a], PureMT)
 randomGenomes rng n len (from, to) =
@@ -80,7 +79,11 @@ randomGenomes rng n len (from, to) =
         nLists n ls = let (h,t) = splitAt n ls in h : nLists n t
 
 -- | Monadic version of 'randomGenomes'.
-getRandomGenomes :: (Enum a) => Int -> Int ->  (a, a) -> Rand ([Genome a])
+getRandomGenomes :: (Enum a)
+                 => Int -- ^ how many genomes to generate
+                 -> Int -- ^ genome length
+                 ->  (a, a) -- ^ range of genome bit values
+                 -> Rand ([Genome a])
 getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
                                in  R gs rng'
@@ -93,24 +96,28 @@ sigmaScale fs = map (\f_g -> 1+(f_g-f_i)/(2*σ)) fs
     where σ   = sqrt . variance $ fs
           f_i = sum fs/genericLength fs
 
--- |Takes a list of fitness values and returns rank scaled values. For a list of /n/ values, this
--- means that the best fitness is scaled to /n/, the second best to /n-1/, and so on.
+-- |Takes a list of fitness values and returns rank scaled values. For
+-- a list of /n/ values, this means that the best fitness is scaled to
+-- /n/, the second best to /n-1/, and so on.
 rankScale :: [Fitness] -> [Fitness]
 rankScale fs = map (\n -> max'-fromIntegral n) ranks
     where ranks = (concatMap (`elemIndices` fs) . reverse . nub . sort) fs
           max'  = fromIntegral $ maximum ranks + 1
 
--- |Fitness-proportionate selection: select a random item from a list of (item,
--- score) where each item's chance of being selected is proportional to its
--- score
-fitPropSelect :: [(a, Fitness)] -> Rand a
-fitPropSelect xs = do
-    let xs' = zip (map fst xs) (scanl1 (+) $ map snd xs)
+-- |Fitness-proportionate (roulette-wheel) selection: select a random
+-- item from a list of (item, score) where each item's chance of being
+-- selected is proportional to its score
+rouletteSelect :: [(a, Fitness)] -> Rand a
+rouletteSelect xs = do
+    let fs = map snd xs  -- fitnesses
+    let gs = map fst xs  -- genomes
+    let xs' = zip gs (scanl1 (+) fs)
     let sumScores = (snd . last) xs'
     rand <- (sumScores*) `liftM` getDouble
     return $ (fst . head . dropWhile ((rand >) . snd)) xs'
 
--- |Performs tournament selection amoing @size@ individuals and returns the winner
+-- |Performs tournament selection amoing @size@ individuals and
+-- returns the winner
 tournamentSelect :: [(a, Fitness)] -> Int -> Rand a
 tournamentSelect xs size = do
     contestants <- randomSample size xs

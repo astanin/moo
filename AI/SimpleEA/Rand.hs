@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 
-{-
- | Some extra facilities to work with 'Rand' monad and 'PureMT'
- random number generator.
+{- | Some extra facilities to work with 'Rand' monad and 'PureMT'
+     random number generator.
 -}
 
 module AI.SimpleEA.Rand

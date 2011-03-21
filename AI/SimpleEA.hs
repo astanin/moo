@@ -6,25 +6,37 @@ License      : BSD3
 Stability    : experimental
 Portability  : portable
 
-A framework for simple evolutionary algorithms. Provided with a function for
-evaluating a genome's fitness, a function for probabilistic selection among a
-pool of genomes, and recombination and mutation operators, 'runEA' will run an
-EA that lazily produces an infinite list of generations.
+A framework for simple genetic algorithms.
 
-'AI.SimpleEA.Utils' contains utilitify functions that makes it easier to write
-the genetic operators.
+First a random number generator needs to be obtained with 'newPureMT',
+then use 'runRandom' or 'evalRandom' to run simulation in the 'Rand'
+monad.  'nextGeneration' implements a single iteration of the
+algorithm, 'iterateM' and 'iterateUntilM' allow to repeat it as long
+as necessary.  The user has to provide an initial population, genome's
+fitness function, selection, crossover and mutation operators.
+See an example below.
+
+"AI.SimpleEA.Utils" module contains utilitify functions that implement
+some most common types of genetic operators: selection, mutation,
+crossover.
+
+"AI.SimpleEA.Rand" module provides some additional facilities to make
+'PureMT' random number generator as convenient as the standard
+generator.
 
 -}
 
 module AI.SimpleEA (
+  -- * Running algorithm
     nextGeneration
   , evalFitness
   , iterateM
   , iterateUntilM
   , iterateHistoryM
-  , FitnessFunc
-  , SelectionFunction
-  , RecombinationOp
+  -- * Types
+  , FitnessFunction
+  , SelectionOp
+  , CrossoverOp
   , MutationOp
   , Fitness
   , Genome
@@ -35,49 +47,67 @@ module AI.SimpleEA (
 import Control.Monad.Mersenne.Random
 
 type Fitness = Double
-type Genome a = [a]
+type Genome a = [a]  -- TODO: allow for efficient bit-vectors/custom types
 
 -- | A fitness functions assigns a fitness score to a genome. The rest of the
 -- individuals of that generation is also provided in case the fitness is
--- in proportion to its neighbours.
-type FitnessFunc a       = Genome a -> [Genome a] -> Fitness
+-- in proportion to its neighbours. Genetic algorithm maximizes the fitness.
+--
+-- Some genetic algorithm operators, like 'rouletteSelect', require
+-- non-negative fitness.  To solve minimization problems consider
+-- transforming the fitness value as @F(x) = 1/(1+f(x))@ or
+-- @F(x) = LargePositive - objective(x)/mean(objective(x_i))@.
+type FitnessFunction a       = Genome a -> [Genome a] -> Fitness
 
--- | A selection function is responsible for selection. It takes pairs of
+-- | A selection operator is responsible for selection. It takes pairs of
 -- genomes and their fitness and is responsible for returning one or more
 -- individuals.
-type SelectionFunction a = [(Genome a, Fitness)] -> Rand [Genome a]
+type SelectionOp a = [(Genome a, Fitness)] -> Rand [Genome a]
 
 -- | A recombination operator takes two /parent/ genomes and returns two
 -- /children/.
-type RecombinationOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
+type CrossoverOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
 type MutationOp a        = Genome a -> Rand (Genome a)
 
+-- | A single step of the genetic algorithm. Take a population with
+-- evaluated fitness values (@pop@), select according to @selFun@,
+-- produce offspring population through crossover (@recOp@) and
+-- mutation (@mutOp@), evaluate new fitness values.
+--
+-- "AI.SimpleEA.Utils" provides some operators which may be used as
+-- building blocks of the algorithm.
+-- Initialization: 'getRandomGenomes'.
+-- Selection: 'rouletteSelect', 'tournamentSelect'.
+-- Crossover: 'onePointCrossover', 'twoPointCrossover', 'uniformCrossover'.
+-- Mutation: 'uniformMutate'.
 nextGeneration ::
-    FitnessFunc a ->
-    SelectionFunction a ->
-    RecombinationOp a ->
+    FitnessFunction a ->
+    SelectionOp a ->
+    CrossoverOp a ->
     MutationOp a ->
     [(Genome a, Fitness)] ->
     Rand [(Genome a, Fitness)]
 nextGeneration fitFun selFun recOp mutOp pop = do
   genomes <- selFun pop
-  genomes <- doRecombinations genomes recOp
+  -- TODO: shuffle?
+  genomes <- doCrossovers genomes recOp
   genomes <- mapM mutOp genomes
   return $ evalFitness fitFun genomes
 
-evalFitness :: FitnessFunc a -> [Genome a] -> [(Genome a, Fitness)]
+-- | Evaluate fitness for all genomes in the population.
+evalFitness :: FitnessFunction a -> [Genome a] -> [(Genome a, Fitness)]
 evalFitness fitFun gs =
   let fs = map (`fitFun` gs) gs
   in  zip gs fs
 
-doRecombinations :: [Genome a] -> RecombinationOp a -> Rand [Genome a]
-doRecombinations []      _   = return []
-doRecombinations [_]     _   = error "odd number of parents"
-doRecombinations (a:b:r) rec = do
+doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
+doCrossovers []      _   = return []
+doCrossovers [_]     _   = error "odd number of parents"
+doCrossovers (a:b:r) rec = do
     (a',b') <- rec (a,b)
-    rest    <- doRecombinations r rec
+    rest    <- doCrossovers r rec
     return $ a':b':rest
 
 -- | Run @n@ strict iterations of monadic action @step@. Return the result
@@ -124,27 +154,27 @@ number of @1@'s it contains.
 >import System.Environment (getArgs)
 >import Control.Monad (unless, liftM)
 
-The @numOnes@ function will function as our 'FitnessFunc' and simply
+The @numOnes@ function will function as our 'FitnessFunction' and simply
 returns the number of @1@'s in the string.
 
->numOnes :: FitnessFunc Char
+>numOnes :: FitnessFunction Char
 >numOnes g _ = (fromIntegral . length . filter (=='1')) g
 
-The @select@ function is our 'SelectionFunction'. It uses
+The @select@ function is our 'SelectionOp'. It uses
 sigma-scaled, fitness-proportionate selection. 'sigmaScale' is defined
 in 'SimpleEA.Utils'. By first taking the four best genomes (by using
 the @elite@ function) we get elitism, making sure that maximum fitness
 never decreases.
 
->select :: SelectionFunction Char
+>select :: SelectionOp Char
 >select gs = select' (take 4 $ elite gs)
 >    where scaled = zip (map fst gs) (sigmaScale (map snd gs))
 >          select' gs' =
 >              if length gs' >= length gs
 >                 then return gs'
 >                 else do
->                     p1 <- fitPropSelect scaled
->                     p2 <- fitPropSelect scaled
+>                     p1 <- rouletteSelect scaled
+>                     p2 <- rouletteSelect scaled
 >                     let newPop = p1:p2:gs'
 >                     select' newPop
 
