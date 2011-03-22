@@ -5,10 +5,16 @@
 -}
 
 module AI.SimpleEA.Rand
-    ( randomIntR
+    (
+    -- * Random numbers from given range
+      randomIntR
     , getIntR
+    -- * Random samples and shuffles
     , randomSample
     , shuffle
+    -- * Re-exports from random number generator packages
+    , getBool, getInt, getWord, getInt64, getWord64, getDouble
+    , runRandom, evalRandom, newPureMT
     ) where
 
 import Control.Monad.Mersenne.Random

@@ -24,7 +24,7 @@ Library
                       , monad-mersenne-random
                       , mersenne-random-pure64
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
-    exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils
+    exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils, AI.SimpleEA.Rand
 
 source-repository head
   type:     git
