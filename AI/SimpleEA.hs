@@ -28,7 +28,8 @@ generator.
 
 module AI.SimpleEA (
   -- * Running algorithm
-    nextGeneration
+    runGA
+  , nextGeneration
   , evalFitness
   , iterateM
   , iterateUntilM
@@ -45,6 +46,7 @@ module AI.SimpleEA (
 ) where
 
 import Control.Monad.Mersenne.Random
+import System.Random.Mersenne.Pure64 (newPureMT)
 
 type Fitness = Double
 type Genome a = [a]  -- TODO: allow for efficient bit-vectors/custom types
@@ -70,6 +72,13 @@ type CrossoverOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
 type MutationOp a        = Genome a -> Rand (Genome a)
+
+-- | Helper function to run an entire algorithm in the 'Rand' monad.
+-- It takes care of generating a new random number generator.
+runGA :: Rand a -> IO a
+runGA ga = do
+  rng <- newPureMT
+  return $ evalRandom ga rng
 
 -- | A single step of the genetic algorithm. Take a population with
 -- evaluated fitness values (@pop@), select according to @selFun@,
@@ -207,7 +216,7 @@ probability @p@.
 >              flipBit '1' = '0'
 
 The @main@ function creates a list of 100 random genomes (bit-strings)
-of length 20 and then runs the EA for 100 generations (101 generations
+of length 20 and then runs the EA for 41 generations (42 generations
 including the random starting population). Average and maximum fitness
 values and standard deviation is then calculated for each generation
 and written to a file if a file name was provided as a parameter. This
@@ -216,16 +225,17 @@ data can then be plotted with, e.g.  gnuplot
 
 >main = do
 >    args <- getArgs
->    rng <- newPureMT
->    let gs = flip evalRandom rng $ do
->             gs <- getRandomGenomes 100 20 ('0', '1')
->             let pop = evalFitness numOnes gs
->             let step = nextGeneration numOnes select (crossOver 0.75) (mutate 0.01)
->             reverse `liftM` iterateHistoryM 101 step pop
->    let fs = avgFitnesses gs
->    let ms = maxFitnesses gs
->    let ds = stdDeviations gs
->    mapM_ print $ zip5 gs [1..] fs ms ds
->    unless (null args) $ writeFile (head args) $ getPlottingData gs
+>    gs <- runGA $ do
+>       initialGs <- getRandomGenomes 100 20 ('0', '1')
+>       let pop = evalFitness numOnes initialGs
+>       let step = nextGeneration numOnes select (crossOver 0.75) (mutate 0.01)
+>       reverse `liftM` iterateHistoryM 41 step pop
+>    let fs = map avgFitness gs
+>    let ms = map maxFitness gs
+>    let ds = map stdDeviation gs
+>    let gen_avg_best_std = getPlottingData gs
+>    if (null args)
+>      then putStr gen_avg_best_std
+>      else writeFile (head args) gen_avg_best_std
 
 -}
