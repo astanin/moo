@@ -161,7 +161,7 @@ number of @1@'s it contains.
 >import System.Random.Mersenne.Pure64
 >import Data.List
 >import System.Environment (getArgs)
->import Control.Monad (unless, liftM)
+>import Control.Monad (unless, liftM, replicateM)
 
 The @numOnes@ function will function as our 'FitnessFunction' and simply
 returns the number of @1@'s in the string.
@@ -172,33 +172,15 @@ returns the number of @1@'s in the string.
 The @select@ function is our 'SelectionOp'. It uses
 sigma-scaled, fitness-proportionate selection. 'sigmaScale' is defined
 in 'SimpleEA.Utils'. By first taking the four best genomes (by using
-the @elite@ function) we get elitism, making sure that maximum fitness
+the 'elite' function) we get elitism, making sure that maximum fitness
 never decreases.
 
 >select :: SelectionOp Char
 >select gs = select' (take 4 $ elite gs)
 >    where scaled = zip (map fst gs) (sigmaScale (map snd gs))
 >          select' gs' =
->              if length gs' >= length gs
->                 then return gs'
->                 else do
->                     p1 <- rouletteSelect scaled
->                     p2 <- rouletteSelect scaled
->                     let newPop = p1:p2:gs'
->                     select' newPop
-
-Crossover consists of finding a crossover point along the length of
-the genomes and swapping what comes after between the two genomes. The
-parameter @p@ determines the likelihood of crossover taking place.
-
->crossOver :: Double -> RecombinationOp Char
->crossOver p (g1,g2) = do
->    t <- getDouble
->    if t < p
->       then do
->           r <- getIntR (0, length g1-1)
->           return (take r g1 ++ drop r g2, take r g2 ++ drop r g1)
->       else return (g1,g2)
+>              let n = 2 * (length gs `div` 2 + 1) -- n >= length gs, n is even
+>              in  replicateM n (rouletteSelect scaled)
 
 Mutation flips a random bit along the length of the genome with
 probability @p@.
@@ -228,7 +210,8 @@ data can then be plotted with, e.g.  gnuplot
 >    gs <- runGA $ do
 >       initialGs <- getRandomGenomes 100 20 ('0', '1')
 >       let pop = evalFitness numOnes initialGs
->       let step = nextGeneration numOnes select (crossOver 0.75) (mutate 0.01)
+>       let xover = onePointCrossover 0.33
+>       let step = nextGeneration numOnes select xover (mutate 0.01)
 >       reverse `liftM` iterateHistoryM 41 step pop
 >    let fs = map avgFitness gs
 >    let ms = map maxFitness gs

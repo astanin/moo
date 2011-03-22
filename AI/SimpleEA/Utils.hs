@@ -15,6 +15,10 @@ module AI.SimpleEA.Utils (
   , sigmaScale
   , rankScale
   , elite
+  -- * Crossover
+  , onePointCrossover
+  , twoPointCrossover
+  , uniformCrossover
   -- * Statistics
   , avgFitness
   , maxFitness
@@ -128,6 +132,46 @@ tournamentSelect xs size = do
 -- by fitness (descending)
 elite :: [(a, Fitness)] -> [a]
 elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
+
+
+-- |Select a random point in two genomes, and swap them beyond this point.
+-- Apply with probability @p@.
+onePointCrossover :: Double -> CrossoverOp a
+onePointCrossover p (g1,g2) = do
+  t <- getDouble
+  if (t < p)
+    then do
+      r <- getIntR (0, length g1-1)
+      let (h1, t1) = splitAt r g1
+      let (h2, t2) = splitAt r g2
+      return (h1 ++ t2, h2 ++ t1)
+    else return (g1,g2)
+
+-- |Select two random points in two genomes, ans swap everything in between.
+-- Apply with probability @p@.
+twoPointCrossover :: Double -> CrossoverOp a
+twoPointCrossover p (g1,g2) = do
+  t <- getDouble
+  if (t < p)
+     then do
+       r1 <- getIntR (0, length g1-2)
+       r2 <- getIntR (r1+1, length g1-1)
+       let (h1, t1) = splitAt r1 g1
+       let (m1, e1) = splitAt (r2-r1) t1
+       let (h2, t2) = splitAt r1 g2
+       let (m2, e2) = splitAt (r2-r1) t2
+       return (h1 ++ m2 ++ e1, h2 ++ m1 ++ e2)
+     else return (g1, g2)
+
+-- |Swap individual bits of two genomes with probability @p@.
+uniformCrossover :: Double -> CrossoverOp a
+uniformCrossover p (g1, g2) = unzip `liftM` mapM swap (zip g1 g2)
+  where
+    swap (x, y) = do
+      t <- getDouble
+      if (t < p)
+         then return (y, x)
+         else return (x, y)
 
 -- |Takes a list of generations and returns a string intended for plotting with
 -- gnuplot.
