@@ -41,7 +41,7 @@ module AI.SimpleEA (
   , MutationOp
   , Fitness
   , Genome
-  -- * Example Program
+  -- * Example
   -- $SimpleEAExample
 ) where
 
@@ -90,7 +90,7 @@ runGA ga = do
 -- Initialization: 'getRandomGenomes'.
 -- Selection: 'rouletteSelect', 'tournamentSelect'.
 -- Crossover: 'onePointCrossover', 'twoPointCrossover', 'uniformCrossover'.
--- Mutation: 'uniformMutate'.
+-- Mutation: 'pointMutate'.
 nextGeneration ::
     FitnessFunction a ->
     SelectionOp a ->
@@ -149,73 +149,62 @@ iterateHistoryM n step x = go n x []
 
 {- $SimpleEAExample
 
-The aim of this /OneMax/ EA is to maximize the number of @1@'s in a
-bitstring.  The fitness of a bitstring i simply s defined to be the
-number of @1@'s it contains.
+The aim of this GA is to maximize the number of @True@ values in a
+list (bitstring). The fitness of the bitstring is defined to be the
+number of @True@ values it contains.
 
 >import AI.SimpleEA
 >import AI.SimpleEA.Utils
 >import AI.SimpleEA.Rand
 >
->import Control.Monad.Mersenne.Random
->import System.Random.Mersenne.Pure64
 >import Data.List
 >import System.Environment (getArgs)
 >import Control.Monad (unless, liftM, replicateM)
 
-The @numOnes@ function will function as our 'FitnessFunction' and simply
-returns the number of @1@'s in the string.
+The @countTrue@ function is our 'FitnessFunction' and simply returns
+the number of @True@ values in the list.
 
->numOnes :: FitnessFunction Char
->numOnes g _ = (fromIntegral . length . filter (=='1')) g
+>countTrue :: FitnessFunction Bool
+>countTrue g _ = (fromIntegral . length . filter id) g
 
-The @select@ function is our 'SelectionOp'. It uses
-sigma-scaled, fitness-proportionate selection. 'sigmaScale' is defined
-in 'SimpleEA.Utils'. By first taking the four best genomes (by using
-the 'elite' function) we get elitism, making sure that maximum fitness
-never decreases.
+The @select@ function is our 'SelectionOp'. It uses sigma-scaled,
+fitness-proportionate selection. 'sigmaScale' is defined in
+"AI.SimpleEA.Utils". By first taking the four best genomes (by using
+the 'elite' function) we get elitism and ensure that the maximum
+fitness never decreases (unless affected by a mutation).
 
->select :: SelectionOp Char
+>select :: SelectionOp Bool
 >select gs = select' (take 4 $ elite gs)
 >    where scaled = zip (map fst gs) (sigmaScale (map snd gs))
 >          select' gs' =
 >              let n = 2 * (length gs `div` 2 + 1) -- n >= length gs, n is even
 >              in  replicateM n (rouletteSelect scaled)
 
-Mutation flips a random bit along the length of the genome with
-probability @p@.
+In our @main@ function we wrap the entire algorithm with 'runGA'
+helper. It gives us access to the random number generator throughout
+its @do@ block. We generate a random initial population of 100 genomes
+with 'getRandomGenomes' function.
 
->mutate :: Double -> MutationOp Char
->mutate p g = do
->    t <- getDouble
->    if t < p
->       then do
->           r <- getIntR (0, length g-1)
->           return (take r g ++ flipBit (g !! r) : drop (r+1) g)
->       else return g
->        where
->              flipBit '0' = '1'
->              flipBit '1' = '0'
-
-The @main@ function creates a list of 100 random genomes (bit-strings)
-of length 20 and then runs the EA for 41 generations (42 generations
-including the random starting population). Average and maximum fitness
-values and standard deviation is then calculated for each generation
-and written to a file if a file name was provided as a parameter. This
-data can then be plotted with, e.g.  gnuplot
-(<http://www.gnuplot.info/>).
+We use 'onePointCrossover' and 'pointMutate' functions to
+provide simple 'CrossoverOp' and 'MutationOp' respectively. The we run
+the algorithm for 41 generations with 'iterateHistoryM' function.  It
+not only runs the algorithm, but also accumulates the history.
 
 >main = do
 >    args <- getArgs
 >    gs <- runGA $ do
->       initialGs <- getRandomGenomes 100 20 ('0', '1')
->       let pop = evalFitness numOnes initialGs
+>       genomes <- getRandomGenomes 100 20 (False,True)
+>       let pop = evalFitness countTrue genomes
 >       let xover = onePointCrossover 0.33
->       let step = nextGeneration numOnes select xover (mutate 0.01)
+>       let mutate = pointMutate 0.01
+>       let step = nextGeneration countTrue select xover mutate
 >       reverse `liftM` iterateHistoryM 41 step pop
->    let fs = map avgFitness gs
->    let ms = map maxFitness gs
->    let ds = map stdDeviation gs
+
+Average and maximum fitness values and fitness standard deviation are
+then calculated for each generation and written to a file if a file
+name was provided as a command line argument. This data can then be
+plotted with, e.g. gnuplot (<http://www.gnuplot.info/>).
+
 >    let gen_avg_best_std = getPlottingData gs
 >    if (null args)
 >      then putStr gen_avg_best_std

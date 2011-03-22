@@ -19,6 +19,8 @@ module AI.SimpleEA.Utils (
   , onePointCrossover
   , twoPointCrossover
   , uniformCrossover
+  -- * Mutation
+  , pointMutate
   -- * Statistics
   , avgFitness
   , maxFitness
@@ -28,7 +30,7 @@ module AI.SimpleEA.Utils (
   , getPlottingData
 ) where
 
-import Control.Monad (liftM, replicateM, when)
+import Control.Monad (liftM, replicateM)
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import AI.SimpleEA.Rand
@@ -172,6 +174,18 @@ uniformCrossover p (g1, g2) = unzip `liftM` mapM swap (zip g1 g2)
       if (t < p)
          then return (y, x)
          else return (x, y)
+
+-- |Flips a random bit along the length of the genome with probability @p@.
+-- With probability @(1 - p)@ the genome remains unaffected.
+pointMutate :: Double -> MutationOp Bool
+pointMutate p bits = do
+  t <- getDouble
+  if t < p
+     then do
+       r <- getIntR (0, length bits - 1)
+       let (before, (bit:after)) = splitAt r bits
+       return (before ++ (not bit:after))
+     else return bits
 
 -- |Takes a list of generations and returns a string intended for plotting with
 -- gnuplot.
