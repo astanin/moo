@@ -15,6 +15,7 @@ module AI.SimpleEA.Rand
     -- * Re-exports from random number generator packages
     , getBool, getInt, getWord, getInt64, getWord64, getDouble
     , runRandom, evalRandom, newPureMT
+    , Rand
     ) where
 
 import Control.Monad.Mersenne.Random
