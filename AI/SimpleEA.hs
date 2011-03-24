@@ -178,7 +178,7 @@ fitness never decreases (unless affected by a mutation).
 >    where scaled = zip (map fst gs) (sigmaScale (map snd gs))
 >          select' gs' =
 >              let n = 2 * (length gs `div` 2 + 1) -- n >= length gs, n is even
->              in  replicateM n (rouletteSelect scaled)
+>              in  rouletteSelect n scaled
 
 In our @main@ function we wrap the entire algorithm with 'runGA'
 helper. It gives us access to the random number generator throughout

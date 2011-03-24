@@ -110,22 +110,28 @@ rankScale fs = map (\n -> max'-fromIntegral n) ranks
     where ranks = (concatMap (`elemIndices` fs) . reverse . nub . sort) fs
           max'  = fromIntegral $ maximum ranks + 1
 
--- |Fitness-proportionate (roulette-wheel) selection: select a random
--- item from a list of (item, score) where each item's chance of being
--- selected is proportional to its score
-rouletteSelect :: [(a, Fitness)] -> Rand a
-rouletteSelect xs = do
-    let fs = map snd xs  -- fitnesses
-    let gs = map fst xs  -- genomes
-    let xs' = zip gs (scanl1 (+) fs)
-    let sumScores = (snd . last) xs'
+-- |Fitness-proportionate (roulette-wheel) selection: select @n@
+-- random items with each item's chance of being selected is
+-- proportional to its score.
+rouletteSelect :: Int -> SelectionOp a
+rouletteSelect n xs = replicateM n roulette1
+  where
+  fs = map snd xs  -- fitnesses
+  gs = map fst xs  -- genomes
+  xs' = zip gs (scanl1 (+) fs)
+  sumScores = (snd . last) xs'
+  roulette1 = do
     rand <- (sumScores*) `liftM` getDouble
     return $ (fst . head . dropWhile ((rand >) . snd)) xs'
 
 -- |Performs tournament selection amoing @size@ individuals and
--- returns the winner
-tournamentSelect :: [(a, Fitness)] -> Int -> Rand a
-tournamentSelect xs size = do
+-- returns the winner. Repeat @n@ times.
+tournamentSelect :: Int -- ^ size of the tournament group
+                 -> Int -- ^ how many tournaments to run
+                 -> SelectionOp a
+tournamentSelect size n xs = replicateM n tournament1
+  where
+  tournament1 = do
     contestants <- randomSample size xs
     let winner = head $ elite contestants
     return winner
