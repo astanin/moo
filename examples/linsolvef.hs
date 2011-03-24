@@ -1,5 +1,7 @@
 -- This example uses SimpleEA library to solve linear equation
--- using genetic algorithm.
+-- using genetic algorithm. A variation of the example using
+-- floating point numbers as matrix coefficients and solution
+-- elements.
 
 import AI.SimpleEA
 import AI.SimpleEA.Rand
@@ -10,25 +12,34 @@ import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import System.Environment
 
-n = 5  -- number of equations
-range = (-100, 100)  -- range of coefficients and solution entries
-popsize = 500  -- population size
+n = 4             -- number of equations
+range = (-10, 10) -- range of coefficients and solution entries
+popsize = 500      -- population size
+ndiscrete = 1000    -- discretization steps
+
+-- generate a floating point Double in given range
+getDoubleR :: (Double, Double) -> Rand Double
+getDoubleR (lo, hi) = do
+  r <- getDouble  -- random in the range (0, 1)
+  return (lo + (hi - lo)*r)
 
 -- create a random system of linear equations, return matrix and rhs
-createSLE :: Int -> Rand ([[Int]], [Int], [Int])
+createSLE :: Int -> Rand ([[Double]], [Double], [Double])
 createSLE n = do
-  mat <- replicateM n $ replicateM n (getIntR range) :: Rand [[Int]]
-  xs <- replicateM n (getIntR range)
+  mat <- replicateM n $ replicateM n (getDoubleR range) :: Rand [[Double]]
+  xs <- replicateM n (getDoubleR range)
   let rhs = mat `mult` xs
   return (mat, xs, rhs)
 
 -- convert solution to bit encoding (genome)
-toGenome :: [Int] -> [Bool]
-toGenome = concatMap (encodeGray range)
+toGenome :: [Double] -> [Bool]
+toGenome = concatMap (encodeGrayReal range ndiscrete)
 
 -- convert bit encoding (genome) to solution variables
-fromGenome :: [Bool] -> [Int]
-fromGenome = map (decodeGray range) . splitEvery (bitsNeeded range)
+fromGenome :: [Bool] -> [Double]
+fromGenome = map (decodeGrayReal range ndiscrete) . splitEvery nbits
+  where
+  nbits = bitsNeeded (0,ndiscrete-1)
 
 -- fitness function designed to minimize the norm of the residual
 -- of the candidate solution.
@@ -50,7 +61,7 @@ main = do
   (mat,solution,rhs,best,history) <- runGA $ do
          (mat, solution, rhs) <- createSLE n
          -- initial population
-         xs0 <- replicateM popsize $ replicateM n (getIntR range)
+         xs0 <- replicateM popsize $ replicateM n (getDoubleR range)
          let genomes0 = map toGenome xs0
          -- run for some generations
          gss <- iterateHistoryM iters

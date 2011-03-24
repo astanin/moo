@@ -23,6 +23,7 @@ Library
     build-depends:      base >=4 && < 5
                       , monad-mersenne-random
                       , mersenne-random-pure64
+                      , gray-code >= 0.2.1
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils, AI.SimpleEA.Rand
 
