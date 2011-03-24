@@ -1,1 +1,8 @@
 dist
+*~
+*.o
+*.hi
+examples/linsolve
+examples/ones
+examples/*.txt
+examples/*.png
