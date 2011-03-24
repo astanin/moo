@@ -59,7 +59,7 @@ type Genome a = [a]  -- TODO: allow for efficient bit-vectors/custom types
 -- non-negative fitness.  To solve minimization problems consider
 -- transforming the fitness value as @F(x) = 1/(1+f(x))@ or
 -- @F(x) = LargePositive - objective(x)/mean(objective(x_i))@.
-type FitnessFunction a       = Genome a -> [Genome a] -> Fitness
+type FitnessFunction a = Genome a -> [Genome a] -> Fitness
 
 -- | A selection operator is responsible for selection. It takes pairs of
 -- genomes and their fitness and is responsible for returning one or more
@@ -71,7 +71,7 @@ type SelectionOp a = [(Genome a, Fitness)] -> Rand [Genome a]
 type CrossoverOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
-type MutationOp a        = Genome a -> Rand (Genome a)
+type MutationOp a = Genome a -> Rand (Genome a)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
@@ -96,14 +96,14 @@ nextGeneration ::
     SelectionOp a ->
     CrossoverOp a ->
     MutationOp a ->
-    [(Genome a, Fitness)] ->
-    Rand [(Genome a, Fitness)]
-nextGeneration fitFun selFun recOp mutOp pop = do
-  genomes <- selFun pop
-  -- TODO: shuffle?
-  genomes <- doCrossovers genomes recOp
-  genomes <- mapM mutOp genomes
-  return $ evalFitness fitFun genomes
+    [Genome a] ->
+    Rand [Genome a]
+nextGeneration fitness selectOp xoverOp mutationOp genomes = do
+  let pop = evalFitness fitness genomes
+  genomes' <- selectOp pop  -- TODO: shuffle?
+  genomes' <- doCrossovers genomes' xoverOp
+  genomes' <- mapM mutationOp genomes'
+  return genomes'
 
 -- | Evaluate fitness for all genomes in the population.
 evalFitness :: FitnessFunction a -> [Genome a] -> [(Genome a, Fitness)]
@@ -193,21 +193,24 @@ not only runs the algorithm, but also accumulates the history.
 >main = do
 >    args <- getArgs
 >    gs <- runGA $ do
->       genomes <- getRandomGenomes 100 20 (False,True)
->       let pop = evalFitness countTrue genomes
->       let xover = onePointCrossover 0.33
->       let mutate = pointMutate 0.01
->       let step = nextGeneration countTrue select xover mutate
->       reverse `liftM` iterateHistoryM 41 step pop
+>       genomes <- getRandomGenomes 100 20 (False,True) :: Rand [Genome Bool]
+>       let xover :: CrossoverOp Bool
+>           xover = onePointCrossover 0.33
+>       let mutate :: MutationOp Bool
+>           mutate = pointMutate 0.01
+>       let step :: [Genome Bool] -> Rand [Genome Bool]
+>           step = nextGeneration countTrue select xover mutate
+>       reverse `liftM` iterateHistoryM 41 step genomes :: Rand [[Genome Bool]]
 
 Average and maximum fitness values and fitness standard deviation are
 then calculated for each generation and written to a file if a file
 name was provided as a command line argument. This data can then be
 plotted with, e.g. gnuplot (<http://www.gnuplot.info/>).
 
->    let gen_avg_best_std = getPlottingData gs
+>    let pop = map (evalFitness countTrue) gs
+>    let plot_table = getPlottingData pop
 >    if (null args)
->      then putStr gen_avg_best_std
->      else writeFile (head args) gen_avg_best_std
+>      then putStr plot_table
+>      else writeFile (head args) plot_table
 
 -}

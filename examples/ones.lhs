@@ -42,19 +42,22 @@ not only runs the algorithm, but also accumulates the history.
 >main = do
 >    args <- getArgs
 >    gs <- runGA $ do
->       genomes <- getRandomGenomes 100 20 (False,True)
->       let pop = evalFitness countTrue genomes
->       let xover = onePointCrossover 0.33
->       let mutate = pointMutate 0.01
->       let step = nextGeneration countTrue select xover mutate
->       reverse `liftM` iterateHistoryM 41 step pop
+>       genomes <- getRandomGenomes 100 20 (False,True) :: Rand [Genome Bool]
+>       let xover :: CrossoverOp Bool
+>           xover = onePointCrossover 0.33
+>       let mutate :: MutationOp Bool
+>           mutate = pointMutate 0.01
+>       let step :: [Genome Bool] -> Rand [Genome Bool]
+>           step = nextGeneration countTrue select xover mutate
+>       reverse `liftM` iterateHistoryM 41 step genomes :: Rand [[Genome Bool]]
 
 Average and maximum fitness values and fitness standard deviation are
 then calculated for each generation and written to a file if a file
 name was provided as a command line argument. This data can then be
 plotted with, e.g. gnuplot (<http://www.gnuplot.info/>).
 
->    let gen_avg_best_std = getPlottingData gs
+>    let pop = map (evalFitness countTrue) gs
+>    let plot_table = getPlottingData pop
 >    if (null args)
->      then putStr gen_avg_best_std
->      else writeFile (head args) gen_avg_best_std
+>      then putStr plot_table
+>      else writeFile (head args) plot_table
