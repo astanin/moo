@@ -17,7 +17,7 @@ fitness function, selection, crossover and mutation operators.
 See an example below.
 
 "AI.SimpleEA.Utils" module contains utilitify functions that implement
-some most common types of genetic operators: selection, mutation,
+some most common types of genetic operators: encoding, selection, mutation,
 crossover.
 
 "AI.SimpleEA.Rand" module provides some additional facilities to make
@@ -45,8 +45,7 @@ module AI.SimpleEA (
   -- $SimpleEAExample
 ) where
 
-import Control.Monad.Mersenne.Random
-import System.Random.Mersenne.Pure64 (newPureMT)
+import AI.SimpleEA.Rand
 
 type Fitness = Double
 type Genome a = [a]  -- TODO: allow for efficient bit-vectors/custom types
@@ -87,9 +86,16 @@ runGA ga = do
 --
 -- "AI.SimpleEA.Utils" provides some operators which may be used as
 -- building blocks of the algorithm.
+--
+-- Search space encoding: 'encodeGray', 'encodeGrayReal' and
+-- 'decodeGray', 'decodeGrayReal' respectively.
+--
 -- Initialization: 'getRandomGenomes'.
+--
 -- Selection: 'rouletteSelect', 'tournamentSelect'.
+--
 -- Crossover: 'onePointCrossover', 'twoPointCrossover', 'uniformCrossover'.
+--
 -- Mutation: 'pointMutate'.
 nextGeneration ::
     FitnessFunction a ->

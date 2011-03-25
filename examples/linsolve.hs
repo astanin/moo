@@ -17,8 +17,8 @@ popsize = 500  -- population size
 -- create a random system of linear equations, return matrix and rhs
 createSLE :: Int -> Rand ([[Int]], [Int], [Int])
 createSLE n = do
-  mat <- replicateM n $ replicateM n (getIntR range) :: Rand [[Int]]
-  xs <- replicateM n (getIntR range)
+  mat <- replicateM n $ replicateM n (getRandomR range) :: Rand [[Int]]
+  xs <- replicateM n (getRandomR range)
   let rhs = mat `mult` xs
   return (mat, xs, rhs)
 
@@ -50,7 +50,7 @@ main = do
   (mat,solution,rhs,best,history) <- runGA $ do
          (mat, solution, rhs) <- createSLE n
          -- initial population
-         xs0 <- replicateM popsize $ replicateM n (getIntR range)
+         xs0 <- replicateM popsize $ replicateM n (getRandomR range)
          let genomes0 = map toGenome xs0
          -- run for some generations
          gss <- iterateHistoryM iters

@@ -17,17 +17,11 @@ range = (-10, 10) -- range of coefficients and solution entries
 popsize = 500      -- population size
 ndiscrete = 1000    -- discretization steps
 
--- generate a floating point Double in given range
-getDoubleR :: (Double, Double) -> Rand Double
-getDoubleR (lo, hi) = do
-  r <- getDouble  -- random in the range (0, 1)
-  return (lo + (hi - lo)*r)
-
 -- create a random system of linear equations, return matrix and rhs
 createSLE :: Int -> Rand ([[Double]], [Double], [Double])
 createSLE n = do
-  mat <- replicateM n $ replicateM n (getDoubleR range) :: Rand [[Double]]
-  xs <- replicateM n (getDoubleR range)
+  mat <- replicateM n $ replicateM n (getRandomR range) :: Rand [[Double]]
+  xs <- replicateM n (getRandomR range)
   let rhs = mat `mult` xs
   return (mat, xs, rhs)
 
@@ -61,7 +55,7 @@ main = do
   (mat,solution,rhs,best,history) <- runGA $ do
          (mat, solution, rhs) <- createSLE n
          -- initial population
-         xs0 <- replicateM popsize $ replicateM n (getDoubleR range)
+         xs0 <- replicateM popsize $ replicateM n (getRandomR range)
          let genomes0 = map toGenome xs0
          -- run for some generations
          gss <- iterateHistoryM iters

@@ -16,7 +16,6 @@ module AI.SimpleEA.Utils (
   , bitsNeeded
   , splitEvery
   -- * Initialization
-  , randomGenomes
   , getRandomGenomes
   -- * Selection
   , rouletteSelect
@@ -147,12 +146,13 @@ randomGenomes rng n len (from, to) =
     let lo = fromEnum from
         hi = fromEnum to
     in flip runRandom rng $
-         (nLists len . map toEnum) `liftM` replicateM (n*len) (getIntR (lo,hi))
+       (nLists len . map toEnum) `liftM` replicateM (n*len) (getRandomR (lo,hi))
   where nLists :: Int -> [a] -> [[a]]
         nLists _ [] = []
         nLists n ls = let (h,t) = splitAt n ls in h : nLists n t
 
--- | Monadic version of 'randomGenomes'.
+-- | Generate @n@ random genomes of length @len@ made of elements
+-- in the range @(from,to)@. Return a list of genomes.
 getRandomGenomes :: (Enum a)
                  => Int -- ^ how many genomes to generate
                  -> Int -- ^ genome length
@@ -217,7 +217,7 @@ onePointCrossover p (g1,g2) = do
   t <- getDouble
   if (t < p)
     then do
-      r <- getIntR (0, length g1-1)
+      r <- getRandomR (0, length g1-1)
       let (h1, t1) = splitAt r g1
       let (h2, t2) = splitAt r g2
       return (h1 ++ t2, h2 ++ t1)
@@ -230,8 +230,8 @@ twoPointCrossover p (g1,g2) = do
   t <- getDouble
   if (t < p)
      then do
-       r1 <- getIntR (0, length g1-2)
-       r2 <- getIntR (r1+1, length g1-1)
+       r1 <- getRandomR (0, length g1-2)
+       r2 <- getRandomR (r1+1, length g1-1)
        let (h1, t1) = splitAt r1 g1
        let (m1, e1) = splitAt (r2-r1) t1
        let (h2, t2) = splitAt r1 g2
@@ -256,7 +256,7 @@ pointMutate p bits = do
   t <- getDouble
   if t < p
      then do
-       r <- getIntR (0, length bits - 1)
+       r <- getRandomR (0, length bits - 1)
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
      else return bits

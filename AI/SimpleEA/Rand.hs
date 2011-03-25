@@ -7,32 +7,31 @@
 module AI.SimpleEA.Rand
     (
     -- * Random numbers from given range
-      randomIntR
-    , getIntR
+      getRandomR
+    , getRandom
     -- * Random samples and shuffles
     , randomSample
     , shuffle
     -- * Re-exports from random number generator packages
     , getBool, getInt, getWord, getInt64, getWord64, getDouble
     , runRandom, evalRandom, newPureMT
-    , Rand
+    , Rand, Random
     ) where
 
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import qualified System.Random.Shuffle as S
-import System.Random (RandomGen, randomR)
+import System.Random (RandomGen, Random(..))
 
--- | Yield a new 'Int' value within given range and return this value
--- the new state of random number generator.
-randomIntR :: PureMT -> (Int, Int) -> (Int, PureMT)
-randomIntR = flip randomR
+-- | Yield a new randomly selected value of type @a@ in the range @(lo, hi)@.
+-- See 'System.Random.randomR' for details.
+getRandomR :: Random a => (a, a) -> Rand a
+getRandomR range = Rand $ \s -> let (r, s') = randomR range s in R r s'
 
--- | Yield a new 'Int' value within given range. Monadic version of
--- 'randomIntR'.
-getIntR :: (Int, Int) -> Rand Int
-getIntR (lo,hi) =
-  Rand $ \s -> case randomIntR s (lo,hi) of (r, s') -> R r s'
+-- | Yield a new randomly selected value of type @a@.
+-- See 'System.Random.random' for for details.
+getRandom :: Random a => Rand a
+getRandom = Rand $ \g -> let (r, g') = random g in R r g'
 
 -- | Take at most n random elements from the list. Preserve order.
 randomSample :: Int -> [a] -> Rand [a]
@@ -43,7 +42,7 @@ randomSample n xs =
     select rng n m xs acc
         | n <= 0     = (reverse acc, rng)
         | otherwise  =
-            let (k, rng') = randomIntR rng (0, m - n)
+            let (k, rng') = randomR (0, m - n) rng
                 (x:rest) = drop k xs
             in  select rng' (n-1) (m-k-1) rest (x:acc)
 
