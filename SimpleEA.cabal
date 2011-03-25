@@ -24,6 +24,8 @@ Library
                       , monad-mersenne-random
                       , mersenne-random-pure64
                       , gray-code >= 0.2.1
+                      , random >= 0.1
+                      , random-shuffle >= 0.0.2 && < 0.1
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils, AI.SimpleEA.Rand
 
