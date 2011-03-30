@@ -4,15 +4,16 @@
 import AI.SimpleEA
 import AI.SimpleEA.Rand
 import AI.SimpleEA.Utils
-import Control.Arrow (first)
 import Control.Monad
 import Control.Monad.Mersenne.Random
+import Data.List (maximumBy)
+import Data.Function (on)
 import System.Random.Mersenne.Pure64
 import System.Environment
 
-n = 5  -- number of equations
-range = (-100, 100)  -- range of coefficients and solution entries
-popsize = 500  -- population size
+n = 4  -- number of equations
+range = (0, 9)  -- range of coefficients and solution entries
+popsize = 100  -- population size
 
 -- create a random system of linear equations, return matrix and rhs
 createSLE :: Int -> Rand ([[Int]], [Int], [Int])
@@ -42,33 +43,31 @@ select mat rhs pop =
     let keep = popsize `div` 10
         top = take keep (elite pop)
     in  do
-      rest <- tournamentSelect 3 (popsize - keep) pop
+      rest <- tournamentSelect 2 (popsize - keep) pop
       return (top ++ rest)
 
 main = do
-  (iters:_) <- map read `liftM` getArgs
-  (mat,solution,rhs,best,history) <- runGA $ do
+  (mat,rhs,solution,best,bestf) <- runGA $ do
+         -- a random SLE problem
          (mat, solution, rhs) <- createSLE n
          -- initial population
          xs0 <- replicateM popsize $ replicateM n (getRandomR range)
-         let genomes0 = map toGenome xs0
+         let pop0 = evalFitness (fitness mat rhs) . map toGenome $ xs0
          -- run for some generations
-         gss <- iterateHistoryM iters
-               (nextGeneration (fitness mat rhs)
+         pop <- loopUntil (MaxFitness (>= 0) `Or` FitnessStdev (<= 1)) pop0 $
+                nextGeneration (fitness mat rhs)
                                (select mat rhs)
-                               (twoPointCrossover 0.25)
-                               (pointMutate 0.35))
-               genomes0
-         let xss = map (map (first fromGenome) . evalFitness (fitness mat rhs)) gss
-         let best = head . elite . head $ xss
-         return (mat, solution, rhs, best, reverse xss)
+                               (twoPointCrossover 0.5)
+                               (pointMutate 0.25)
+         let (best, bestf) = maximumBy (compare `on` snd) $ pop
+         return (mat, rhs, solution, fromGenome best, bestf)
   putStr $ unlines
     [ "system matrix: " ++ show mat
     , "system right hand side: " ++ show rhs
     , "system solution: " ++ show solution
     , "best found     : " ++ show best
+    , "best fitness   : " ++ show bestf
     ]
-  writeFile "solve.txt" $ getPlottingData history
 
 -- Matrix - vector product.
 mult :: (Num a) => [[a]] -> [a] -> [a]
@@ -83,3 +82,6 @@ minus xs ys = zipWith (-) xs ys
 -- Vector norm.
 norm2 :: (Num a, Real a) => [a] -> Double
 norm2 = sqrt . fromRational . toRational . sum . map (^2)
+
+first :: (a -> b) -> (a, c) -> (b, c)
+first f (x, y) = (f x, y)

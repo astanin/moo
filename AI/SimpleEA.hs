@@ -8,15 +8,7 @@ Portability  : portable
 
 A framework for simple genetic algorithms.
 
-First a random number generator needs to be obtained with 'newPureMT',
-then use 'runRandom' or 'evalRandom' to run simulation in the 'Rand'
-monad.  'nextGeneration' implements a single iteration of the
-algorithm, 'iterateM' and 'iterateUntilM' allow to repeat it as long
-as necessary.  The user has to provide an initial population, genome's
-fitness function, selection, crossover and mutation operators.
-See an example below.
-
-"AI.SimpleEA.Utils" module contains utilitify functions that implement
+"AI.SimpleEA.Utils" module contains utility functions that implement
 some most common types of genetic operators: encoding, selection, mutation,
 crossover.
 
@@ -31,46 +23,26 @@ module AI.SimpleEA (
     runGA
   , nextGeneration
   , evalFitness
-  , iterateM
-  , iterateUntilM
-  , iterateHistoryM
+  , loopUntil
+  , loopUntil'
+  , Cond(..)
   -- * Types
+  , Fitness
+  , Genome
+  , Population
   , FitnessFunction
   , SelectionOp
   , CrossoverOp
   , MutationOp
-  , Fitness
-  , Genome
   -- * Example
   -- $SimpleEAExample
 ) where
 
 import AI.SimpleEA.Rand
+import AI.SimpleEA.Utils (minFitness, maxFitness, stdDeviation)
+import AI.SimpleEA.Types
 
-type Fitness = Double
-type Genome a = [a]  -- TODO: allow for efficient bit-vectors/custom types
-
--- | A fitness functions assigns a fitness score to a genome. The rest of the
--- individuals of that generation is also provided in case the fitness is
--- in proportion to its neighbours. Genetic algorithm maximizes the fitness.
---
--- Some genetic algorithm operators, like 'rouletteSelect', require
--- non-negative fitness.  To solve minimization problems consider
--- transforming the fitness value as @F(x) = 1/(1+f(x))@ or
--- @F(x) = LargePositive - objective(x)/mean(objective(x_i))@.
-type FitnessFunction a = Genome a -> [Genome a] -> Fitness
-
--- | A selection operator is responsible for selection. It takes pairs of
--- genomes and their fitness and is responsible for returning one or more
--- individuals.
-type SelectionOp a = [(Genome a, Fitness)] -> Rand [Genome a]
-
--- | A recombination operator takes two /parent/ genomes and returns two
--- /children/.
-type CrossoverOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
-
--- | A mutation operator takes a genome and returns an altered copy of it.
-type MutationOp a = Genome a -> Rand (Genome a)
+import Control.Monad (liftM)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
@@ -79,10 +51,7 @@ runGA ga = do
   rng <- newPureMT
   return $ evalRandom ga rng
 
--- | A single step of the genetic algorithm. Take a population with
--- evaluated fitness values (@pop@), select according to @selFun@,
--- produce offspring population through crossover (@recOp@) and
--- mutation (@mutOp@), evaluate new fitness values.
+-- | A single step of the genetic algorithm.
 --
 -- "AI.SimpleEA.Utils" provides some operators which may be used as
 -- building blocks of the algorithm.
@@ -102,17 +71,94 @@ nextGeneration ::
     SelectionOp a ->
     CrossoverOp a ->
     MutationOp a ->
-    [Genome a] ->
-    Rand [Genome a]
-nextGeneration fitness selectOp xoverOp mutationOp genomes = do
-  let pop = evalFitness fitness genomes
-  genomes' <- selectOp pop  -- TODO: shuffle?
+    Population a ->
+    Rand (Population a)
+nextGeneration fitness selectOp xoverOp mutationOp pop = do
+  genomes' <- selectOp pop
+  genomes' <- shuffle genomes'  -- just in case if selectOp preserves order
   genomes' <- doCrossovers genomes' xoverOp
   genomes' <- mapM mutationOp genomes'
-  return genomes'
+  return $ evalFitness fitness genomes'
+
+-- | Run @n@ strict iterations of the genetic algorithm defined by @step@.
+{-
+{-# INLINE iterateM #-}
+iterateM :: (Monad m)
+         => Int    -- ^ how many iterations to run
+         -> Population a  -- ^ initial population
+         -> (Population a -> m (Population a))
+                         -- ^ @step@ function to produce the next generation
+         -> m (Population a)  -- ^ final population
+iterateM n pop0 step = loopUntil (Iteration n) pop0 step
+-}
+
+-- | Run strict iterations of the genetic algorithm defined by @step@.
+-- Termination condition @cond@ is evaluated before every step.
+-- Return the result of the last step.
+{-# INLINE loopUntil #-}
+loopUntil :: (Monad m)
+      => Cond a           -- ^ termination condition @cond@
+      -> Population a     -- ^ initial population
+      -> (Population a -> m (Population a))
+                         -- ^ @step@ function to produce the next generation
+      -> m (Population a) -- ^ final population
+loopUntil cond pop0 step = go cond pop0
+  where
+    go cond !x
+       | evalCond cond x  = return x
+       | otherwise        = step x >>= go (countdownCond cond)
+
+-- | Like 'loopUntil' but the user also provides a @digest@ function which
+-- extracts some summary from the current generation to keep. 'loopUntil''
+-- accumulates these digests and returns the history of population evolution
+-- along with the final population.
+{-# INLINE loopUntil' #-}
+loopUntil' :: (Monad m)
+      => Cond a   -- ^ termination condition @cond@
+      -> (Population a -> d)  -- ^ @digest@ function to extract summary
+      -> Population a  -- ^ initial population
+      -> (Population a -> m (Population a))
+                      -- ^ @step@ function to produce the next generation
+      -> m ((Population a, [d]))  -- ^ final population and its history
+loopUntil' cond digest pop0 step =
+    second reverse `liftM` go cond pop0 [digest pop0]
+  where
+    second f (x,y) = (x, f y)
+    go cond !x !ds
+       | evalCond cond x  = return (x, ds)
+       | otherwise        =
+           do x' <- step x
+              go (countdownCond cond) x' (digest x':ds)
+
+-- | Iterations stop when the condition evaluates as @True@.
+data Cond a =
+      Iteration Int                  -- ^ becomes @True@ after /n/ iterations
+    | MaxFitness (Fitness -> Bool)    -- ^ consider the maximal observed fitness
+    | MinFitness (Fitness -> Bool)    -- ^ consider the minimal observed fitness
+    | FitnessStdev (Fitness -> Bool)  -- ^ consider standard deviation of fitness
+                                     -- within population; may be used to
+                                     -- detect premature convergence
+    | EntirePopulation ([Genome a] -> Bool)  -- ^ consider all genomes
+    | Or (Cond a) (Cond a)
+    | And (Cond a) (Cond a)
+
+evalCond :: (Cond a) -> Population a -> Bool
+evalCond (Iteration n) _  = n <= 0
+evalCond (MaxFitness cond) p = cond . maxFitness $ p
+evalCond (MinFitness cond) p = cond . minFitness $ p
+evalCond (FitnessStdev cond) p = cond . stdDeviation $ p
+evalCond (EntirePopulation cond) p = cond . map fst $ p
+evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
+evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
+
+countdownCond :: Cond a -> Cond a
+countdownCond (Iteration n) = Iteration (n-1)
+countdownCond (And c1 c2) = And (countdownCond c1) (countdownCond c2)
+countdownCond (Or c1 c2) = Or (countdownCond c1) (countdownCond c2)
+countdownCond c = c
 
 -- | Evaluate fitness for all genomes in the population.
-evalFitness :: FitnessFunction a -> [Genome a] -> [(Genome a, Fitness)]
+evalFitness :: FitnessFunction a -> [Genome a] -> Population a
 evalFitness fitFun gs =
   let fs = map (`fitFun` gs) gs
   in  zip gs fs
@@ -125,98 +171,8 @@ doCrossovers (a:b:r) rec = do
     rest    <- doCrossovers r rec
     return $ a':b':rest
 
--- | Run @n@ strict iterations of monadic action @step@. Return the result
--- of the last step.
-{-# INLINE iterateM #-}
-iterateM :: (Monad m) => Int -> (a -> m a) -> a -> m a
-iterateM n step x = go n x
-    where
-      go 0 !x = return x
-      go n !x = step x >>= go (n-1)
-
--- | Run strict iteration of monadic action @step@ until termination
--- condition @termCond@ is True. Return the result of the last step.
-{-# INLINE iterateUntilM #-}
-iterateUntilM :: (Monad m) => (a -> Bool) ->  (a ->  m a) ->  a ->  m a
-iterateUntilM termCond step x = go x
-    where
-      go !x | termCond x = return x
-            | otherwise = step x >>= go
-
--- | Like 'iterateM', but return the reversed history of the intermediate
--- results (the last result in the head of the list).
--- TODO: rewrite with MonadWriter.
-{-# INLINE iterateHistoryM #-}
-iterateHistoryM :: (Monad m) => Int -> (a -> m a) -> a -> m [a]
-iterateHistoryM n step x = go n x []
-    where
-      go 0 !x !a = return (x:a)
-      go n !x !a = step x >>= \x' -> go (n-1) x' (x':a)
-
 {- $SimpleEAExample
 
-The aim of this GA is to maximize the number of @True@ values in a
-list (bitstring). The fitness of the bitstring is defined to be the
-number of @True@ values it contains.
-
->import AI.SimpleEA
->import AI.SimpleEA.Utils
->import AI.SimpleEA.Rand
->
->import Data.List
->import System.Environment (getArgs)
->import Control.Monad (unless, liftM, replicateM)
-
-The @countTrue@ function is our 'FitnessFunction' and simply returns
-the number of @True@ values in the list.
-
->countTrue :: FitnessFunction Bool
->countTrue g _ = (fromIntegral . length . filter id) g
-
-The @select@ function is our 'SelectionOp'. It uses sigma-scaled,
-fitness-proportionate selection. 'sigmaScale' is defined in
-"AI.SimpleEA.Utils". By first taking the four best genomes (by using
-the 'elite' function) we get elitism and ensure that the maximum
-fitness never decreases (unless affected by a mutation).
-
->select :: SelectionOp Bool
->select gs = select' (take 4 $ elite gs)
->    where scaled = zip (map fst gs) (sigmaScale (map snd gs))
->          select' gs' =
->              let n = 2 * (length gs `div` 2 + 1) -- n >= length gs, n is even
->              in  rouletteSelect n scaled
-
-In our @main@ function we wrap the entire algorithm with 'runGA'
-helper. It gives us access to the random number generator throughout
-its @do@ block. We generate a random initial population of 100 genomes
-with 'getRandomGenomes' function.
-
-We use 'onePointCrossover' and 'pointMutate' functions to
-provide simple 'CrossoverOp' and 'MutationOp' respectively. The we run
-the algorithm for 41 generations with 'iterateHistoryM' function.  It
-not only runs the algorithm, but also accumulates the history.
-
->main = do
->    args <- getArgs
->    gs <- runGA $ do
->       genomes <- getRandomGenomes 100 20 (False,True) :: Rand [Genome Bool]
->       let xover :: CrossoverOp Bool
->           xover = onePointCrossover 0.33
->       let mutate :: MutationOp Bool
->           mutate = pointMutate 0.01
->       let step :: [Genome Bool] -> Rand [Genome Bool]
->           step = nextGeneration countTrue select xover mutate
->       reverse `liftM` iterateHistoryM 41 step genomes :: Rand [[Genome Bool]]
-
-Average and maximum fitness values and fitness standard deviation are
-then calculated for each generation and written to a file if a file
-name was provided as a command line argument. This data can then be
-plotted with, e.g. gnuplot (<http://www.gnuplot.info/>).
-
->    let pop = map (evalFitness countTrue) gs
->    let plot_table = getPlottingData pop
->    if (null args)
->      then putStr plot_table
->      else writeFile (head args) plot_table
+TO BE WRITTEN
 
 -}

@@ -34,11 +34,9 @@ module AI.SimpleEA.Utils (
   , maxFitness
   , minFitness
   , stdDeviation
-  -- * Input/output
-  , getPlottingData
 ) where
 
-import AI.SimpleEA
+import AI.SimpleEA.Types
 import AI.SimpleEA.Rand
 import Codec.Binary.Gray.List
 import Control.Monad (liftM, replicateM)
@@ -262,20 +260,20 @@ pointMutate p bits = do
      else return bits
 
 -- |Returns the average fitnesses in a population.
-avgFitness :: [(Genome a, Fitness)] -> Fitness
+avgFitness :: Population a -> Fitness
 avgFitness = avg . map snd
   where avg = uncurry (/) . foldl' (\(!s, !c) x -> (s+x, c+1)) (0, 0)
 
 -- |Returns the maximum fitness in a population.
-maxFitness :: [(Genome a, Fitness)] -> Fitness
+maxFitness :: Population a -> Fitness
 maxFitness = maximum . map snd
 
 -- |Returns the minimum fitness in a population.
-minFitness :: [(Genome a, Fitness)] -> Fitness
+minFitness :: Population a -> Fitness
 minFitness = minimum . map snd
 
 -- |Returns the standard deviation of the fitness values in a population.
-stdDeviation :: [(Genome a, Fitness)] -> Double
+stdDeviation :: Population a -> Double
 stdDeviation = sqrt . variance . map snd
 
 -- Population variance (divided by n).
@@ -294,14 +292,3 @@ variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
                 sa' = sa + x
                 qa' = qa + delta*delta*na/(na+1)
             in  (n + 1, sa', qa')
-
--- |Takes a list of generations and returns a string intended for plotting with
--- gnuplot.
-getPlottingData :: [[(Genome a, Fitness)]] -> String
-getPlottingData gs = concatMap conc (zip4 ns fs ms ds)
-    where ns = [1..] :: [Int]
-          fs = map avgFitness gs
-          ms = map maxFitness gs
-          ds = map stdDeviation gs
-          conc (n, a, m ,s) =
-              show n ++ " " ++ show a ++ " " ++ show m ++ " " ++ show s ++ "\n"

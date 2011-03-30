@@ -6,6 +6,7 @@ number of @True@ values it contains.
 >import AI.SimpleEA.Utils
 >import AI.SimpleEA.Rand
 >
+>import Codec.Binary.Gray.List (showBits)
 >import Data.List
 >import System.Environment (getArgs)
 >import Control.Monad (unless, liftM, replicateM)
@@ -40,24 +41,27 @@ the algorithm for 41 generations with 'iterateHistoryM' function.  It
 not only runs the algorithm, but also accumulates the history.
 
 >main = do
+>    let popsize = 100
+>    let genomesize = 20
 >    args <- getArgs
->    gs <- runGA $ do
->       genomes <- getRandomGenomes 100 20 (False,True) :: Rand [Genome Bool]
->       let xover :: CrossoverOp Bool
->           xover = onePointCrossover 0.33
->       let mutate :: MutationOp Bool
->           mutate = pointMutate 0.01
->       let step :: [Genome Bool] -> Rand [Genome Bool]
->           step = nextGeneration countTrue select xover mutate
->       reverse `liftM` iterateHistoryM 41 step genomes :: Rand [[Genome Bool]]
+>    (pop, history) <- runGA $ do
+>       genomes <- getRandomGenomes popsize genomesize (False,True)
+>       let pop0 = evalFitness countTrue genomes
+>       let xover = onePointCrossover 0.33
+>       let mutate = pointMutate 0.1
+>       let step = nextGeneration countTrue select xover mutate
+>       let digest p = (avgFitness p, stdDeviation p, maxFitness p)
+>       loopUntil' (Iteration 20) digest pop0 step
 
-Average and maximum fitness values and fitness standard deviation are
-then calculated for each generation and written to a file if a file
-name was provided as a command line argument. This data can then be
-plotted with, e.g. gnuplot (<http://www.gnuplot.info/>).
+>    putStrLn $ "Best found: " ++ (showBits . head . elite $ pop)
+>    putStrLn $ "Iterations: " ++ show (length history - 1)
+>    putStrLn $ "Fitness evaluations: " ++ show (length history * popsize)
+>    case args of
+>      (outfile:_) -> do
+>         writeFile outfile . unlines . map showLine $ zip [1..] history
+>      _ -> return ()
 
->    let pop = map (evalFitness countTrue) gs
->    let plot_table = getPlottingData pop
->    if (null args)
->      then putStr plot_table
->      else writeFile (head args) plot_table
+To print a numbered tuple with generation number:
+
+>showLine :: (Int, (Fitness, Fitness, Fitness)) -> String
+>showLine (n, (a, b, c)) = unwords [ show n, show a, show b , show c ]

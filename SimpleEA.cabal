@@ -27,7 +27,10 @@ Library
                       , random >= 0.1
                       , random-shuffle >= 0.0.2 && < 0.1
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
-    exposed-modules:    AI.SimpleEA, AI.SimpleEA.Utils, AI.SimpleEA.Rand
+    exposed-modules:    AI.SimpleEA
+                      , AI.SimpleEA.Types
+                      , AI.SimpleEA.Utils
+                      , AI.SimpleEA.Rand
 
 source-repository head
   type:     git
