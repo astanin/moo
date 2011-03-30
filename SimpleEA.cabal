@@ -1,7 +1,7 @@
 name:               SimpleEA
 category:           AI
 build-type:         Simple
-version:            0.1.1
+version:            0.2
 synopsis:           Simple evolutionary algorithm framework using Mersenne twister.
 description:        Simple framework for running an evolutionary algorithm by
                     providing selection, recombination, and mutation operators.
