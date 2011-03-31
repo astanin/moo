@@ -23,8 +23,8 @@ module AI.SimpleEA (
     runGA
   , nextGeneration
   , evalFitness
-  , loopUntil
-  , loopUntil'
+  , loopUntil, loopUntil'
+  , iterateUntil, iterateUntil'
   , Cond(..)
   -- * Types
   , Fitness
@@ -80,18 +80,6 @@ nextGeneration fitness selectOp xoverOp mutationOp pop = do
   genomes' <- mapM mutationOp genomes'
   return $ evalFitness fitness genomes'
 
--- | Run @n@ strict iterations of the genetic algorithm defined by @step@.
-{-
-{-# INLINE iterateM #-}
-iterateM :: (Monad m)
-         => Int    -- ^ how many iterations to run
-         -> Population a  -- ^ initial population
-         -> (Population a -> m (Population a))
-                         -- ^ @step@ function to produce the next generation
-         -> m (Population a)  -- ^ final population
-iterateM n pop0 step = loopUntil (Iteration n) pop0 step
--}
-
 -- | Run strict iterations of the genetic algorithm defined by @step@.
 -- Termination condition @cond@ is evaluated before every step.
 -- Return the result of the last step.
@@ -129,6 +117,19 @@ loopUntil' cond digest pop0 step =
        | otherwise        =
            do x' <- step x
               go (countdownCond cond) x' (digest x':ds)
+
+-- | Like 'loopUntil', but argumens' order is more suitable for
+-- partial function application.
+iterateUntil :: (Monad m) => Cond a -> (Population a -> m (Population a))
+             -> Population a -> m (Population a)
+iterateUntil cond step pop0 = loopUntil cond pop0 step
+
+-- | Like 'loopUntil'', but argumens' order is more suitable for
+-- partial function application.
+iterateUntil' :: (Monad m) => Cond a -> (Population a -> d)
+             -> (Population a -> m (Population a)) -> Population a
+             -> m (Population a, [d])
+iterateUntil' cond digest step pop0 = loopUntil' cond digest pop0 step
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
