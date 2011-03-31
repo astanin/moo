@@ -6,7 +6,7 @@ Some common genetic operators and utilities to work with GA data.
 -}
 
 module AI.SimpleEA.Utils (
-  -- * Encoding
+  -- * #encode# Encoding
     encodeGray
   , decodeGray
   , encodeBinary
@@ -15,19 +15,19 @@ module AI.SimpleEA.Utils (
   , decodeGrayReal
   , bitsNeeded
   , splitEvery
-  -- * Initialization
+  -- * #init# Initialization
   , getRandomGenomes
-  -- * Selection
+  -- * #select# Selection
   , rouletteSelect
   , tournamentSelect
   , sigmaScale
   , rankScale
   , elite
-  -- * Crossover
+  -- * #crossover# Crossover
   , onePointCrossover
   , twoPointCrossover
   , uniformCrossover
-  -- * Mutation
+  -- * #mutate# Mutation
   , pointMutate
   -- * Statistics
   , avgFitness
@@ -42,7 +42,7 @@ import Codec.Binary.Gray.List
 import Control.Monad (liftM, replicateM)
 import Control.Monad.Mersenne.Random
 import Data.Bits
-import Data.List (genericLength, zip4, sortBy, nub, elemIndices, sort, foldl')
+import Data.List (genericLength, sortBy, nub, elemIndices, sort, foldl')
 import System.Random.Mersenne.Pure64
 
 

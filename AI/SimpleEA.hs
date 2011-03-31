@@ -8,6 +8,67 @@ Portability  : portable
 
 A framework for simple genetic algorithms.
 
+Genetic algorithms are used to find good solutions to optimization
+and search problems. They mimic the process of natural evolution
+and selection.
+
+A genetic algorithm deals with a “/population/” of candidate
+solutions.  Each candidate solution is represented with a
+“/genome/”. On every iteration the most fittest genomes are
+/selected/. The next generation is produced through /crossover/
+(recombination of the parents) and /mutation/ (a random change in the
+genome) of the selected genomes. This process of selection --
+crossover -- mutation is repeated until a good enough solution appears
+or all hope is lost.
+
+Sometimes genetic algorithms are defined in terms of minimizing
+a cost function rather than maximizing fitness.
+
+/How to write a Genetic Algorithm/
+
+  1. Provide an encoding and decoding functions to convert from model
+     variables to “genomes” and back. See /Choosing an encoding/ below.
+
+  2. Write a custom fitness function to maximize. Its type should be
+     'FitnessFunction' @a@.
+
+  3. Optionally write custom selection ('SelectionOp'), crossover
+     ('CrossoverOp') and mutation ('MutationOp') operators or just use
+     some standard operators provided by this library, see
+     "AI.SimpleEA.Utils".
+
+  4. Generate an initial population randomly, encode it to genomes,
+     evaluate fitness ('evalFitness'). "AI.SimpleEA.Rand" provides
+     necessary functions to generate random variables.
+
+  5. Use 'nextGeneration' and 'loopUntil' or 'loopUntil'' to repeat
+     the iterations as long as necessary.
+
+Library functions which need access to random number generator work in
+'Rand' monad. Wrap such functions with 'runGA' or 'runRandom'.
+
+/Choosing an encoding/
+
+ * For discrete variables the binary (or Gray) encoding may be the
+   most suitable. In this library it is represented as a list of
+   @Bool@ values (@[Bool]@). Gray code has an advantage, because it
+   doesn't suffer from Humming cliff, when two successive variable
+   values may be represented by very different
+   genomes. "AI.SimpleEA.Utils#encode" provides some tools to encode
+   and decode binary genomes. To encode more than one variable, just
+   concatenate their codes.
+
+ * For continuous (real-valued) problem variables the user may either
+   discretize them or make a genome directly of real-valued variables.
+   The former case is equivalent to discrete variables and allows for
+   binary/Gray coding and usual crossover and mutation operators, but
+   suffers from fixed precision. 'encodeGrayReal' and 'decodeGrayReal'
+   from "AI.SimpleEA.Utils#encode" implement such a discretization. In
+   the latter case (@[Double]@ or @[Float]@ as a genome) special
+   crossover and mutation operators should be used.
+
+/Other modules/
+
 "AI.SimpleEA.Utils" module contains utility functions that implement
 some most common types of genetic operators: encoding, selection, mutation,
 crossover.
@@ -55,11 +116,6 @@ runGA ga = do
 --
 -- "AI.SimpleEA.Utils" provides some operators which may be used as
 -- building blocks of the algorithm.
---
--- Search space encoding: 'encodeGray', 'encodeGrayReal' and
--- 'decodeGray', 'decodeGrayReal' respectively.
---
--- Initialization: 'getRandomGenomes'.
 --
 -- Selection: 'rouletteSelect', 'tournamentSelect'.
 --
@@ -174,6 +230,6 @@ doCrossovers (a:b:r) rec = do
 
 {- $SimpleEAExample
 
-TO BE WRITTEN
+TO BE WRITTEN. See @examples/@ folder of the source distribution.
 
 -}
