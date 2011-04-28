@@ -6,7 +6,7 @@ Some common genetic operators and utilities to work with GA data.
 -}
 
 module AI.SimpleEA.Utils (
-  -- * #encode# Encoding
+  -- * Encoding
     encodeGray
   , decodeGray
   , encodeBinary
@@ -15,20 +15,23 @@ module AI.SimpleEA.Utils (
   , decodeGrayReal
   , bitsNeeded
   , splitEvery
-  -- * #init# Initialization
+  -- * Initialization
   , getRandomGenomes
-  -- * #select# Selection
+  -- * Selection
   , rouletteSelect
   , tournamentSelect
   , sigmaScale
   , rankScale
   , elite
-  -- * #crossover# Crossover
+  -- * Crossover
   , onePointCrossover
   , twoPointCrossover
   , uniformCrossover
-  -- * #mutate# Mutation
+  , blendCrossover
+  -- * Mutation
   , pointMutate
+  , gaussianMutate
+  , clip
   -- * Statistics
   , avgFitness
   , maxFitness
@@ -247,6 +250,26 @@ uniformCrossover p (g1, g2) = unzip `liftM` mapM swap (zip g1 g2)
          then return (y, x)
          else return (x, y)
 
+-- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
+-- each component let @x@ and @y@ be its values in the first and the
+-- second parent respectively. Choose corresponding component values
+-- of the children independently from the uniform distribution in the
+-- range (L,U), where @L = min (x,y) - alpha * d@, @U = max
+-- (x,y) + alpha * d@, and @d = abs (x - y)@. @alpha@ is usually
+-- 0.5. Takahashi in [10.1109/CEC.2001.934452] suggests 0.366.
+blendCrossover :: Double -- ^ alpha, range expansion parameter
+               -> CrossoverOp Double
+blendCrossover alpha (xs,ys) = unzip `liftM` mapM (blx alpha) (zip xs ys)
+  where
+    blx a (x,y) =
+        let l = min x y - a*d
+            u = max x y + a*d
+            d = abs (x - y)
+        in  do
+          x' <- getRandomR (l, u)
+          y' <- getRandomR (l, u)
+          return (x', y')
+
 -- |Flips a random bit along the length of the genome with probability @p@.
 -- With probability @(1 - p)@ the genome remains unaffected.
 pointMutate :: Double -> MutationOp Bool
@@ -258,6 +281,29 @@ pointMutate p bits = do
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
      else return bits
+
+-- |For every variable in the genome with probability @p@ replace its
+-- value @v@ with @v + sigma*N(0,1)@, where @N(0,1)@ is a normally
+-- distributed random variable with mean equal 0 and variance equal 1.
+-- With probability @(1 - n*p)@, where @n@ is the number
+-- of variables, the genome remains unaffected.
+gaussianMutate :: Double -> Double -> MutationOp Double
+gaussianMutate p sigma vars = mapM mutate vars
+  where
+    mutate v  = do
+      t <- getDouble
+      if t < p
+        then do
+          n <- getNormal
+          return (v + sigma*n)
+        else return v
+
+-- |Clip variable @v@ to stay within range @(vmin, vmax)@ (inclusive).
+clip :: (Ord a) => (a, a) -> a -> a
+clip range v =
+    let vmin = uncurry min range
+        vmax = uncurry max range
+    in  max (min v vmax) vmin
 
 -- |Returns the average fitnesses in a population.
 avgFitness :: Population a -> Fitness
@@ -276,7 +322,7 @@ minFitness = minimum . map snd
 stdDeviation :: Population a -> Double
 stdDeviation = sqrt . variance . map snd
 
--- Population variance (divided by n).
+-- |Population variance (divided by n).
 variance :: (Floating a) => [a] -> a
 variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
               in  q / fromIntegral n

@@ -9,6 +9,9 @@ module AI.SimpleEA.Rand
     -- * Random numbers from given range
       getRandomR
     , getRandom
+    -- * Probability distributions
+    , getNormal2
+    , getNormal
     -- * Random samples and shuffles
     , randomSample
     , shuffle
@@ -18,10 +21,12 @@ module AI.SimpleEA.Rand
     , Rand, Random
     ) where
 
+import Control.Monad (liftM)
 import Control.Monad.Mersenne.Random
+import Data.Complex (Complex (..))
+import System.Random (RandomGen, Random(..))
 import System.Random.Mersenne.Pure64
 import qualified System.Random.Shuffle as S
-import System.Random (RandomGen, Random(..))
 
 -- | Yield a new randomly selected value of type @a@ in the range @(lo, hi)@.
 -- See 'System.Random.randomR' for details.
@@ -32,6 +37,21 @@ getRandomR range = Rand $ \s -> let (r, s') = randomR range s in R r s'
 -- See 'System.Random.random' for for details.
 getRandom :: Random a => Rand a
 getRandom = Rand $ \g -> let (r, g') = random g in R r g'
+
+-- | Yield two randomly selected values which follow standard
+-- normal distribution.
+getNormal2 :: Rand (Double, Double)
+getNormal2 = do
+  -- Box-Muller method
+  u <- getDouble
+  v <- getDouble
+  let (c :+ s) = exp (0 :+ (2*pi*v))
+  let r = sqrt $ (-2) * log u
+  return (r*c, r*s)
+
+-- | Yield one randomly selected value from standard normal distribution.
+getNormal :: Rand Double
+getNormal = fst `liftM` getNormal2
 
 -- | Take at most n random elements from the list. Preserve order.
 randomSample :: Int -> [a] -> Rand [a]
