@@ -6,13 +6,10 @@
 import AI.SimpleEA
 import AI.SimpleEA.Rand
 import AI.SimpleEA.Utils
-import Control.Arrow (first)
 import Control.Monad
-import Data.List (maximumBy)
-import Data.Function (on)
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
-import System.Environment
+import Print (printHistoryAndBest)
 
 n = 4             -- number of equations
 range = (-10, 10) -- range of coefficients and solution entries
@@ -54,29 +51,28 @@ select mat rhs pop =
       return (top ++ rest)
 
 main = do
-  (mat,solution,rhs,best,bestf) <- runGA $ do
+  (mat,solution,rhs, (pop, log)) <- runGA $ do
          -- random SLE problem
          (mat, solution, rhs) <- createSLE n
          -- initial population
          xs0 <- replicateM popsize $ replicateM n (getRandomR range)
          let p0 = evalFitness (fitness mat rhs) . map toGenome $ xs0
-         -- run for some generations
-         p <- loopUntil (FitnessStdev (<= 10.0)
-                        `Or` MaxFitness (>= (-0.1))
-                        `Or` Iteration 10000000) p0 $
-               nextGeneration (fitness mat rhs)
-                               (select mat rhs)
-                               (twoPointCrossover 0.5)
-                               (pointMutate 0.35)
-         let (best, bestf) = maximumBy (compare `on` snd) p
-         return (mat, solution, rhs, fromGenome best, bestf)
+         -- digest function to keep log of evolution
+         let digest p = (avgFitness p, maxFitness p)
+         -- run for 10*200 generations, save digest every 10 iterations
+         let stopCondition = FitnessStdev (<= 10.0) `Or` MaxFitness (>= (-0.1))
+         r <- loopUntil' (stopCondition `Or` Iteration 200) digest p0 $
+               iterateUntil (stopCondition `Or` Iteration 10) $
+                  nextGeneration (fitness mat rhs)
+                                 (select mat rhs)
+                                 (twoPointCrossover 0.5)
+                                 (pointMutate 0.35)
+         return (mat, solution, rhs, r)
+  printHistoryAndBest (show . fromGenome) pop log
   putStr $ unlines
-    [ "system matrix: " ++ show mat
-    , "system right hand side: " ++ show rhs
-    , "system solution: " ++ show solution
-    , "best found     : " ++ show best
-    , "best fitness   : " ++ show bestf
-    ]
+    [ "# system matrix: " ++ show mat
+    , "# system right hand side: " ++ show rhs
+    , "# system solution: " ++ show solution ]
 
 -- Matrix - vector product.
 mult :: (Num a) => [[a]] -> [a] -> [a]

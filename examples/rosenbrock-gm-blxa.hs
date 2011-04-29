@@ -7,6 +7,7 @@ import AI.SimpleEA.Utils
 import AI.SimpleEA.Rand
 import Control.Monad
 import Data.List
+import Print (printHistoryAndBest)
 
 rosenbrock :: [Double] -> Double
 rosenbrock xs = sum . map f $ zip xs (drop 1 xs)
@@ -52,13 +53,6 @@ main = do
     let pop0 = evalFitness fitness genomes0
     -- run genetic algorithm
     loopUntil' (MaxFitness (>= (-precision))
-                      `Or` Iteration maxiters) digest pop0 $
+                `Or` Iteration maxiters) digest pop0 $
                nextGeneration fitness select crossover mutate
-  let best = head . elite $ pop
-  -- print results
-  putStrLn "# generation averageFitness maxFitness"
-  forM_ (zip [0..] log) $ \(i, (avgF, maxF)) -> do
-      putStrLn $ intercalate " " ([show i, show avgF, show maxF])
-  putStrLn $ "# generations: " ++ show (length log)
-  putStrLn $ "# best solution: " ++ show best
-  putStrLn $ "# Rosenbrock(best): " ++ show (rosenbrock best)
+  printHistoryAndBest show pop log

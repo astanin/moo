@@ -6,10 +6,8 @@ import AI.SimpleEA.Rand
 import AI.SimpleEA.Utils
 import Control.Monad
 import Control.Monad.Mersenne.Random
-import Data.List (maximumBy)
-import Data.Function (on)
 import System.Random.Mersenne.Pure64
-import System.Environment
+import Print (printHistoryAndBest)
 
 n = 4  -- number of equations
 range = (0, 9)  -- range of coefficients and solution entries
@@ -47,27 +45,29 @@ select mat rhs pop =
       return (top ++ rest)
 
 main = do
-  (mat,rhs,solution,best,bestf) <- runGA $ do
+  (mat,rhs,solution,(pop, log)) <- runGA $ do
          -- a random SLE problem
          (mat, solution, rhs) <- createSLE n
          -- initial population
          xs0 <- replicateM popsize $ replicateM n (getRandomR range)
          let pop0 = evalFitness (fitness mat rhs) . map toGenome $ xs0
+         -- digest function to keep log of evolution
+         let digest p = (avgFitness p, maxFitness p)
          -- run for some generations
-         pop <- loopUntil (MaxFitness (>= 0) `Or` FitnessStdev (<= 1)) pop0 $
+         r <- loopUntil' (MaxFitness (>= 0)
+                         `Or` FitnessStdev (<= 1)
+                         `Or` Iteration 1000)
+               digest pop0 $
                 nextGeneration (fitness mat rhs)
                                (select mat rhs)
                                (twoPointCrossover 0.5)
                                (pointMutate 0.25)
-         let (best, bestf) = maximumBy (compare `on` snd) $ pop
-         return (mat, rhs, solution, fromGenome best, bestf)
+         return (mat, rhs, solution, r)
+  printHistoryAndBest (show.fromGenome) pop log
   putStr $ unlines
-    [ "system matrix: " ++ show mat
-    , "system right hand side: " ++ show rhs
-    , "system solution: " ++ show solution
-    , "best found     : " ++ show best
-    , "best fitness   : " ++ show bestf
-    ]
+    [ "# system matrix: " ++ show mat
+    , "# system right hand side: " ++ show rhs
+    , "# system solution: " ++ show solution ]
 
 -- Matrix - vector product.
 mult :: (Num a) => [[a]] -> [a] -> [a]
@@ -82,6 +82,3 @@ minus xs ys = zipWith (-) xs ys
 -- Vector norm.
 norm2 :: (Num a, Real a) => [a] -> Double
 norm2 = sqrt . fromRational . toRational . sum . map (^2)
-
-first :: (a -> b) -> (a, c) -> (b, c)
-first f (x, y) = (f x, y)

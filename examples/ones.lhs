@@ -5,11 +5,8 @@ number of @True@ values it contains.
 >import AI.SimpleEA
 >import AI.SimpleEA.Utils
 >import AI.SimpleEA.Rand
->
+>import Print (printHistoryAndBest)
 >import Codec.Binary.Gray.List (showBits)
->import Data.List
->import System.Environment (getArgs)
->import Control.Monad (unless, liftM, replicateM)
 
 The @countTrue@ function is our 'FitnessFunction' and simply returns
 the number of @True@ values in the list.
@@ -41,27 +38,14 @@ the algorithm for 41 generations with 'iterateHistoryM' function.  It
 not only runs the algorithm, but also accumulates the history.
 
 >main = do
->    let popsize = 100
+>    let popsize = 10
 >    let genomesize = 20
->    args <- getArgs
 >    (pop, history) <- runGA $ do
 >       genomes <- getRandomGenomes popsize genomesize (False,True)
 >       let pop0 = evalFitness countTrue genomes
 >       let xover = onePointCrossover 0.33
 >       let mutate = pointMutate 0.1
 >       let step = nextGeneration countTrue select xover mutate
->       let digest p = (avgFitness p, stdDeviation p, maxFitness p)
->       loopUntil' (Iteration 20) digest pop0 step
-
->    putStrLn $ "Best found: " ++ (showBits . head . elite $ pop)
->    putStrLn $ "Iterations: " ++ show (length history - 1)
->    putStrLn $ "Fitness evaluations: " ++ show (length history * popsize)
->    case args of
->      (outfile:_) -> do
->         writeFile outfile . unlines . map showLine $ zip [1..] history
->      _ -> return ()
-
-To print a numbered tuple with generation number:
-
->showLine :: (Int, (Fitness, Fitness, Fitness)) -> String
->showLine (n, (a, b, c)) = unwords [ show n, show a, show b , show c ]
+>       let digest p = (avgFitness p, maxFitness p)
+>       loopUntil' (Iteration 50) digest pop0 step
+>    printHistoryAndBest showBits pop history
