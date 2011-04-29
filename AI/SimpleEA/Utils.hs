@@ -28,6 +28,8 @@ module AI.SimpleEA.Utils (
   , twoPointCrossover
   , uniformCrossover
   , blendCrossover
+  , unimodalCrossover
+  , unimodalCrossoverRP
   -- * Mutation
   , pointMutate
   , gaussianMutate
@@ -283,17 +285,82 @@ blendCrossover alpha (xs:ys:rest) = do
           y' <- getRandomR (l, u)
           return (x', y')
 
+-- | Unimodal normal distributed crossover (UNDX) for continuous
+-- genetic algorithms. Recommended parameters according to [ISBN
+-- 978-3-540-43330-9] are @sigma_xi = 0.5@, @sigma_eta =
+-- 0.35/sqrt(n)@, where @n@ is the number of variables (dimensionality
+-- of the search space). UNDX mixes three parents, doing mostly linear
+-- interpolation between the first two, and using the third to build a
+-- supplementary orthogonal correction component. UNDX preserves the
+-- mean of the offspring, and also the covariance matrix of the
+-- offspring if @sigma_xi^2 = 0.25@.  By preserving distribution of
+-- the offspring, /the UNDX can efficiently search in along the
+-- valleys where parents are distributed in functions with strong
+-- epistasis among parameters/ (idem).
+unimodalCrossover :: Double -> Double -> CrossoverOp Double
+unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
+  let d = x2 `minus` x1
+  let x_mean = 0.5 `scale` (x1 `plus` x2)
+  let perpD =
+       let v31 = x3 `minus` x1
+           v21 = x2 `minus` x1
+       in  norm2 v31 * sqrt (1-((v31 `dot` v21)/(norm2 v31*norm2 v21))^(2::Int))
+  let exs = drop 1 . mkBasis $ d
+  (xi:etas) <- getNormals (length x1)
+  let xi' = sigma_xi * xi
+  let etas' = map (perpD * sigma_eta *) etas
+  let parCorr = xi' `scale` d
+  let orthCorrs = zipWith scale etas' exs
+  let totalCorr = foldr plus parCorr orthCorrs
+  let child1 = x_mean `minus` totalCorr
+  let child2 = x_mean `plus` totalCorr
+  -- drop only two parents of the three, to keep the number of children the same
+  return ([child1, child2], x3:rest)
+  where
+    minus xs ys = zipWith (-) xs ys
+    plus xs ys = zipWith (+) xs ys
+    scale a xs = map (a*) xs
+    dot xs ys = sum $ zipWith (*) xs ys
+    norm2 xs = sqrt $ dot xs xs
+    proj xs dir = ( dot xs dir / dot dir dir ) `scale` dir
+    normalize xs = let a = norm2 xs in (1.0/a) `scale` xs
+    getNormals n = do  -- generate a list of n normally distributed random vars
+      ps <- replicateM ((n + 1) `div` 2) getNormal2
+      return . take n $ concatMap (\(x,y) -> [x,y]) ps
+    mkBasis :: [Double] -> [[Double]]
+    mkBasis dir0 =
+        let n = length dir0
+            dims = [0..n-1]
+            basisVector i = replicate (n-i-1) 0.0 ++ [1] ++ replicate i 0.0
+            ixs = map basisVector dims
+        in  map normalize . reverse $ foldr build [dir0] ixs
+      where
+        build ix exs =
+            let projs = map (proj ix) exs
+                rem = foldl' minus ix projs
+            in  if norm2 rem <= 1e-6 * maximum (map norm2 exs)
+                then exs   -- skip this vector, as linear depenent with dir0
+                else rem : exs  -- add to the list of orthogonalized vectors
+unimodalCrossover _ _ [] = return ([], [])
+unimodalCrossover _ _ (x1:x2:[]) = return ([x1,x2], [])  -- FIXME the last two
+unimodalCrossover _ _ _  = error "bad number of parents"
+
+-- | Run 'unimodalCrossover' with default recommended parameters.
+unimodalCrossoverRP :: CrossoverOp Double
+unimodalCrossoverRP [] = return ([], [])
+unimodalCrossoverRP parents@(x1:_) =
+    let n = genericLength x1
+        sigma_xi = 0.5
+        sigma_eta = 0.35 / sqrt n
+    in  unimodalCrossover sigma_xi sigma_eta parents
+
 -- |Flips a random bit along the length of the genome with probability @p@.
 -- With probability @(1 - p)@ the genome remains unaffected.
 pointMutate :: Double -> MutationOp Bool
-pointMutate p bits = do
-  t <- getDouble
-  if t < p
-     then do
+pointMutate p bits = withProbability p bits $ \bits -> do
        r <- getRandomR (0, length bits - 1)
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
-     else return bits
 
 -- |For every variable in the genome with probability @p@ replace its
 -- value @v@ with @v + sigma*N(0,1)@, where @N(0,1)@ is a normally
@@ -303,13 +370,9 @@ pointMutate p bits = do
 gaussianMutate :: Double -> Double -> MutationOp Double
 gaussianMutate p sigma vars = mapM mutate vars
   where
-    mutate v  = do
-      t <- getDouble
-      if t < p
-        then do
+    mutate v  = withProbability p v $ \v -> do
           n <- getNormal
           return (v + sigma*n)
-        else return v
 
 -- |Clip variable @v@ to stay within range @(vmin, vmax)@ (inclusive).
 clip :: (Ord a) => (a, a) -> a -> a
