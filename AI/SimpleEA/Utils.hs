@@ -210,45 +210,54 @@ tournamentSelect size n xs = replicateM n tournament1
 elite :: [(a, Fitness)] -> [a]
 elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
 
+-- |Modify value with probability @p@.
+withProbability :: Double -> a -> (a -> Rand a) -> Rand a
+withProbability p x modify = do
+  t <- getDouble
+  if t < p
+     then modify x
+     else return x
+
+-- | Crossover two lists in exactly @n@ random points.
+nPointCrossover :: Int -> ([a], [a]) -> Rand ([a], [a])
+nPointCrossover n (xs,ys)
+    | n <= 0 = return (xs,ys)
+    | otherwise =
+  let len = min (length xs) (length ys)
+  in  do
+    pos <- getRandomR (0, len-n)
+    let (hxs, txs) = splitAt pos xs
+    let (hys, tys) = splitAt pos ys
+    (rxs, rys) <- nPointCrossover (n-1) (tys, txs) -- FIXME: not tail recursive
+    return (hxs ++ rxs, hys ++ rys)
 
 -- |Select a random point in two genomes, and swap them beyond this point.
 -- Apply with probability @p@.
 onePointCrossover :: Double -> CrossoverOp a
-onePointCrossover p (g1,g2) = do
-  t <- getDouble
-  if (t < p)
-    then do
-      r <- getRandomR (0, length g1-1)
-      let (h1, t1) = splitAt r g1
-      let (h2, t2) = splitAt r g2
-      return (h1 ++ t2, h2 ++ t1)
-    else return (g1,g2)
+onePointCrossover _ []  = return ([],[])
+onePointCrossover _ [_] = error "odd number of parents"
+onePointCrossover p (g1:g2:rest) = do
+  (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 1
+  return ([h1,h2], rest)
 
 -- |Select two random points in two genomes, ans swap everything in between.
 -- Apply with probability @p@.
 twoPointCrossover :: Double -> CrossoverOp a
-twoPointCrossover p (g1,g2) = do
-  t <- getDouble
-  if (t < p)
-     then do
-       r1 <- getRandomR (0, length g1-2)
-       r2 <- getRandomR (r1+1, length g1-1)
-       let (h1, t1) = splitAt r1 g1
-       let (m1, e1) = splitAt (r2-r1) t1
-       let (h2, t2) = splitAt r1 g2
-       let (m2, e2) = splitAt (r2-r1) t2
-       return (h1 ++ m2 ++ e1, h2 ++ m1 ++ e2)
-     else return (g1, g2)
+twoPointCrossover _ []  = return ([], [])
+twoPointCrossover _ [_] = error "odd number of parents"
+twoPointCrossover p (g1:g2:rest) = do
+  (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 2
+  return ([h1,h2], rest)
 
 -- |Swap individual bits of two genomes with probability @p@.
 uniformCrossover :: Double -> CrossoverOp a
-uniformCrossover p (g1, g2) = unzip `liftM` mapM swap (zip g1 g2)
+uniformCrossover _ []  = return ([], [])
+uniformCrossover _ [_] = error "odd number of parents"
+uniformCrossover p (g1:g2:rest) = do
+  (h1, h2) <- unzip `liftM` mapM swap (zip g1 g2)
+  return ([h1,h2], rest)
   where
-    swap (x, y) = do
-      t <- getDouble
-      if (t < p)
-         then return (y, x)
-         else return (x, y)
+    swap (x, y) = withProbability p (x,y) $ \(a,b) -> return (b,a)
 
 -- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
 -- each component let @x@ and @y@ be its values in the first and the
@@ -259,7 +268,11 @@ uniformCrossover p (g1, g2) = unzip `liftM` mapM swap (zip g1 g2)
 -- 0.5. Takahashi in [10.1109/CEC.2001.934452] suggests 0.366.
 blendCrossover :: Double -- ^ alpha, range expansion parameter
                -> CrossoverOp Double
-blendCrossover alpha (xs,ys) = unzip `liftM` mapM (blx alpha) (zip xs ys)
+blendCrossover _ [] = return ([], [])
+blendCrossover _ [_] = error "odd number of parents"
+blendCrossover alpha (xs:ys:rest) = do
+  (xs',ys') <- unzip `liftM` mapM (blx alpha) (zip xs ys)
+  return ([xs',ys'], rest)
   where
     blx a (x,y) =
         let l = min x y - a*d

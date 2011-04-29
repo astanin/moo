@@ -220,13 +220,13 @@ evalFitness fitFun gs =
   let fs = map (`fitFun` gs) gs
   in  zip gs fs
 
+-- | Take a list of parents, run crossovers, and return a list of children.
 doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
-doCrossovers []      _   = return []
-doCrossovers [_]     _   = error "odd number of parents"
-doCrossovers (a:b:r) rec = do
-    (a',b') <- rec (a,b)
-    rest    <- doCrossovers r rec
-    return $ a':b':rest
+doCrossovers []      _     = return []
+doCrossovers parents xover = do
+  (children', parents') <- xover parents
+  rest <- doCrossovers parents' xover
+  return $ children' ++ rest
 
 {- $SimpleEAExample
 

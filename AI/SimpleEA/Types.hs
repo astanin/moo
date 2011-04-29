@@ -27,12 +27,6 @@ type Population a = [(Genome a, Fitness)]
 -- @
 -- F(x) = 1/(1+f(x))
 -- @
---
--- or
---
--- @
--- F(x) = LargePositive - objective(x)/mean(objective(x_i)).
--- @
 type FitnessFunction a = Genome a -> [Genome a] -> Fitness
 
 -- | A selection operator is responsible for selection. It takes pairs of
@@ -40,9 +34,12 @@ type FitnessFunction a = Genome a -> [Genome a] -> Fitness
 -- individuals.
 type SelectionOp a = Population a -> Rand [Genome a]
 
--- | A crossover operator takes two /parent/ genomes and returns two
--- /children/.
-type CrossoverOp a = (Genome a, Genome a) -> Rand (Genome a, Genome a)
+-- | A crossover operator takes some /parent/ genomes and returns some
+-- /children/ along with the remaining parents. Many crossover
+-- operators use only two parents, but some require three (like UNDX)
+-- or more. Crossover operator should consume as many parents as
+-- necessary and stop when the list of parents is empty.
+type CrossoverOp a = [Genome a] -> Rand ([Genome a], [Genome a])
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
 type MutationOp a = Genome a -> Rand (Genome a)
