@@ -297,42 +297,69 @@ blendCrossover alpha (xs:ys:rest) = do
 -- the offspring, /the UNDX can efficiently search in along the
 -- valleys where parents are distributed in functions with strong
 -- epistasis among parameters/ (idem).
+--
+-- @sigma_xi@ is the standard deviation of the mix between principal
+-- parents.  @sigma_eta@ is the standard deviation of the single
+-- component in the perpendicular subspace.
 unimodalCrossover :: Double -> Double -> CrossoverOp Double
 unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
-  let d = x2 `minus` x1
-  let x_mean = 0.5 `scale` (x1 `plus` x2)
-  let perpD =
-       let v31 = x3 `minus` x1
-           v21 = x2 `minus` x1
-       in  norm2 v31 * sqrt (1-((v31 `dot` v21)/(norm2 v31*norm2 v21))^(2::Int))
-  let exs = drop 1 . mkBasis $ d
-  (xi:etas) <- getNormals (length x1)
-  let xi' = sigma_xi * xi
-  let etas' = map (perpD * sigma_eta *) etas
-  let parCorr = xi' `scale` d
-  let orthCorrs = zipWith scale etas' exs
+  let d = x2 `minus` x1  -- vector between parents
+  let x_mean = 0.5 `scale` (x1 `plus` x2)  -- parents' average
+   -- distance to the 3rd parent in the orthogonal subspace
+  let dist3 =
+          let v31 = x3 `minus` x1
+              v21 = x2 `minus` x1
+              base = norm2 v21
+              -- twice the triangle area
+              area = sqrt $ (dot v31 v31)*(dot v21 v21) - (dot v21 v31)^(2::Int)
+              h = area / base
+          in  if isNaN h    -- if x1 and x2 coincide
+                then norm2 v31
+                else h
+  let n = length x1
+  (parCorr, orthCorrs) <-
+      if norm2 d > 1e-6
+      then do -- distinct parents
+        let exs = drop 1 . mkBasis $ d
+        (xi:etas) <- getNormals n
+        let xi' = sigma_xi * xi
+        let parCorr = xi' `scale` d
+        let etas' = map (dist3 * sigma_eta *) etas
+        let orthCorrs = zipWith scale etas' exs
+        return (parCorr, orthCorrs)
+      else do -- identical parents, direction d is undefined
+        let exs = map (basisVector n) [0..n-1]
+        etas <- getNormals n
+        let etas' = map (dist3 * sigma_eta *) etas
+        let orthCorrs = zipWith scale etas' exs
+        let zeroCorr = replicate n 0.0
+        return (zeroCorr, orthCorrs)
   let totalCorr = foldr plus parCorr orthCorrs
   let child1 = x_mean `minus` totalCorr
   let child2 = x_mean `plus` totalCorr
   -- drop only two parents of the three, to keep the number of children the same
   return ([child1, child2], x3:rest)
   where
-    minus xs ys = zipWith (-) xs ys
-    plus xs ys = zipWith (+) xs ys
-    scale a xs = map (a*) xs
-    dot xs ys = sum $ zipWith (*) xs ys
-    norm2 xs = sqrt $ dot xs xs
-    proj xs dir = ( dot xs dir / dot dir dir ) `scale` dir
+    -- ersatz linear algebra
+    minus xs ys  = zipWith (-) xs ys
+    plus xs ys   = zipWith (+) xs ys
+    scale a xs   = map (a*) xs
+    dot xs ys    = sum $ zipWith (*) xs ys
+    norm2 xs     = sqrt $ dot xs xs
+    proj xs dir  = ( dot xs dir / dot dir dir ) `scale` dir
     normalize xs = let a = norm2 xs in (1.0/a) `scale` xs
-    getNormals n = do  -- generate a list of n normally distributed random vars
+    -- generate a list of n normally distributed random vars
+    getNormals n = do
       ps <- replicateM ((n + 1) `div` 2) getNormal2
       return . take n $ concatMap (\(x,y) -> [x,y]) ps
+    -- i-th basis vector in n-dimensional space
+    basisVector n i = replicate (n-i-1) 0.0 ++ [1] ++ replicate i 0.0
+    -- generate orthonormal bases starting from direction dir0
     mkBasis :: [Double] -> [[Double]]
     mkBasis dir0 =
         let n = length dir0
             dims = [0..n-1]
-            basisVector i = replicate (n-i-1) 0.0 ++ [1] ++ replicate i 0.0
-            ixs = map basisVector dims
+            ixs = map (basisVector n) dims
         in  map normalize . reverse $ foldr build [dir0] ixs
       where
         build ix exs =
