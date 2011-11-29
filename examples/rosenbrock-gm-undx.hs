@@ -37,8 +37,8 @@ mutate =
         s = 0.1*(snd xrange - fst xrange)
     in  gaussianMutate p s
 
--- BLX-0.5 crossover
-crossover = blendCrossover 0.5
+-- UNDX crossover
+crossover = unimodalCrossover 0.5 (0.35 / sqrt (fromIntegral nvariables))
 
 -- digest: what to log on every iteration
 digest pop =
