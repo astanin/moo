@@ -100,7 +100,7 @@ module AI.SimpleEA (
 ) where
 
 import AI.SimpleEA.Rand
-import AI.SimpleEA.Utils (minFitness, maxFitness, stdDeviation)
+import AI.SimpleEA.Utils (minFitness, maxFitness, avgFitness, stdDeviation)
 import AI.SimpleEA.Types
 
 import Control.Monad (liftM)
@@ -193,6 +193,7 @@ data Cond a =
       Iteration Int                  -- ^ becomes @True@ after /n/ iterations
     | MaxFitness (Fitness -> Bool)    -- ^ consider the maximal observed fitness
     | MinFitness (Fitness -> Bool)    -- ^ consider the minimal observed fitness
+    | AvgFitness (Fitness -> Bool)    -- ^ consider the average observed fitness
     | FitnessStdev (Fitness -> Bool)  -- ^ consider standard deviation of fitness
                                      -- within population; may be used to
                                      -- detect premature convergence
@@ -204,6 +205,7 @@ evalCond :: (Cond a) -> Population a -> Bool
 evalCond (Iteration n) _  = n <= 0
 evalCond (MaxFitness cond) p = cond . maxFitness $ p
 evalCond (MinFitness cond) p = cond . minFitness $ p
+evalCond (AvgFitness cond) p = cond . avgFitness $ p
 evalCond (FitnessStdev cond) p = cond . stdDeviation $ p
 evalCond (EntirePopulation cond) p = cond . map fst $ p
 evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
