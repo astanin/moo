@@ -30,6 +30,7 @@ module AI.SimpleEA.Utils (
   , blendCrossover
   , unimodalCrossover
   , unimodalCrossoverRP
+  , simulatedBinaryCrossover
   -- * Mutation
   , pointMutate
   , gaussianMutate
@@ -268,7 +269,7 @@ uniformCrossover p (g1:g2:rest) = do
 -- range (L,U), where @L = min (x,y) - alpha * d@, @U = max
 -- (x,y) + alpha * d@, and @d = abs (x - y)@. @alpha@ is usually
 -- 0.5. Takahashi in [10.1109/CEC.2001.934452] suggests 0.366.
-blendCrossover :: Double -- ^ alpha, range expansion parameter
+blendCrossover :: Double -- ^ @alpha@, range expansion parameter
                -> CrossoverOp Double
 blendCrossover _ [] = return ([], [])
 blendCrossover _ [_] = error "odd number of parents"
@@ -289,19 +290,21 @@ blendCrossover alpha (xs:ys:rest) = do
 -- genetic algorithms. Recommended parameters according to [ISBN
 -- 978-3-540-43330-9] are @sigma_xi = 0.5@, @sigma_eta =
 -- 0.35/sqrt(n)@, where @n@ is the number of variables (dimensionality
--- of the search space). UNDX mixes three parents, doing mostly linear
--- interpolation between the first two, and using the third to build a
--- supplementary orthogonal correction component. UNDX preserves the
--- mean of the offspring, and also the covariance matrix of the
--- offspring if @sigma_xi^2 = 0.25@.  By preserving distribution of
--- the offspring, /the UNDX can efficiently search in along the
--- valleys where parents are distributed in functions with strong
--- epistasis among parameters/ (idem).
+-- of the search space). UNDX mixes three parents, producing normally
+-- distributed children along the line between first two parents, and using
+-- the third parent to build a supplementary orthogonal correction
+-- component.
 --
--- @sigma_xi@ is the standard deviation of the mix between principal
--- parents.  @sigma_eta@ is the standard deviation of the single
--- component in the perpendicular subspace.
-unimodalCrossover :: Double -> Double -> CrossoverOp Double
+-- UNDX preserves the mean of the offspring, and also the
+-- covariance matrix of the offspring if @sigma_xi^2 = 0.25@.  By
+-- preserving distribution of the offspring, /the UNDX can efficiently
+-- search in along the valleys where parents are distributed in
+-- functions with strong epistasis among parameters/ (idem).
+unimodalCrossover :: Double  -- ^ @sigma_xi@, the standard deviation of
+                            -- the mix between two principal parents
+                  -> Double  -- ^ @sigma_eta@, the standard deviation
+                            -- of the single orthogonal component
+                  -> CrossoverOp Double
 unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
   let d = x2 `minus` x1  -- vector between parents
   let x_mean = 0.5 `scale` (x1 `plus` x2)  -- parents' average
@@ -340,14 +343,6 @@ unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
   -- drop only two parents of the three, to keep the number of children the same
   return ([child1, child2], x3:rest)
   where
-    -- ersatz linear algebra
-    minus xs ys  = zipWith (-) xs ys
-    plus xs ys   = zipWith (+) xs ys
-    scale a xs   = map (a*) xs
-    dot xs ys    = sum $ zipWith (*) xs ys
-    norm2 xs     = sqrt $ dot xs xs
-    proj xs dir  = ( dot xs dir / dot dir dir ) `scale` dir
-    normalize xs = let a = norm2 xs in (1.0/a) `scale` xs
     -- generate a list of n normally distributed random vars
     getNormals n = do
       ps <- replicateM ((n + 1) `div` 2) getNormal2
@@ -380,6 +375,55 @@ unimodalCrossoverRP parents@(x1:_) =
         sigma_xi = 0.5
         sigma_eta = 0.35 / sqrt n
     in  unimodalCrossover sigma_xi sigma_eta parents
+
+-- | Simulated binary crossover (SBX) operator for continuous genetic
+-- algorithms. SBX preserves the average of the parents and has a
+-- spread factor distribution similar to single-point crossover of the
+-- binary genetic algorithms. If @n > 0@, then the heighest
+-- probability density is assigned to the same distance between
+-- children as that of the parents.
+--
+-- The performance of real-coded genetic algorithm with SBX is similar
+-- to that of binary GA with a single-point crossover. For details see
+-- Simulated Binary Crossover for Continuous Search Space (1995) Agrawal etal.
+simulatedBinaryCrossover :: Double  -- ^ non-negative distribution
+                                   -- parameter @n@, usually in the
+                                   -- range from 2 to 5; for small
+                                   -- values of @n@ children far away
+                                   -- from the parents are more likely
+                                   -- to be chosen.
+                         -> CrossoverOp Double
+simulatedBinaryCrossover n (x1:x2:rest) = do
+  -- let pdf beta | beta >  1.0 = 0.5*(n+1)/beta**(n+2)
+  --              | beta >= 0.0 = 0.5*(n+1)*beta**n
+  --              | otherwise   = 0.0   -- beta < 0
+  let cdf beta | beta < 0    = 0.0
+               | beta <= 1.0 = 0.5*beta**(n+1)
+               | otherwise   = 1.0-0.5/beta**(n+1)  -- beta > 1.0
+  u <- getDouble  -- uniform random variable in [0,1]
+  -- solve cdf(beta) = u with absolute residual less than eps > 0
+  let solve eps u = solve' 0.0 (upperB 2.0)
+        where
+          upperB b | cdf b < u = upperB (b*2)
+                   | otherwise = b
+          solve' b1 b2 =
+              let b = 0.5*(b1+b2)
+                  r = cdf b - u
+              in  if abs r < eps
+                  then b
+                  else
+                      if r >= 0
+                      then solve' b1 b
+                      else solve' b b2
+  let beta = solve 1e-6 u
+  let xmean = 0.5 `scale` (x1 `plus` x2)
+  let deltax = (0.5 * beta) `scale` (x2 `minus` x1)
+  let c1 = xmean `plus`  deltax
+  let c2 = xmean `minus` deltax
+  return ([c1,c2], rest)
+simulatedBinaryCrossover _ [] = return ([], [])
+simulatedBinaryCrossover _ _  = error "bad number of parents"
+
 
 -- |Flips a random bit along the length of the genome with probability @p@.
 -- With probability @(1 - p)@ the genome remains unaffected.
@@ -441,3 +485,19 @@ variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
                 sa' = sa + x
                 qa' = qa + delta*delta*na/(na+1)
             in  (n + 1, sa', qa')
+
+-- Ersatz linear algebra
+minus :: Num a => [a] -> [a] -> [a]
+minus xs ys  = zipWith (-) xs ys
+plus :: Num a => [a] -> [a] -> [a]
+plus xs ys   = zipWith (+) xs ys
+scale :: Num a => a -> [a] -> [a]
+scale a xs   = map (a*) xs
+dot :: Num a => [a] -> [a] -> a
+dot xs ys    = sum $ zipWith (*) xs ys
+norm2 :: (Num a, Floating a) => [a] -> a
+norm2 xs     = sqrt $ dot xs xs
+proj :: (Num a, Fractional a) => [a] -> [a] -> [a]
+proj xs dir  = ( dot xs dir / dot dir dir ) `scale` dir
+normalize :: (Num a, Floating a, Fractional a) => [a] -> [a]
+normalize xs = let a = norm2 xs in (1.0/a) `scale` xs

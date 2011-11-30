@@ -119,9 +119,10 @@ runGA ga = do
 --
 -- Selection: 'rouletteSelect', 'tournamentSelect'.
 --
--- Crossover: 'onePointCrossover', 'twoPointCrossover', 'uniformCrossover'.
+-- Crossover: 'onePointCrossover', 'twoPointCrossover', 'uniformCrossover',
+-- 'simulatedBinaryCrossover'.
 --
--- Mutation: 'pointMutate'.
+-- Mutation: 'pointMutate', 'gaussianMutate'.
 nextGeneration ::
     FitnessFunction a ->
     SelectionOp a ->
