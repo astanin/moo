@@ -20,11 +20,8 @@ fitness-proportionate selection. 'sigmaScale' is defined in
 elitism and ensure that the maximum fitness never decreases (unless
 affected by a mutation).
 
->select :: SelectionOp Bool
->select population =
->  let scaled = zip (map fst population) (sigmaScale (map snd population))
->      select' = withElite 4 $ rouletteSelect (length population - 4)
->  in  select' scaled
+>select :: Int -> SelectionOp Bool
+>select n = withElite 4 $ withScale sigmaScale $ rouletteSelect (n-4)
 
 In our @main@ function we wrap the entire algorithm with 'runGA'
 helper. It gives us access to the random number generator throughout
@@ -44,7 +41,7 @@ not only runs the algorithm, but also accumulates the history.
 >       let pop0 = evalFitness countTrue genomes
 >       let xover = onePointCrossover 0.33
 >       let mutate = pointMutate 0.2
->       let step = nextGeneration countTrue select xover mutate
+>       let step = nextGeneration countTrue (select popsize) xover mutate
 >       let digest p = (avgFitness p, maxFitness p)
 >       loopUntil' (Iteration 50) digest pop0 step
 >    printHistoryAndBest showBits pop history

@@ -22,6 +22,7 @@ module AI.SimpleEA.Utils (
   , tournamentSelect
   , withElite
   , sortByFitness
+  , withScale
   , sigmaScale
   , rankScale
   -- * Crossover
@@ -49,7 +50,7 @@ import Codec.Binary.Gray.List
 import Control.Monad (liftM, replicateM)
 import Control.Monad.Mersenne.Random
 import Data.Bits
-import Data.List (genericLength, sortBy, nub, elemIndices, sort, foldl')
+import Data.List (genericLength, sortBy, foldl')
 import System.Random.Mersenne.Pure64
 
 -- | How many bits are needed to represent a range of integer numbers
@@ -166,21 +167,36 @@ getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
                                in  R gs rng'
 
--- |Applies sigma scaling to a list of fitness values. In sigma scaling, the
--- standard deviation of the population fitness is used to scale the fitness
--- scores.
-sigmaScale :: [Fitness] -> [Fitness]
-sigmaScale fs = map (\f_g -> 1+(f_g-f_i)/(2*σ)) fs
-    where σ   = sqrt . variance $ fs
-          f_i = sum fs/genericLength fs
 
--- |Takes a list of fitness values and returns rank scaled values. For
--- a list of /n/ values, this means that the best fitness is scaled to
--- /n/, the second best to /n-1/, and so on.
-rankScale :: [Fitness] -> [Fitness]
-rankScale fs = map (\n -> max'-fromIntegral n) ranks
-    where ranks = (concatMap (`elemIndices` fs) . reverse . nub . sort) fs
-          max'  = fromIntegral $ maximum ranks + 1
+-- | Apply given scaling or other transform to population before selection.
+withScale :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a
+withScale scale select = \pop -> select (scale pop)
+
+-- | Sigma scaling. Fitness values of all genomes are scaled with
+-- respect to standard devation of population fitness.
+sigmaScale :: Population a -> Population a
+sigmaScale pop = map (\(g,f) -> (g,1+(f-f_avg)/(2*σ))) pop
+    where
+      fs = map snd pop
+      σ   = sqrt . variance $ fs
+      f_avg = avg fs
+      avg = uncurry (/) . foldl' (\(!s, !c) x -> (s+x, c+1)) (0, 0)
+
+-- | Replace fitness values in the population with their ranks.  For a
+-- population of size @n@, the best genome has rank @n' <= n@, and the
+-- worst genome has rank @1@. 'rankScale' may be useful to avoid
+-- domination of few super-genomes in 'rouletteSelect' or to apply
+-- 'rouletteSelect' when fitness is not necessarily positive.
+rankScale :: Population a -> Population a
+rankScale pop =
+    let sorted = reverse $ sortByFitness pop
+        worstF = snd . head $ sorted
+    in  ranks 1 worstF sorted
+    where
+      ranks _ _ [] = []
+      ranks rank worst ((genome,fitness):rest)
+          | worst == fitness    = (genome,rank)   : ranks rank worst rest
+          | otherwise           = (genome,rank+1) : ranks (rank+1) fitness rest
 
 -- |Fitness-proportionate (roulette-wheel) selection: select @n@
 -- random items with each item's chance of being selected is
