@@ -21,26 +21,21 @@ nvariables = 2
 xrange = (-30.0, 30.0)
 popsize = 100
 precision = 1e-4
-maxiters = 5000 :: Int
+maxiters = 1000 :: Int
 
 -- fitness function is maximized  when Rosenbrock function is minimized
 fitness xs _ = negate $ rosenbrock xs
 
 -- selection: tournament selection with elitism
-select pop =
-    let keep = popsize `div` 10
-        top = take keep (elite pop)
-    in  do
-      rest <- tournamentSelect 3 (popsize - keep) pop
-      return (top ++ rest)
+select = withElite 10 $ tournamentSelect 3 (popsize-10)
 
 -- Gaussian mutation
-gm =
+mutate =
     let p = 0.5/fromIntegral nvariables
         s = 0.1*(snd xrange - fst xrange)
     in  gaussianMutate p s
 
-mutationOps = [ ("gm", gm) ]
+mutationOps = [ ("gm", mutate) ]
 
 -- BLX-0.5 crossover
 blxa = blendCrossover 0.5
@@ -84,7 +79,7 @@ main = do
     (Just mutate, Just crossover) -> do
        (pop, log) <- runGA $ geneticAlgorithm mutate crossover
        printHistoryAndBest show pop log
-       let bestF = snd . head . sortBy (comparing (negate . snd)) $ pop
+       let bestF = snd . head . sortBy (comparing (snd)) $ pop
        if (bestF >= (-precision))
           then exitWith ExitSuccess
           else exitWith (ExitFailure 2)  -- failed to find a solution

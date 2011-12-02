@@ -38,12 +38,7 @@ totalValue things taken _ = fromIntegral . sumVals (0,0) $ zip taken things
 bestValue :: Population Bool -> Fitness
 bestValue = maximum . map snd
 
-select pop =
-    let keep = 1
-        top = take keep (elite pop)
-    in  do
-      rest <- tournamentSelect 2 (popsize - keep) pop
-      return (top ++ rest)
+select = withElite 1 $ tournamentSelect 2 (popsize - 1)
 
 geneticAlgorithm :: [(Weight,Value)] -> Rand (Population Bool, [Fitness])
 geneticAlgorithm things = do
@@ -66,7 +61,7 @@ main = do
   -- print results and evolution log
   putStrLn "# iteration bestValue"
   mapM_ (\(i,v) -> putStrLn $ show i ++ " " ++ show v) (zip [0..] log)
-  let best = head . elite $ pop
+  let best = fst . head . sortByFitness $ pop
   let bestthings = zip best things
   let taken = intercalate ", " . map (show . snd) $ filter fst bestthings
   let left = intercalate ", " . map (show . snd) $ filter (not . fst) bestthings

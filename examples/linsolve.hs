@@ -37,12 +37,9 @@ fitness mat rhs bits _ =
     in  negate residual
 
 -- selection: tournament selection with elitism
-select mat rhs pop =
+select mat rhs =
     let keep = popsize `div` 10
-        top = take keep (elite pop)
-    in  do
-      rest <- tournamentSelect 2 (popsize - keep) pop
-      return (top ++ rest)
+    in  withElite keep $ tournamentSelect 2 (popsize - keep)
 
 main = do
   (mat,rhs,solution,(pop, log)) <- runGA $ do
