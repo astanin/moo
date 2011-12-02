@@ -20,9 +20,10 @@ module AI.SimpleEA.Utils (
   -- * Selection
   , rouletteSelect
   , tournamentSelect
+  , withElite
+  , sortByFitness
   , sigmaScale
   , rankScale
-  , elite
   -- * Crossover
   , onePointCrossover
   , twoPointCrossover
@@ -50,7 +51,6 @@ import Control.Monad.Mersenne.Random
 import Data.Bits
 import Data.List (genericLength, sortBy, nub, elemIndices, sort, foldl')
 import System.Random.Mersenne.Pure64
-
 
 -- | How many bits are needed to represent a range of integer numbers
 -- @(from, to)@ (inclusive).
@@ -205,13 +205,31 @@ tournamentSelect size n xs = replicateM n tournament1
   where
   tournament1 = do
     contestants <- randomSample size xs
-    let winner = head $ elite contestants
+    let winner = head $ eliteGenomes contestants
     return winner
 
--- |Takes a list of (genome,fitness) pairs and returns a list of genomes sorted
--- by fitness (descending)
-elite :: [(a, Fitness)] -> [a]
-elite = map fst . sortBy (\(_,a) (_,b) -> compare b a)
+-- | Select @n@ best genomes, then select more genomes from the
+-- /entire/ population (elite genomes inclusive). Elite genomes will
+-- be the first in the list.
+--
+-- This function transforms a normal selection operator to selection
+-- with elitism. For best results, use 'preserveElite' to transform
+-- crossover and mutation operators (TODO).
+withElite :: Int -> SelectionOp a -> SelectionOp a
+withElite n select = \population -> do
+  let elite = take n . eliteGenomes $ population
+  selected <- select population
+  return (elite ++ selected)
+
+-- | Sort population (a list of (genome,fitness) pairs) by fitness
+-- (descending). The best genomes are put in the head of the list.
+sortByFitness :: Population a -> Population a
+sortByFitness = sortBy (\(_,a) (_,b) -> compare b a)
+
+-- | Takes a list of (genome,fitness) pairs and returns a list of
+-- genomes sorted by fitness (descending)
+eliteGenomes :: Population a -> [Genome a]
+eliteGenomes = map fst . sortByFitness
 
 -- |Modify value with probability @p@.
 withProbability :: Double -> a -> (a -> Rand a) -> Rand a
