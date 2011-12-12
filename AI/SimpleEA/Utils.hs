@@ -179,8 +179,7 @@ sigmaScale pop = map (\(g,f) -> (g,1+(f-f_avg)/(2*σ))) pop
     where
       fs = map snd pop
       σ   = sqrt . variance $ fs
-      f_avg = avg fs
-      avg = uncurry (/) . foldl' (\(!s, !c) x -> (s+x, c+1)) (0, 0)
+      f_avg = average fs
 
 -- | Replace fitness values in the population with their ranks.  For a
 -- population of size @n@, the best genome has rank @n' <= n@, and the
@@ -488,8 +487,7 @@ clip range v =
 
 -- |Returns the average fitnesses in a population.
 avgFitness :: Population a -> Fitness
-avgFitness = avg . map snd
-  where avg = uncurry (/) . foldl' (\(!s, !c) x -> (s+x, c+1)) (0, 0)
+avgFitness = average . map snd
 
 -- |Returns the maximum fitness in a population.
 maxFitness :: Population a -> Fitness
@@ -503,6 +501,26 @@ minFitness = minimum . map snd
 stdDeviation :: Population a -> Double
 stdDeviation = sqrt . variance . map snd
 
+-- Ersatz linear algebra
+minus :: Num a => [a] -> [a] -> [a]
+minus xs ys  = zipWith (-) xs ys
+plus :: Num a => [a] -> [a] -> [a]
+plus xs ys   = zipWith (+) xs ys
+scale :: Num a => a -> [a] -> [a]
+scale a xs   = map (a*) xs
+dot :: Num a => [a] -> [a] -> a
+dot xs ys    = sum $ zipWith (*) xs ys
+norm2 :: (Num a, Floating a) => [a] -> a
+norm2 xs     = sqrt $ dot xs xs
+proj :: (Num a, Fractional a) => [a] -> [a] -> [a]
+proj xs dir  = ( dot xs dir / dot dir dir ) `scale` dir
+normalize :: (Num a, Floating a, Fractional a) => [a] -> [a]
+normalize xs = let a = norm2 xs in (1.0/a) `scale` xs
+
+-- Ersatz statistics
+-- |Average
+average :: (Num a, Fractional a) => [a] -> a
+average = uncurry (/) . foldl' (\(!s, !c) x -> (s+x, c+1)) (0, 0)
 -- |Population variance (divided by n).
 variance :: (Floating a) => [a] -> a
 variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
@@ -520,18 +538,3 @@ variance xs = let (n, _, q) = foldr go (0, 0, 0) xs
                 qa' = qa + delta*delta*na/(na+1)
             in  (n + 1, sa', qa')
 
--- Ersatz linear algebra
-minus :: Num a => [a] -> [a] -> [a]
-minus xs ys  = zipWith (-) xs ys
-plus :: Num a => [a] -> [a] -> [a]
-plus xs ys   = zipWith (+) xs ys
-scale :: Num a => a -> [a] -> [a]
-scale a xs   = map (a*) xs
-dot :: Num a => [a] -> [a] -> a
-dot xs ys    = sum $ zipWith (*) xs ys
-norm2 :: (Num a, Floating a) => [a] -> a
-norm2 xs     = sqrt $ dot xs xs
-proj :: (Num a, Fractional a) => [a] -> [a] -> [a]
-proj xs dir  = ( dot xs dir / dot dir dir ) `scale` dir
-normalize :: (Num a, Floating a, Fractional a) => [a] -> [a]
-normalize xs = let a = norm2 xs in (1.0/a) `scale` xs
