@@ -13,9 +13,12 @@ import Print (printHistoryAndBest)
 
 n = 4             -- number of equations
 range = (-10, 10) -- range of coefficients and solution entries
-popsize = 500     -- population size
+
+popsize = 50      -- population size
 ndiscrete = 1000  -- discretization steps
 maxiters = 10000  -- stop after maxiters iterations
+elitesize = 2     -- number of best genomes to keep intact
+maxResidual = 0.1
 
 -- create a random system of linear equations, return matrix and rhs
 createSLE :: Int -> Rand ([[Double]], [Double], [Double])
@@ -43,9 +46,7 @@ fitness mat rhs bits _ =
     in  negate residual
 
 -- selection: tournament selection with elitism
-select mat rhs =
-    let keep = popsize `div` 10
-    in  withElite keep $ tournamentSelect 3 (popsize - keep)
+select mat rhs = tournamentSelect 2 (popsize - elitesize)
 
 main = do
   (mat,solution,rhs, (pop, log)) <- runGA $ do
@@ -57,10 +58,12 @@ main = do
          -- digest function to keep log of evolution
          let digest p = (avgFitness p, maxFitness p)
          -- run for 10*200 generations, save digest every 10 iterations
-         let stopCondition = FitnessStdev (<= 10.0) `Or` MaxFitness (>= (-0.1))
-         r <- loopUntil' (stopCondition `Or` Iteration 200) digest p0 $
+         let stopCondition = MaxFitness (>= (negate maxResidual))
+         let bigIters = maxiters `div` 10
+         r <- loopUntil' (stopCondition `Or` Iteration bigIters) digest p0 $
                iterateUntil (stopCondition `Or` Iteration 10) $
-                  nextGeneration (fitness mat rhs)
+                  nextGeneration elitesize
+                                 (fitness mat rhs)
                                  (select mat rhs)
                                  (twoPointCrossover 0.5)
                                  (pointMutate 0.35)

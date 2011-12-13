@@ -22,17 +22,18 @@ xrange = (-30.0, 30.0)
 popsize = 100
 precision = 1e-4
 maxiters = 1000 :: Int
+elitesize = 2
 
 -- fitness function is maximized  when Rosenbrock function is minimized
 fitness xs _ = negate $ rosenbrock xs
 
--- selection: tournament selection with elitism
-select = withElite 10 $ tournamentSelect 3 (popsize-10)
+-- selection: tournament selection
+select = tournamentSelect 3 (popsize-10)
 
 -- Gaussian mutation
 mutate =
     let p = 0.5/fromIntegral nvariables
-        s = 0.1*(snd xrange - fst xrange)
+        s = 0.01*(snd xrange - fst xrange)
     in  gaussianMutate p s
 
 mutationOps = [ ("gm", mutate) ]
@@ -67,7 +68,7 @@ geneticAlgorithm mutate crossover = do
   -- run genetic algorithm
   loopUntil' (MaxFitness (>= (-precision))
               `Or` Iteration maxiters) digest pop0 $
-              nextGeneration fitness select crossover mutate
+              nextGeneration elitesize fitness select crossover mutate
 
 -- usage: rosenbrock mutationOperator crossoverOperator
 main = do

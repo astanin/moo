@@ -20,7 +20,6 @@ module AI.SimpleEA.Utils (
   -- * Selection
   , rouletteSelect
   , tournamentSelect
-  , withElite
   , sortByFitness
   , withScale
   , sigmaScale
@@ -222,19 +221,6 @@ tournamentSelect size n xs = replicateM n tournament1
     contestants <- randomSample size xs
     let winner = head $ eliteGenomes contestants
     return winner
-
--- | Select @n@ best genomes, then select more genomes from the
--- /entire/ population (elite genomes inclusive). Elite genomes will
--- be the first in the list.
---
--- This function transforms a normal selection operator to selection
--- with elitism. For best results, use 'preserveElite' to transform
--- crossover and mutation operators (TODO).
-withElite :: Int -> SelectionOp a -> SelectionOp a
-withElite n select = \population -> do
-  let elite = take n . eliteGenomes $ population
-  selected <- select population
-  return (elite ++ selected)
 
 -- | Sort population (a list of (genome,fitness) pairs) by fitness
 -- (descending). The best genomes are put in the head of the list.

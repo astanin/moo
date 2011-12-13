@@ -101,6 +101,7 @@ module AI.SimpleEA (
 
 import AI.SimpleEA.Rand
 import AI.SimpleEA.Utils (minFitness, maxFitness, avgFitness, stdDeviation)
+import AI.SimpleEA.Utils (sortByFitness)
 import AI.SimpleEA.Types
 
 import Control.Monad (liftM)
@@ -124,18 +125,32 @@ runGA ga = do
 --
 -- Mutation: 'pointMutate', 'gaussianMutate'.
 nextGeneration ::
-    FitnessFunction a ->
-    SelectionOp a ->
-    CrossoverOp a ->
-    MutationOp a ->
-    Population a ->
-    Rand (Population a)
-nextGeneration fitness selectOp xoverOp mutationOp pop = do
-  genomes' <- selectOp pop
-  genomes' <- shuffle genomes'  -- just in case if selectOp preserves order
+    Int ->                -- ^ @elite@, the number of genomes to keep intact
+    FitnessFunction a ->  -- ^ fitness function
+    SelectionOp a ->      -- ^ selection operator
+    CrossoverOp a ->      -- ^ crossover operator
+    MutationOp a ->       -- ^ mutation operator
+    Population a ->       -- ^ current population
+    Rand (Population a)  -- ^ next generation
+nextGeneration elite fitness selectOp xoverOp mutationOp pop = do
+  genomes' <- withElite elite selectOp pop
+  let top = take elite genomes'
+  let rest = drop elite genomes'
+  genomes' <- shuffle rest         -- just in case if selectOp preserves order
   genomes' <- doCrossovers genomes' xoverOp
   genomes' <- mapM mutationOp genomes'
-  return $ evalFitness fitness genomes'
+  return $ evalFitness fitness (top ++ genomes')
+
+-- | Select @n@ best genomes, then select more genomes from the
+-- /entire/ population (elite genomes inclusive). Elite genomes will
+-- be the first in the list.
+withElite :: Int -> SelectionOp a -> SelectionOp a
+withElite n select = \population -> do
+  let elite = take n . eliteGenomes $ population
+  selected <- select population
+  return (elite ++ selected)
+  where
+    eliteGenomes = map fst . sortByFitness
 
 -- | Run strict iterations of the genetic algorithm defined by @step@.
 -- Termination condition @cond@ is evaluated before every step.

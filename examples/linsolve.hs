@@ -9,9 +9,12 @@ import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import Print (printHistoryAndBest)
 
-n = 4  -- number of equations
-range = (0, 9)  -- range of coefficients and solution entries
-popsize = 100  -- population size
+n = 4          -- number of equations
+range = (0, 9) -- range of coefficients and solution entries
+
+popsize = 200  -- population size
+maxiters = 1000 -- maximum number of iterations
+elitesize = 2  -- best genomes to keep intact
 
 -- create a random system of linear equations, return matrix and rhs
 createSLE :: Int -> Rand ([[Int]], [Int], [Int])
@@ -36,10 +39,8 @@ fitness mat rhs bits _ =
         residual = norm2 $ (mat `mult` xs) `minus` rhs
     in  negate residual
 
--- selection: tournament selection with elitism
-select mat rhs =
-    let keep = popsize `div` 10
-    in  withElite keep $ tournamentSelect 2 (popsize - keep)
+-- selection: tournament selection
+select mat rhs = tournamentSelect 2 (popsize-elitesize)
 
 main = do
   (mat,rhs,solution,(pop, log)) <- runGA $ do
@@ -53,9 +54,10 @@ main = do
          -- run for some generations
          r <- loopUntil' (MaxFitness (>= 0)
                          `Or` FitnessStdev (<= 1)
-                         `Or` Iteration 1000)
+                         `Or` Iteration maxiters)
                digest pop0 $
-                nextGeneration (fitness mat rhs)
+                nextGeneration elitesize
+                               (fitness mat rhs)
                                (select mat rhs)
                                (twoPointCrossover 0.5)
                                (pointMutate 0.25)

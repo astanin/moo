@@ -16,12 +16,10 @@ the number of @True@ values in the list.
 
 The @select@ function is our 'SelectionOp'. It uses sigma-scaled,
 fitness-proportionate selection. 'sigmaScale' is defined in
-"AI.SimpleEA.Utils". By first taking the four best genomes we get
-elitism and ensure that the maximum fitness never decreases (unless
-affected by a mutation).
+"AI.SimpleEA.Utils".
 
 >select :: Int -> SelectionOp Bool
->select n = withElite 4 $ withScale sigmaScale $ rouletteSelect (n-4)
+>select n = withScale sigmaScale $ rouletteSelect n
 
 In our @main@ function we wrap the entire algorithm with 'runGA'
 helper. It gives us access to the random number generator throughout
@@ -34,14 +32,16 @@ the algorithm for 41 generations with 'iterateHistoryM' function.  It
 not only runs the algorithm, but also accumulates the history.
 
 >main = do
->    let popsize = 10
->    let genomesize = 20
+>    let popsize = 11
+>    let genomesize = 50
+>    let elitesize = 1
 >    (pop, history) <- runGA $ do
 >       genomes <- getRandomGenomes popsize genomesize (False,True)
 >       let pop0 = evalFitness countTrue genomes
 >       let xover = onePointCrossover 0.33
 >       let mutate = pointMutate 0.2
->       let step = nextGeneration countTrue (select popsize) xover mutate
+>       let step = nextGeneration elitesize countTrue
+>                  (select (popsize-elitesize)) xover mutate
 >       let digest p = (avgFitness p, maxFitness p)
->       loopUntil' (Iteration 50) digest pop0 step
+>       loopUntil' (MaxFitness (>= fromIntegral genomesize)) digest pop0 step
 >    printHistoryAndBest showBits pop history

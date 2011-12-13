@@ -17,13 +17,14 @@ import Print (printHistoryAndBest)
 type Weight = Int
 type Value = Int
 
-items = 40
+items = 50
 itemWeight = (1,9 :: Weight)
 itemValue = (0,9 :: Value)
 maxTotalWeight = items*2 :: Weight
 
-popsize = 20
+popsize = 11
 maxiters = 100
+elitesize = 1
 
 -- fitness function to maximize
 totalValue things taken _ = fromIntegral . sumVals (0,0) $ zip taken things
@@ -38,7 +39,7 @@ totalValue things taken _ = fromIntegral . sumVals (0,0) $ zip taken things
 bestValue :: Population Bool -> Fitness
 bestValue = maximum . map snd
 
-select = withElite 1 $ tournamentSelect 2 (popsize - 1)
+select = tournamentSelect 2 (popsize-elitesize)
 
 geneticAlgorithm :: [(Weight,Value)] -> Rand (Population Bool, [Fitness])
 geneticAlgorithm things = do
@@ -47,8 +48,8 @@ geneticAlgorithm things = do
   let pop0 = evalFitness fitness genomes0
   let bestValue = maximum . map snd
   loopUntil' (Iteration maxiters) bestValue pop0 $ do
-      nextGeneration fitness select
-                     (onePointCrossover 0.5) (pointMutate 0.1)
+      nextGeneration elitesize fitness select
+                     (onePointCrossover 0.5) (pointMutate 0.5)
 
 main = do
   rng <- newPureMT
