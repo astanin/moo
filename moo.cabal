@@ -1,0 +1,53 @@
+name:               moo
+category:           AI, Algorithms, Optimisation
+build-type:         Simple
+version:            1.0
+synopsis:           Genetic algorithm library
+description:        Moo library provides building blocks to build custom
+                    genetic algorithms in Haskell. They can be used to
+                    find solutions to optimisation and search problems.
+                    .
+                    Variants supported out of the box: binary (using
+                    bit-strings) and continuous (real-valued).
+                    .
+                    Binary GAs: binary and Gray encoding; point mutation;
+                    one-point, two-point, and uniform crossover.
+                    Continuous GAs: gaussian mutation; BLX-α, UNDX, and
+                    SBX crossover.
+                    Selection operators: roulette, and tournament;
+                    with optional elitism and scaling.
+
+license:            BSD3
+License-file:       LICENSE
+category:           AI
+maintainer:         Sergey Astanin <s.astanin@gmail.com>
+author:             Sergey Astanin <s.astanin@gmail.com>
+author:             Erlend Hamberg
+stability:          experimental
+tested-with:        GHC==7.0.3
+homepage:           http://www.github.com/sergeyastanin/moo/
+cabal-version:       >=1.6
+
+
+Library
+    build-depends:      base >=4 && < 5
+                      , monad-mersenne-random
+                      , mersenne-random-pure64
+                      , gray-code >= 0.2.1
+                      , random >= 0.1
+                      , random-shuffle >= 0.0.2 && < 0.1
+    ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
+    exposed-modules:    Moo.GeneticAlgorithm
+                      , Moo.GeneticAlgorithm.Types
+                      , Moo.GeneticAlgorithm.Binary
+                      , Moo.GeneticAlgorithm.Continuous
+                      , Moo.GeneticAlgorithm.Selection
+                      , Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.Run
+                      , Moo.GeneticAlgorithm.Random
+                      , Moo.GeneticAlgorithm.Utils
+
+
+source-repository head
+  type:     git
+  location: git://github.com/sergeyastanin/moo.git

@@ -1,4 +1,4 @@
-module AI.SimpleEA.Types
+module Moo.GeneticAlgorithm.Types
     (
     -- * Data structures
       Fitness
@@ -10,7 +10,7 @@ module AI.SimpleEA.Types
     , CrossoverOp
     , MutationOp ) where
 
-import AI.SimpleEA.Rand
+import Moo.GeneticAlgorithm.Random
 
 type Fitness = Double
 type Genome a = [a]
