@@ -4,7 +4,7 @@
      random number generator.
 -}
 
-module AI.SimpleEA.Rand
+module Moo.GeneticAlgorithm.Random
     (
     -- * Random numbers from given range
       getRandomR
