@@ -4,12 +4,10 @@
   with given maximum weight constraint.
 -}
 
-import AI.SimpleEA
-import AI.SimpleEA.Utils
-import AI.SimpleEA.Rand
+import Moo.GeneticAlgorithm.Binary
+import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Run
 import Control.Monad
-import Control.Monad.Mersenne.Random
-import System.Random.Mersenne.Pure64
 import Data.List (intercalate)
 
 import Print (printHistoryAndBest)

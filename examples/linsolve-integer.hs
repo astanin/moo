@@ -1,9 +1,10 @@
--- This example uses SimpleEA library to solve linear equation
+-- This example uses Moo library to solve linear equation
 -- using genetic algorithm.
 
-import AI.SimpleEA
-import AI.SimpleEA.Rand
-import AI.SimpleEA.Utils
+import Moo.GeneticAlgorithm.Binary
+import Moo.GeneticAlgorithm.Run
+import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Utilities
 import Control.Monad
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64

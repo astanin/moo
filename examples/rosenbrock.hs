@@ -2,9 +2,10 @@
    Optimal value x* = (1,...,1). F(x*) = 0.
 -}
 
-import AI.SimpleEA
-import AI.SimpleEA.Utils
-import AI.SimpleEA.Rand
+import Moo.GeneticAlgorithm.Continuous
+import Moo.GeneticAlgorithm.Utilities
+import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Run
 import Control.Monad
 import Data.List
 import Data.Ord (comparing)

@@ -2,9 +2,9 @@ The aim of this GA is to maximize the number of @True@ values in a
 list (bitstring). The fitness of the bitstring is defined to be the
 number of @True@ values it contains.
 
->import AI.SimpleEA
->import AI.SimpleEA.Utils
->import AI.SimpleEA.Rand
+>import Moo.GeneticAlgorithm.Binary
+>import Moo.GeneticAlgorithm.Utilities (avgFitness, maxFitness)
+>import Moo.GeneticAlgorithm.Run
 >import Print (printHistoryAndBest)
 >import Codec.Binary.Gray.List (showBits)
 
@@ -16,7 +16,7 @@ the number of @True@ values in the list.
 
 The @select@ function is our 'SelectionOp'. It uses sigma-scaled,
 fitness-proportionate selection. 'sigmaScale' is defined in
-"AI.SimpleEA.Utils".
+"Moo.GeneticAlgorithm.Selection".
 
 >select :: Int -> SelectionOp Bool
 >select n = withScale sigmaScale $ rouletteSelect n
@@ -36,7 +36,7 @@ not only runs the algorithm, but also accumulates the history.
 >    let genomesize = 50
 >    let elitesize = 1
 >    (pop, history) <- runGA $ do
->       genomes <- getRandomGenomes popsize genomesize (False,True)
+>       genomes <- getRandomBinaryGenomes popsize genomesize
 >       let pop0 = evalFitness countTrue genomes
 >       let xover = onePointCrossover 0.33
 >       let mutate = pointMutate 0.2

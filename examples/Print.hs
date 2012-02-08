@@ -1,7 +1,7 @@
 -- | Routines to print results shared between various examples.
 module Print where
 
-import AI.SimpleEA.Types
+import Moo.GeneticAlgorithm.Types
 
 import Data.List (sortBy)
 import Data.Ord (comparing)

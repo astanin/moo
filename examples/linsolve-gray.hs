@@ -1,22 +1,23 @@
--- This example uses SimpleEA library to solve linear equation
--- using genetic algorithm. A variation of the example using
+-- This example uses Moo library to solve linear equation
+-- using genetic algorithm. A variation of the    example using
 -- floating point numbers as matrix coefficients and solution
--- elements.
+-- elements and binary gray encoding for the genetic algorithm.
 
-import AI.SimpleEA
-import AI.SimpleEA.Rand
-import AI.SimpleEA.Utils
+import Moo.GeneticAlgorithm.Binary
+import Moo.GeneticAlgorithm.Run
+import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Utilities (avgFitness, maxFitness)
 import Control.Monad
 import Control.Monad.Mersenne.Random
 import System.Random.Mersenne.Pure64
 import Print (printHistoryAndBest)
 
-n = 4             -- number of equations
+n = 3             -- number of equations
 range = (-10, 10) -- range of coefficients and solution entries
 
-popsize = 50      -- population size
+popsize = 500      -- population size
 ndiscrete = 1000  -- discretization steps
-maxiters = 10000  -- stop after maxiters iterations
+maxiters = 1000   -- stop after maxiters iterations
 elitesize = 2     -- number of best genomes to keep intact
 maxResidual = 0.1
 
