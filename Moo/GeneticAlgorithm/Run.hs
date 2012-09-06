@@ -11,8 +11,8 @@ module Moo.GeneticAlgorithm.Run (
   , nextGeneration
   , evalFitness
   -- * Iteration control
-  , loopUntil, loopUntil'
-  , iterateUntil, iterateUntil'
+  , loopUntil
+  , writeEvery, ioEvery
   , Cond(..)
 ) where
 
@@ -21,7 +21,7 @@ import Moo.GeneticAlgorithm.Utilities (minFitness, maxFitness, avgFitness, stdDe
 import Moo.GeneticAlgorithm.Selection (sortByFitness)
 import Moo.GeneticAlgorithm.Types
 
-import Control.Monad (liftM)
+import Control.Monad.Writer.Lazy (WriterT, Monoid, tell, lift)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
@@ -79,51 +79,42 @@ loopUntil cond pop0 step = go cond pop0
        | evalCond cond x  = return x
        | otherwise        = step x >>= go (countdownCond cond)
 
--- | Like 'loopUntil' but the user also provides a @digest@ function which
--- extracts some summary from the current generation to keep. 'loopUntil''
--- accumulates these digests and returns the history of population evolution
--- along with the final population.
-{-# INLINE loopUntil' #-}
-loopUntil' :: (Monad m)
-      => Cond a   -- ^ termination condition @cond@
-      -> (Population a -> d)  -- ^ @digest@ function to extract summary
-      -> Population a  -- ^ initial population
-      -> (Population a -> m (Population a))
-                      -- ^ @step@ function to produce the next generation
-      -> m ((Population a, [d]))  -- ^ final population and its history
-loopUntil' cond digest pop0 step =
-    second reverse `liftM` go cond pop0 [digest pop0]
-  where
-    second f (x,y) = (x, f y)
-    go cond !x !ds
-       | evalCond cond x  = return (x, ds)
-       | otherwise        =
-           do x' <- step x
-              go (countdownCond cond) x' (digest x':ds)
+-- | Interleave monadic iteration with writing log every @n@ steps.
+-- Use 'runWriterT' to exectute it.
+writeEvery :: (Monad m, Monoid w) =>
+              Int         -- ^ every @n@ iterations
+           -> (a -> m a)  -- ^ monadic iteration to repeat
+           -> (a -> w)    -- ^ write action to insert
+           -> (a -> WriterT w m a)
+writeEvery n step write x = do
+    x' <- lift (loopM n step x)
+    tell (write x')
+    return x'
 
--- | Like 'loopUntil', but argumens' order is more suitable for
--- partial function application.
-iterateUntil :: (Monad m) => Cond a -> (Population a -> m (Population a))
-             -> Population a -> m (Population a)
-iterateUntil cond step pop0 = loopUntil cond pop0 step
+-- | Interleave monadic iteration with IO action every @n@ steps.
+ioEvery :: Int           -- ^ every @n@ iterations
+        -> (a -> IO a)    -- ^ monadic action to repeat
+        -> (a -> IO ())  -- ^ IO action to insert
+        -> (a -> IO a)
+ioEvery n step io x = do
+  x' <- loopM n step x
+  io x'
+  return x'
 
--- | Like 'loopUntil'', but argumens' order is more suitable for
--- partial function application.
-iterateUntil' :: (Monad m) => Cond a -> (Population a -> d)
-             -> (Population a -> m (Population a)) -> Population a
-             -> m (Population a, [d])
-iterateUntil' cond digest step pop0 = loopUntil' cond digest pop0 step
+loopM :: (Monad m) => Int -> (a -> m a) -> a -> m a
+loopM n step !x
+    | n == 0    = return x
+    | otherwise = step x >>= loopM (n-1) step
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
       Iteration Int                  -- ^ becomes @True@ after /n/ iterations
-    | MaxFitness (Fitness -> Bool)    -- ^ consider the maximal observed fitness
-    | MinFitness (Fitness -> Bool)    -- ^ consider the minimal observed fitness
-    | AvgFitness (Fitness -> Bool)    -- ^ consider the average observed fitness
-    | FitnessStdev (Fitness -> Bool)  -- ^ consider standard deviation of fitness
+    | MaxFitness (Fitness -> Bool)   -- ^ consider the maximal observed fitness
+    | MinFitness (Fitness -> Bool)   -- ^ consider the minimal observed fitness
+    | AvgFitness (Fitness -> Bool)   -- ^ consider the average observed fitness
+    | FitnessStdev (Fitness -> Bool) -- ^ consider standard deviation of fitness
                                      -- within population; may be used to
                                      -- detect premature convergence
-    | EntirePopulation ([Genome a] -> Bool)  -- ^ consider all genomes
     | Or (Cond a) (Cond a)
     | And (Cond a) (Cond a)
 
@@ -133,7 +124,6 @@ evalCond (MaxFitness cond) p = cond . maxFitness $ p
 evalCond (MinFitness cond) p = cond . minFitness $ p
 evalCond (AvgFitness cond) p = cond . avgFitness $ p
 evalCond (FitnessStdev cond) p = cond . stdDeviation $ p
-evalCond (EntirePopulation cond) p = cond . map fst $ p
 evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
 evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
 
@@ -156,4 +146,3 @@ doCrossovers parents xover = do
   (children', parents') <- xover parents
   rest <- doCrossovers parents' xover
   return $ children' ++ rest
-

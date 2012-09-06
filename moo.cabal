@@ -30,12 +30,13 @@ cabal-version:       >=1.6
 
 
 Library
-    build-depends:      base >=4 && < 5
+    build-depends:      base >=4
                       , monad-mersenne-random
                       , mersenne-random-pure64
                       , gray-code >= 0.2.1
                       , random >= 0.1
-                      , random-shuffle >= 0.0.2 && < 0.1
+                      , random-shuffle >= 0.0.2
+                      , mtl >= 2
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Types
