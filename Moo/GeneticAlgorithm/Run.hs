@@ -12,8 +12,8 @@ module Moo.GeneticAlgorithm.Run (
   , evalFitness
   -- * Iteration control
   , loopUntil
-  , writeEvery, ioEvery
-  , Cond(..)
+  , loopUntilWithHooks
+  , Cond(..), WriterHook(..)
 ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -21,7 +21,7 @@ import Moo.GeneticAlgorithm.Utilities (minFitness, maxFitness, avgFitness, stdDe
 import Moo.GeneticAlgorithm.Selection (sortByFitness)
 import Moo.GeneticAlgorithm.Types
 
-import Control.Monad.Writer.Lazy (WriterT, Monoid, tell, lift)
+import Data.Monoid (Monoid, mempty, mconcat)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
@@ -79,32 +79,34 @@ loopUntil cond pop0 step = go cond pop0
        | evalCond cond x  = return x
        | otherwise        = step x >>= go (countdownCond cond)
 
--- | Interleave monadic iteration with writing log every @n@ steps.
--- Use 'runWriterT' to exectute it.
-writeEvery :: (Monad m, Monoid w) =>
-              Int         -- ^ every @n@ iterations
-           -> (a -> m a)  -- ^ monadic iteration to repeat
-           -> (a -> w)    -- ^ write action to insert
-           -> (a -> WriterT w m a)
-writeEvery n step write x = do
-    x' <- lift (loopM n step x)
-    tell (write x')
-    return x'
+{-# INLINE loopUntilWithHooks #-}
+loopUntilWithHooks :: (Monad m, Monoid w)
+      => Cond a           -- ^ termination condition @cond@
+      -> [WriterHook a m w] -- ^ periodic side-effect actions, usually logging
+      -> Population a     -- ^ initial population
+      -> (Population a -> m (Population a))
+                         -- ^ @step@ function to produce the next generation
+      -> m (Population a, w) -- ^ final population
+loopUntilWithHooks cond hooks pop0 step = go cond 0 mempty pop0
+  where
+    -- go :: Cond a -> Int -> w -> Population a -> m (Population a, w)
+    go cond !i !w !x = do
+      ws <- mapM (runHook i x) hooks
+      let w' = mconcat (w:ws)
+      if (evalCond cond x)
+        then return (x, w')
+        else step x >>= go (countdownCond cond) (i+1) w'
+    runHook !i !x (WriteEvery n write)
+        | (rem i n) == 0 = return (write x)
+        | otherwise      = return mempty
+    runHook !i !x (DoEvery n dowhat)
+        | (rem i n) == 0 = dowhat x >> return mempty
+        | otherwise      = return mempty
 
--- | Interleave monadic iteration with IO action every @n@ steps.
-ioEvery :: Int           -- ^ every @n@ iterations
-        -> (a -> IO a)    -- ^ monadic action to repeat
-        -> (a -> IO ())  -- ^ IO action to insert
-        -> (a -> IO a)
-ioEvery n step io x = do
-  x' <- loopM n step x
-  io x'
-  return x'
-
-loopM :: (Monad m) => Int -> (a -> m a) -> a -> m a
-loopM n step !x
-    | n == 0    = return x
-    | otherwise = step x >>= loopM (n-1) step
+-- | Hooks to run every nth iteration starting from 0.
+data (Monad m, Monoid w) => WriterHook a m w =
+     WriteEvery Int (Population a -> w) -- ^ pure writer hook
+   | DoEvery Int (Population a -> m ()) -- ^ same-monad action
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
