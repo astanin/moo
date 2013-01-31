@@ -1,19 +1,20 @@
 # -*- mode: org -*-
 
-** TODO Moo genetic algorithm library, first release [1/15]
-  - [x] SBX
-  - [x] UNDX
+** TODO Moo genetic algorithm library, first release [8/11]
+  - [X] SBX
+  - [X] UNDX
   - [ ] premature convergence check (GensNoChange)
-  - [x] loop-with-IO
-  - [x] elite as SelectionOp
-  - [x] fitness scaling as Population a -> Population a
-  - [x] SelectionOp combinator
-  - [x] preserve elite in crossover and mutation
+  - [X] loop-with-IO
+  - [X] elite as SelectionOp
+  - [X] fitness scaling as Population a -> Population a
+  - [X] SelectionOp combinator
+  - [X] preserve elite in crossover and mutation
   - [X] re-organize modules by coding type: binary, real-valued, permutation
   - [ ] common framework to run GAs in all examples (CLI)
   - [ ] tests (or use examples as tests)
+
+** TODO: future releases [0/4]
   - [ ] permutation GAs, TSP example
   - [ ] minimizing SelectionOp's
   - [ ] time-dependent mutation
   - [ ] NSGA-II
-
