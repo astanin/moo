@@ -24,9 +24,8 @@ maintainer:         Sergey Astanin <s.astanin@gmail.com>
 author:             Sergey Astanin <s.astanin@gmail.com>
 author:             Erlend Hamberg
 stability:          experimental
-tested-with:        GHC==7.0.3
 homepage:           http://www.github.com/sergeyastanin/moo/
-cabal-version:       >=1.6
+cabal-version:       >=1.8
 
 
 Library
@@ -49,6 +48,15 @@ Library
                       , Moo.GeneticAlgorithm.Utilities
     other-modules:      Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Statistics
+
+
+Test-Suite test-problems
+  Type:                 exitcode-stdio-1.0
+  Main-Is:              test-problems.hs
+  Build-Depends:
+      moo
+    , base
+    , HUnit
 
 
 source-repository head
