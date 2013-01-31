@@ -9,7 +9,7 @@ import Moo.GeneticAlgorithm.Run
 import Control.Monad
 import Data.List
 import Data.Ord (comparing)
-import Print (printHistoryAndBest)
+import Print (printBest)
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
 
@@ -56,20 +56,14 @@ printUsage = do
   mops = intercalate "|" (map fst mutationOps)
   xops = intercalate "|" (map fst crossoverOps)
 
--- digest: what to log on every iteration
-digest pop =
-  let m = maxFitness pop
-      a = avgFitness pop
-  in  (a, m)
-
 geneticAlgorithm mutate crossover = do
   -- initial population
   genomes0 <- replicateM popsize $ replicateM nvariables (getRandomR xrange)
   let pop0 = evalFitness fitness genomes0
+  let step = nextGeneration elitesize fitness select crossover mutate
   -- run genetic algorithm
-  loopUntil' (MaxFitness (>= (-precision))
-              `Or` Iteration maxiters) digest pop0 $
-              nextGeneration elitesize fitness select crossover mutate
+  loopUntil (MaxFitness (>= (-precision)) `Or` Iteration maxiters) pop0 step
+
 
 -- usage: rosenbrock mutationOperator crossoverOperator
 main = do
@@ -79,8 +73,8 @@ main = do
            _        -> printUsage
   case conf of
     (Just mutate, Just crossover) -> do
-       (pop, log) <- runGA $ geneticAlgorithm mutate crossover
-       printHistoryAndBest show pop log
+       pop <- runGA $ geneticAlgorithm mutate crossover
+       printBest show pop
        let bestF = snd . head . sortBy (comparing (snd)) $ pop
        if (bestF >= (-precision))
           then exitWith ExitSuccess

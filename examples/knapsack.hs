@@ -10,12 +10,12 @@ import Moo.GeneticAlgorithm.Run
 import Control.Monad
 import Data.List (intercalate)
 
-import Print (printHistoryAndBest)
+import Print (printBest)
 
 type Weight = Int
 type Value = Int
 
-items = 50
+items = 16
 itemWeight = (1,9 :: Weight)
 itemValue = (0,9 :: Value)
 maxTotalWeight = items*2 :: Weight
@@ -34,20 +34,15 @@ totalValue things taken _ = fromIntegral . sumVals (0,0) $ zip taken things
     sumVals (_, totalV) []             = totalV   -- all items in the knapsack
 
 
-bestValue :: Population Bool -> Fitness
-bestValue = maximum . map snd
-
 select = tournamentSelect 2 (popsize-elitesize)
 
-geneticAlgorithm :: [(Weight,Value)] -> Rand (Population Bool, [Fitness])
+geneticAlgorithm :: [(Weight,Value)] -> Rand (Population Bool)
 geneticAlgorithm things = do
   genomes0 <- replicateM popsize $ replicateM items getRandom
   let fitness = totalValue things
   let pop0 = evalFitness fitness genomes0
-  let bestValue = maximum . map snd
-  loopUntil' (Iteration maxiters) bestValue pop0 $ do
-      nextGeneration elitesize fitness select
-                     (onePointCrossover 0.5) (pointMutate 0.5)
+  loopUntil (Iteration maxiters) pop0 $ do
+      nextGeneration elitesize fitness select (onePointCrossover 0.5) (pointMutate 0.5)
 
 main = do
   rng <- newPureMT
@@ -56,10 +51,8 @@ main = do
                          weights <- replicateM items $ getRandomR itemWeight
                          values <- replicateM items $ getRandomR itemValue
                          return $ zip weights values
-  let (pop,log) = flip evalRandom rng' $ geneticAlgorithm things
-  -- print results and evolution log
-  putStrLn "# iteration bestValue"
-  mapM_ (\(i,v) -> putStrLn $ show i ++ " " ++ show v) (zip [0..] log)
+  let pop = flip evalRandom rng' $ geneticAlgorithm things
+  putStrLn "# final population:"
   let best = fst . head . sortByFitness $ pop
   let bestthings = zip best things
   let taken = intercalate ", " . map (show . snd) $ filter fst bestthings
