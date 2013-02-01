@@ -20,7 +20,7 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Statistics (variance, average)
 
 import Control.Monad (liftM, replicateM)
-import Data.List (genericLength, sortBy)
+import Data.List (sortBy)
 
 -- | Apply given scaling or other transform to population before selection.
 withScale :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a

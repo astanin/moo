@@ -42,7 +42,6 @@ module Moo.GeneticAlgorithm.Binary (
 
 import Codec.Binary.Gray.List
 import Data.Bits
-import System.Random.Mersenne.Pure64
 
 import Moo.GeneticAlgorithm.Crossover
 import Moo.GeneticAlgorithm.Random
@@ -155,4 +154,3 @@ pointMutate p bits = withProbability p bits $ \bits -> do
        r <- getRandomR (0, length bits - 1)
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
-
