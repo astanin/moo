@@ -106,10 +106,7 @@ loopUntilWithHooks hooks cond step pop0 = go cond 0 mempty pop0
         then return (x, w')
         else step x >>= go (countdownCond cond) (i+1) w'
     runHook !i !x (WriteEvery n write)
-        | (rem i n) == 0 = return (write x)
-        | otherwise      = return mempty
-    runHook !i !x (DoEvery n dowhat)
-        | (rem i n) == 0 = dowhat x >> return mempty
+        | (rem i n) == 0 = return (write i x)
         | otherwise      = return mempty
 
 
@@ -142,9 +139,10 @@ loopUntilWithIO io cond step pop0 rng = go cond 0 rng pop0
           go (countdownCond cond) i' rng' x'
 
 -- | Hooks to run every nth iteration starting from 0.
-data (Monad m, Monoid w) => WriterHook a m w =
-     WriteEvery Int (Population a -> w) -- ^ pure writer hook
-   | DoEvery Int (Population a -> m ()) -- ^ same-monad action
+-- The second argument is a function which takes generation count
+-- and the current population, and returns some data to save.
+data (Monad m, Monoid w) =>
+    WriterHook a m w = WriteEvery Int (Int -> Population a -> w)
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =

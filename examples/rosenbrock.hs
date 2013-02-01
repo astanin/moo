@@ -8,7 +8,14 @@
    To run:
 
        ghc --make rosenbrock.hs
-       ./rosenbrock gm blxa
+       ./rosenbrock gm undx > output.txt
+
+   To visualize the output in gnuplot:
+
+       % gnuplot
+       > set key bottom
+       > plot [25:] 'output.txt' u 1:2 w l t 'median value', '' u 1:3 w l t 'best value' lt 3
+
 
 -}
 
@@ -28,11 +35,11 @@ rosenbrock xs = sum . map f $ zip xs (drop 1 xs)
   where
    f (x1, x2) = 100 * (x2 - x1^2)^2 + (x1 - 1)^2
 
-nvariables = 2
+nvariables = 3
 xrange = (-30.0, 30.0)
 popsize = 100
-precision = 1e-4
-maxiters = 1000 :: Int
+precision = 1e-5
+maxiters = 2000 :: Int
 elitesize = 2
 
 -- fitness function is maximized  when Rosenbrock function is minimized
@@ -66,17 +73,17 @@ printUsage = do
   mops = intercalate "|" (map fst mutationOps)
   xops = intercalate "|" (map fst crossoverOps)
 
-logStats = WriteEvery 10 $ \pop ->
+logStats = WriteEvery 10 $ \iterno pop ->
              let pop' =  sortByFitness pop
                  bestfitness = snd $ head pop'
                  medianfitness = snd $ pop' !! (length pop' `div` 2)
-             in  [(medianfitness, bestfitness)]
+             in  [(iterno, medianfitness, bestfitness)]
 
-printStats :: [(Fitness, Fitness)] -> IO ()
+printStats :: [(Int, Fitness, Fitness)] -> IO ()
 printStats stats = do
-  printf "# %-13s %15s\n" "medianFitness" "bestFitness"
-  flip mapM_ stats $ \(median, best) ->
-      printf "%15.3g\t%15.3g\n" median best
+  printf "# %-10s %15s %15s\n" "generation" "medianFitness" "bestFitness"
+  flip mapM_ stats $ \(iterno, median, best) ->
+      printf "%12d %15.3g %15.3g\n" iterno median best
 
 geneticAlgorithm mutate crossover = do
   -- initial population
@@ -89,7 +96,7 @@ geneticAlgorithm mutate crossover = do
 
 printBest :: Population Double -> IO ()
 printBest pop = do
-  let bestGenome = fst . head $ sortByFitness pop
+  let bestGenome = takeGenome . head $ sortByFitness pop
   let vals = map (\x -> printf "%.5f" x) bestGenome
   putStrLn $ "# best solution: " ++ (intercalate ", " vals)
 
@@ -105,8 +112,10 @@ main = do
        printStats stats
        printBest pop
        -- exit status depends on convergence
-       let bestF = snd . head . sortBy (comparing (snd)) $ pop
-       if (bestF >= (-precision))
+       let bestF = takeFitness . head $ sortByFitness pop
+       if (abs bestF <= precision)
           then exitWith ExitSuccess
-          else exitWith (ExitFailure 2)  -- failed to find a solution
+          else do
+            printf "# failed to converge: best fitness=%.5f, target=-%g\n" bestF precision
+            exitWith (ExitFailure 2)  -- failed to find a solution
     _ -> printUsage
