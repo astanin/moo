@@ -18,7 +18,7 @@ module Moo.GeneticAlgorithm.Random
     -- * Re-exports from random number generator packages
     , getBool, getInt, getWord, getInt64, getWord64, getDouble
     , runRandom, evalRandom, newPureMT
-    , Rand, Random
+    , Rand, Random, PureMT
     ) where
 
 import Control.Monad (liftM)
@@ -99,4 +99,3 @@ randomShuffle elements len g =
         lastGen [] = g   -- didn't use the generator yet
         lastGen (lst:[]) = lst
         lastGen gens = lastGen (drop 1 gens)
-
