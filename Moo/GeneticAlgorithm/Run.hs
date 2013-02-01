@@ -13,6 +13,7 @@ module Moo.GeneticAlgorithm.Run (
   -- * Iteration control
   , loopUntil
   , loopUntilWithHooks
+  , loopUntilWithIO
   , Cond(..), WriterHook(..)
 ) where
 
@@ -67,27 +68,35 @@ withElite n select = \population -> do
 -- Termination condition @cond@ is evaluated before every step.
 -- Return the result of the last step.
 {-# INLINE loopUntil #-}
-loopUntil :: (Monad m)
-      => Cond a           -- ^ termination condition @cond@
-      -> Population a     -- ^ initial population
-      -> (Population a -> m (Population a))
-                         -- ^ @step@ function to produce the next generation
-      -> m (Population a) -- ^ final population
-loopUntil cond pop0 step = go cond pop0
+loopUntil :: (Monad m) =>
+             Cond a
+          -- ^ termination condition @cond@
+          -> (Population a -> m (Population a))
+          -- ^ @step@ function to produce the next generation
+          -> Population a
+          -- ^ initial population
+          -> m (Population a)
+           -- ^ final population
+loopUntil cond step pop0 = go cond pop0
   where
     go cond !x
        | evalCond cond x  = return x
        | otherwise        = step x >>= go (countdownCond cond)
 
+-- | GA iteration interleaved with the same-monad logging hooks.
 {-# INLINE loopUntilWithHooks #-}
-loopUntilWithHooks :: (Monad m, Monoid w)
-      => Cond a           -- ^ termination condition @cond@
-      -> [WriterHook a m w] -- ^ periodic side-effect actions, usually logging
-      -> Population a     -- ^ initial population
-      -> (Population a -> m (Population a))
-                         -- ^ @step@ function to produce the next generation
-      -> m (Population a, w) -- ^ final population
-loopUntilWithHooks cond hooks pop0 step = go cond 0 mempty pop0
+loopUntilWithHooks :: (Monad m, Monoid w) =>
+                      [WriterHook a m w]
+                   -- ^ periodic side-effect actions, usually logging
+                   -> Cond a
+                   -- ^ termination condition @cond@
+                   -> (Population a -> m (Population a))
+                   -- ^ @step@ function to produce the next generation
+                   -> Population a
+                   -- ^ initial population
+                   -> m (Population a, w)
+                   -- ^ final population
+loopUntilWithHooks hooks cond step pop0 = go cond 0 mempty pop0
   where
     -- go :: Cond a -> Int -> w -> Population a -> m (Population a, w)
     go cond !i !w !x = do
@@ -102,6 +111,35 @@ loopUntilWithHooks cond hooks pop0 step = go cond 0 mempty pop0
     runHook !i !x (DoEvery n dowhat)
         | (rem i n) == 0 = dowhat x >> return mempty
         | otherwise      = return mempty
+
+
+-- | GA iteration interleaved with IO (for logging or saving the
+-- intermediate results); it takes and returns the updated random
+-- number generator explicitly.
+{-# INLINE loopUntilWithIO #-}
+loopUntilWithIO :: (Int -> Population a -> IO ())
+                -- ^ an IO action which takes generation count and the current population;
+                -- it is executed for every new generation.
+                -> Cond a
+                -- ^ termination condition @cond@
+                -> (Population a -> Rand (Population a))
+                -- ^ @step@ function to produce the next generation
+                -> Population a
+                -- ^ initial population @pop0@
+                -> PureMT
+                -- ^ random number generator
+                -> IO (Population a, PureMT)
+                -- ^ final population and the new state of the random number generator
+loopUntilWithIO io cond step pop0 rng = go cond 0 rng pop0
+  where
+    -- go :: Cond a -> Int -> PureMT -> Population a -> IO (Population a, PureMT)
+    go cond !i !rng !x
+       | evalCond cond x  = return (x, rng)
+       | otherwise        = do
+          let (x', rng') = runRandom (step x) rng
+          let i' = i + 1
+          io i' x'
+          go (countdownCond cond) i' rng' x'
 
 -- | Hooks to run every nth iteration starting from 0.
 data (Monad m, Monoid w) => WriterHook a m w =

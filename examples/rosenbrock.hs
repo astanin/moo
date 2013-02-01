@@ -1,5 +1,15 @@
 {- Minimize Rosenbrock function using real-valued genetic algorithm.
    Optimal value x* = (1,...,1). F(x*) = 0.
+
+   It is a real-values genetic algorithm. The user may choose a
+   mutation and crossover operators.  This example uses hooks to save
+   evolution history.
+
+   To run:
+
+       ghc --make rosenbrock.hs
+       ./rosenbrock gm blxa
+
 -}
 
 import Moo.GeneticAlgorithm.Continuous
@@ -9,9 +19,9 @@ import Moo.GeneticAlgorithm.Run
 import Control.Monad
 import Data.List
 import Data.Ord (comparing)
-import Print (printBest)
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
+import Text.Printf (printf)
 
 rosenbrock :: [Double] -> Double
 rosenbrock xs = sum . map f $ zip xs (drop 1 xs)
@@ -56,14 +66,32 @@ printUsage = do
   mops = intercalate "|" (map fst mutationOps)
   xops = intercalate "|" (map fst crossoverOps)
 
+logStats = WriteEvery 10 $ \pop ->
+             let pop' =  sortByFitness pop
+                 bestfitness = snd $ head pop'
+                 medianfitness = snd $ pop' !! (length pop' `div` 2)
+             in  [(medianfitness, bestfitness)]
+
+printStats :: [(Fitness, Fitness)] -> IO ()
+printStats stats = do
+  printf "# %-13s %15s\n" "medianFitness" "bestFitness"
+  flip mapM_ stats $ \(median, best) ->
+      printf "%15.3g\t%15.3g\n" median best
+
 geneticAlgorithm mutate crossover = do
   -- initial population
   genomes0 <- replicateM popsize $ replicateM nvariables (getRandomR xrange)
   let pop0 = evalFitness fitness genomes0
   let step = nextGeneration elitesize fitness select crossover mutate
   -- run genetic algorithm
-  loopUntil (MaxFitness (>= (-precision)) `Or` Iteration maxiters) pop0 step
+  loopUntilWithHooks [logStats] (MaxFitness (>= (-precision)) `Or` Iteration maxiters) step pop0
 
+
+printBest :: Population Double -> IO ()
+printBest pop = do
+  let bestGenome = fst . head $ sortByFitness pop
+  let vals = map (\x -> printf "%.5f" x) bestGenome
+  putStrLn $ "# best solution: " ++ (intercalate ", " vals)
 
 -- usage: rosenbrock mutationOperator crossoverOperator
 main = do
@@ -73,8 +101,10 @@ main = do
            _        -> printUsage
   case conf of
     (Just mutate, Just crossover) -> do
-       pop <- runGA $ geneticAlgorithm mutate crossover
-       printBest show pop
+       (pop, stats) <- runGA $ geneticAlgorithm mutate crossover
+       printStats stats
+       printBest pop
+       -- exit status depends on convergence
        let bestF = snd . head . sortBy (comparing (snd)) $ pop
        if (bestF >= (-precision))
           then exitWith ExitSuccess
