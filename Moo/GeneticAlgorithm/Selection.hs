@@ -85,5 +85,4 @@ sortByFitness = sortBy (\(_,a) (_,b) -> compare b a)
 -- | Takes a list of (genome,fitness) pairs and returns a list of
 -- genomes sorted by fitness (descending)
 eliteGenomes :: Population a -> [Genome a]
-eliteGenomes = map fst . sortByFitness
-
+eliteGenomes = map takeGenome . sortByFitness

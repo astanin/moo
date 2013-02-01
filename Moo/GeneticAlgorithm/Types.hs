@@ -4,6 +4,7 @@ module Moo.GeneticAlgorithm.Types
       Fitness
     , Genome
     , Population
+    , takeGenome, takeFitness
     -- * GA operators
     , FitnessFunction
     , SelectionOp
@@ -15,6 +16,12 @@ import Moo.GeneticAlgorithm.Random
 type Fitness = Double
 type Genome a = [a]
 type Population a = [(Genome a, Fitness)]
+
+takeGenome :: (Genome a, Fitness) -> Genome a
+takeGenome = fst
+
+takeFitness :: (Genome a, Fitness) -> Fitness
+takeFitness = snd
 
 -- | A fitness functions assigns a fitness score to a genome. The rest of the
 -- individuals of that generation is also provided in case the fitness is
@@ -43,4 +50,3 @@ type CrossoverOp a = [Genome a] -> Rand ([Genome a], [Genome a])
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
 type MutationOp a = Genome a -> Rand (Genome a)
-
