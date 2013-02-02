@@ -52,15 +52,14 @@ data Solver a = Solver {
 
 
 -- default solver for real-valued problems
-solverReal :: RealProblem -> Int -> Int -> CrossoverOp Double -> Int -> Solver Double
-solverReal (RealMinimize f vranges sol) popsize elitesize crossover maxiters =
+solverReal :: RealProblem -> Int -> Int -> CrossoverOp Double -> Cond Double -> Solver Double
+solverReal (RealMinimize f vranges sol) popsize elitesize crossover stopcond =
     let nvars = length vranges
         s = 0.1 * average (map (uncurry subtract) vranges)
         mutate = gauss s nvars
         fitness xs _ = negate (f xs)
         select = tournamentSelect 3 (popsize - elitesize)
-        stop = Iteration maxiters
-    in  Solver popsize elitesize fitness select crossover mutate stop
+    in  Solver popsize elitesize fitness select crossover mutate stopcond
 
 
 runSolverReal :: RealProblem
