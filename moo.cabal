@@ -57,7 +57,12 @@ Test-Suite test-problems
       moo
     , base
     , HUnit
-
+    , random >= 0.1
+    , random-shuffle >= 0.0.2
+    , monad-mersenne-random
+    , mersenne-random-pure64
+    , gray-code >= 0.2.1
+    , mtl
 
 source-repository head
   type:     git
