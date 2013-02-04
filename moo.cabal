@@ -47,8 +47,8 @@ Library
                       , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Random
                       , Moo.GeneticAlgorithm.Utilities
-    other-modules:      Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Statistics
+    other-modules:      Moo.GeneticAlgorithm.LinAlg
 
 
 source-repository head
