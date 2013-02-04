@@ -24,7 +24,7 @@ maintainer:         Sergey Astanin <s.astanin@gmail.com>
 author:             Sergey Astanin <s.astanin@gmail.com>
 author:             Erlend Hamberg
 stability:          experimental
-homepage:           http://www.github.com/sergeyastanin/moo/
+homepage:           http://www.github.com/astanin/moo/
 cabal-version:       >=1.8
 
 
@@ -79,4 +79,4 @@ Test-Suite test-problems
 
 source-repository head
   type:     git
-  location: git://github.com/sergeyastanin/moo.git
+  location: git://github.com/astanin/moo.git
