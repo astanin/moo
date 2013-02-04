@@ -91,7 +91,8 @@ geneticAlgorithm mutate crossover = do
   let pop0 = evalFitness fitness genomes0
   let step = nextGeneration elitesize fitness select crossover mutate
   -- run genetic algorithm
-  loopUntilWithHooks [logStats] (MaxFitness (>= (-precision)) `Or` Iteration maxiters) step pop0
+  let stopcond = IfFitness ((>= -precision) . maximum) `Or` Iteration maxiters
+  loopUntilWithHooks [logStats] stopcond step pop0
 
 
 printBest :: Population Double -> IO ()

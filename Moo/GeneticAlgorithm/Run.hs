@@ -18,7 +18,6 @@ module Moo.GeneticAlgorithm.Run (
 ) where
 
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Utilities (minFitness, maxFitness, avgFitness, stdDeviation)
 import Moo.GeneticAlgorithm.Selection (sortByFitness)
 import Moo.GeneticAlgorithm.Types
 
@@ -147,21 +146,13 @@ data (Monad m, Monoid w) =>
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
       Iteration Int                  -- ^ becomes @True@ after /n/ iterations
-    | MaxFitness (Fitness -> Bool)   -- ^ consider the maximal observed fitness
-    | MinFitness (Fitness -> Bool)   -- ^ consider the minimal observed fitness
-    | AvgFitness (Fitness -> Bool)   -- ^ consider the average observed fitness
-    | FitnessStdev (Fitness -> Bool) -- ^ consider standard deviation of fitness
-                                     -- within population; may be used to
-                                     -- detect premature convergence
+    | IfFitness ([Fitness] -> Bool)  -- ^ population fitness satisfies some condition
     | Or (Cond a) (Cond a)
     | And (Cond a) (Cond a)
 
 evalCond :: (Cond a) -> Population a -> Bool
 evalCond (Iteration n) _  = n <= 0
-evalCond (MaxFitness cond) p = cond . maxFitness $ p
-evalCond (MinFitness cond) p = cond . minFitness $ p
-evalCond (AvgFitness cond) p = cond . avgFitness $ p
-evalCond (FitnessStdev cond) p = cond . stdDeviation $ p
+evalCond (IfFitness cond) p = cond . map takeFitness $ p
 evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
 evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
 

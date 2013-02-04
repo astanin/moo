@@ -10,16 +10,10 @@ module Moo.GeneticAlgorithm.Utilities
   -- * Non-deterministic functions
     getRandomGenomes
   , withProbability
-  -- * Common digest functions
-  , avgFitness
-  , maxFitness
-  , minFitness
-  , stdDeviation
 ) where
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Statistics (average, variance)
 
 import Control.Monad.Mersenne.Random
 import Control.Monad (liftM, replicateM)
@@ -55,20 +49,3 @@ getRandomGenomes :: (Enum a)
 getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
                                in  R gs rng'
-
-
--- |Returns the average fitnesses in a population.
-avgFitness :: Population a -> Fitness
-avgFitness = average . map snd
-
--- |Returns the maximum fitness in a population.
-maxFitness :: Population a -> Fitness
-maxFitness = maximum . map snd
-
--- |Returns the minimum fitness in a population.
-minFitness :: Population a -> Fitness
-minFitness = minimum . map snd
-
--- |Returns the standard deviation of the fitness values in a population.
-stdDeviation :: Population a -> Double
-stdDeviation = sqrt . variance . map snd

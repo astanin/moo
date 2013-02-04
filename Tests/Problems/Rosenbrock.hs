@@ -42,7 +42,7 @@ testRosenbrock = TestList
       let tolerance = 1e-6  -- fitness residual
       let maxiters = 500
       let problem = RealMinimize rosenbrock [(-20,20),(-20,20)] [1,1]
-      let stop = ((Iteration maxiters) `Or` (MaxFitness (>= -tolerance)))
+      let stop = Iteration maxiters `Or` IfFitness ((>= -tolerance) . maximum)
       let solver = solverReal problem 101 11 sbx stop
       (pop, dist) <- runSolverReal problem solver
       let best = head $ sortByFitness pop
