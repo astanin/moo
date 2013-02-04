@@ -13,8 +13,8 @@
    To visualize the output in gnuplot:
 
        % gnuplot
-       > set key bottom
-       > plot [25:] 'output.txt' u 1:2 w l t 'median value', '' u 1:3 w l t 'best value' lt 3
+       > set logscale y ; set xlabel 'generation' ;
+       > plot 'output.txt' u 1:(-$2) w l t 'median', '' u 1:(-$3) w l t 'best' lt 3
 
 
 -}
@@ -40,13 +40,13 @@ xrange = (-30.0, 30.0)
 popsize = 100
 precision = 1e-5
 maxiters = 2000 :: Int
-elitesize = 2
+elitesize = 10
 
 -- fitness function is maximized  when Rosenbrock function is minimized
 fitness xs _ = negate $ rosenbrock xs
 
 -- selection: tournament selection
-select = tournamentSelect 3 (popsize-10)
+select = tournamentSelect 3 (popsize-elitesize)
 
 -- Gaussian mutation
 mutate =
