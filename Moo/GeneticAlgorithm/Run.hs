@@ -25,10 +25,15 @@ import Data.Monoid (Monoid, mempty, mconcat)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
-runGA :: Rand a -> IO a
-runGA ga = do
+runGA :: FitnessFunction a           -- ^ fitness function
+      -> Rand [Genome a]             -- ^ function to create initial population
+      -> (Population a -> Rand b)    -- ^ genetic algorithm
+      -> IO b                        -- ^ final population
+runGA fitness initialize ga = do
   rng <- newPureMT
-  return $ evalRandom ga rng
+  let (genomes0, rng') = runRandom initialize rng
+  let pop0 = evalFitness fitness genomes0
+  return $ evalRandom (ga pop0) rng'
 
 -- | A single step of the genetic algorithm.
 --

@@ -87,12 +87,12 @@ printStats stats = do
 
 geneticAlgorithm mutate crossover = do
   -- initial population
-  genomes0 <- replicateM popsize $ replicateM nvariables (getRandomR xrange)
-  let pop0 = evalFitness fitness genomes0
+  let initialize = replicateM popsize $ replicateM nvariables (getRandomR xrange)
   let step = nextGeneration elitesize fitness select crossover mutate
-  -- run genetic algorithm
   let stopcond = IfFitness ((>= -precision) . maximum) `Or` Iteration maxiters
-  loopUntilWithHooks [logStats] stopcond step pop0
+  --
+  let ga = loopUntilWithHooks [logStats] stopcond step
+  runGA fitness initialize ga
 
 
 printBest :: Population Double -> IO ()
@@ -109,7 +109,7 @@ main = do
            _        -> printUsage
   case conf of
     (Just mutate, Just crossover) -> do
-       (pop, stats) <- runGA $ geneticAlgorithm mutate crossover
+       (pop, stats) <- geneticAlgorithm mutate crossover
        printStats stats
        printBest pop
        -- exit status depends on convergence

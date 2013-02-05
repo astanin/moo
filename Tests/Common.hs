@@ -67,12 +67,11 @@ runSolverReal :: RealProblem
               -> IO (Population Double, Double)
               -- ^ final population and euclidean distance from the known solution
 runSolverReal problem solver = do
-    pop <- runGA $ do
-             genomes0 <- randomGenomesReal (s'popsize solver) (minimizeVarRange problem)
-             let pop0 = evalFitness (s'fitness solver) genomes0
-             let step = nextGeneration (s'elitesize solver) (s'fitness solver)
-                        (s'select solver) (s'crossover solver) (s'mutate solver)
-             loopUntil (s'stopcond solver) step pop0
+    let init = randomGenomesReal (s'popsize solver) (minimizeVarRange problem)
+    let step = nextGeneration (s'elitesize solver) (s'fitness solver)
+               (s'select solver) (s'crossover solver) (s'mutate solver)
+    let ga   = loopUntil (s'stopcond solver) step
+    pop <- runGA (s'fitness solver) init ga
     let best = takeGenome . head $ sortByFitness pop
     let dist = sqrt . sum . map (^2) $ zipWith (-) best (minimizeSolution problem)
     return (pop, dist)
