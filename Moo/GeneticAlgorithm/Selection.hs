@@ -11,6 +11,8 @@ module Moo.GeneticAlgorithm.Selection
   , tournamentSelect
   , sortByFitness
   , withScale
+  , withFitnessScale
+  , minimizing, minimizing'
   , sigmaScale
   , rankScale
   ) where
@@ -20,11 +22,18 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Statistics (variance, average)
 
 import Control.Monad (liftM, replicateM)
+import Control.Arrow (second)
 import Data.List (sortBy)
 
 -- | Apply given scaling or other transform to population before selection.
 withScale :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a
 withScale scale select = \pop -> select (scale pop)
+
+-- | Transform fitness values before seletion.
+withFitnessScale :: (Fitness -> Fitness) -> SelectionOp a -> SelectionOp a
+withFitnessScale f select =
+    let scale = map (second f)
+    in  withScale scale select
 
 -- | Sigma scaling. Fitness values of all genomes are scaled with
 -- respect to standard devation of population fitness.
@@ -76,6 +85,16 @@ tournamentSelect size n xs = replicateM n tournament1
     contestants <- randomSample size xs
     let winner = head $ eliteGenomes contestants
     return winner
+
+-- |Transform a maximizing selection operator to minimizing one
+-- by changing fitness sign.
+minimizing :: SelectionOp a -> SelectionOp a
+minimizing = withFitnessScale negate
+
+-- |Transform a maximizing selection operator to minimizing one
+-- by applying @1/1+x@ fitness transform.
+minimizing' :: SelectionOp a -> SelectionOp a
+minimizing' = withFitnessScale (\x -> 1.0 / (1.0 + x))
 
 -- | Sort population (a list of (genome,fitness) pairs) by fitness
 -- (descending). The best genomes are put in the head of the list.
