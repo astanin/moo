@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Selection
     rouletteSelect
   , tournamentSelect
   , sortByFitness
+  , sortByCost
   , withScale
   , withFitnessScale
   , minimizing, minimizing'
@@ -24,6 +25,7 @@ import Moo.GeneticAlgorithm.Statistics (variance, average)
 import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
 import Data.List (sortBy)
+import Data.Function (on)
 
 -- | Apply given scaling or other transform to population before selection.
 withScale :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a
@@ -99,7 +101,13 @@ minimizing' = withFitnessScale (\x -> 1.0 / (1.0 + x))
 -- | Sort population (a list of (genome,fitness) pairs) by fitness
 -- (descending). The best genomes are put in the head of the list.
 sortByFitness :: Population a -> Population a
-sortByFitness = sortBy (\(_,a) (_,b) -> compare b a)
+sortByFitness = sortBy (flip compare `on` snd)
+
+-- | Sort population by increasing fitness (also known as cost for
+-- minimization problems). The genomes with the smallest fitness
+-- (cost) are put in the head of the list.
+sortByCost :: Population a -> Population a
+sortByCost = sortBy (compare `on` snd)
 
 -- | Takes a list of (genome,fitness) pairs and returns a list of
 -- genomes sorted by fitness (descending)
