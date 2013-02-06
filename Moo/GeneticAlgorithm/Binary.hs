@@ -34,6 +34,8 @@ module Moo.GeneticAlgorithm.Binary (
   , getRandomBinaryGenomes
   -- * Mutation
   , pointMutate
+  , asymmetricMutate
+  , constFrequencyMutate
   -- * Crossover
   , module Moo.GeneticAlgorithm.Crossover
   -- * Selection
@@ -154,3 +156,50 @@ pointMutate p bits = withProbability p bits $ \bits -> do
        r <- getRandomR (0, length bits - 1)
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
+
+
+-- |Flip @1@s and @0@s with different probabilities. This may help to control
+-- the relative frequencies of @1@s and @0@s in the genome.
+asymmetricMutate :: Double   -- ^ probability of a @False@ bit to become @True@
+                 -> Double   -- ^ probability of a @True@ bit to become @False@
+                 -> MutationOp Bool
+asymmetricMutate prob0to1 prob1to0 = mapM flipbit
+    where
+      flipbit False = withProbability prob0to1 False (return . not)
+      flipbit True  = withProbability prob1to0 True  (return . not)
+
+
+-- Preserving the relative frequencies of ones and zeros:
+--
+-- ones' = p0*(n-ones) + (1-p1)*ones
+-- ones + p0*ones + (p1 - 1)*ones = p0*n
+-- p0 + p1 = p0 * n / ones
+--
+-- zeros' = (1-p0)*zeros + p1*(n-zeros)
+-- zeros + (p0 - 1)*zeros + p1*zeros = n*p1
+-- p0 + p1 = p1 * n / zeros
+--
+-- => p0 * zeros = p1 * ones
+--
+-- Average number of changed bits:
+--
+-- m = p0*zeros + p1*ones
+--
+-- => p0 = m / (2*zeros)
+--    p1 = m / (2*ones)
+--
+-- Probability of changing a bit:
+--
+-- p = m / n
+--
+
+-- |Flip @m@ bits on average, keeping the relative frequency of @0@s
+-- and @1@s in the genome constant.
+constFrequencyMutate :: Real a
+                     => a                -- ^ average number of bits to change
+                     -> MutationOp Bool
+constFrequencyMutate m bits =
+    let (ones, zeros) = foldr (\b (o,z) -> if b then (o+1,z) else (o,z+1)) (0,0) bits
+        p0to1 = fromRational $ 0.5 * (toRational m) / zeros
+        p1to0 = fromRational $ 0.5 * (toRational m) / ones
+    in  asymmetricMutate p0to1 p1to0 bits
