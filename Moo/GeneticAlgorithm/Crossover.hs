@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Crossover
     onePointCrossover
   , twoPointCrossover
   , uniformCrossover
+  , noCrossover
 ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -58,4 +59,3 @@ uniformCrossover p (g1:g2:rest) = do
   return ([h1,h2], rest)
   where
     swap (x, y) = withProbability p (x,y) $ \(a,b) -> return (b,a)
-

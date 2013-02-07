@@ -9,7 +9,11 @@ module Moo.GeneticAlgorithm.Types
     , FitnessFunction
     , SelectionOp
     , CrossoverOp
-    , MutationOp ) where
+    , MutationOp
+    -- * Dummy operators
+    , noMutation
+    , noCrossover
+    ) where
 
 import Moo.GeneticAlgorithm.Random
 
@@ -50,3 +54,11 @@ type CrossoverOp a = [Genome a] -> Rand ([Genome a], [Genome a])
 
 -- | A mutation operator takes a genome and returns an altered copy of it.
 type MutationOp a = Genome a -> Rand (Genome a)
+
+-- | Don't crossover.
+noCrossover :: CrossoverOp a
+noCrossover genomes = return (genomes, [])
+
+-- | Don't mutate.
+noMutation :: MutationOp a
+noMutation = return
