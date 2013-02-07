@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification #-}
 {- |
 
 Helper functions to run genetic algorithms and control iterations.
@@ -85,7 +85,7 @@ loopUntil cond step pop0 = go cond pop0
   where
     go cond !x
        | evalCond cond x  = return x
-       | otherwise        = step x >>= go (countdownCond cond)
+       | otherwise        = step x >>= \pop -> go (updateCond pop cond) pop
 
 -- | GA iteration interleaved with the same-monad logging hooks.
 {-# INLINE loopUntilWithHooks #-}
@@ -108,7 +108,7 @@ loopUntilWithHooks hooks cond step pop0 = go cond 0 mempty pop0
       let w' = mconcat (w:ws)
       if (evalCond cond x)
         then return (x, w')
-        else step x >>= go (countdownCond cond) (i+1) w'
+        else step x >>= \pop -> go (updateCond pop cond) (i+1) w' pop
     runHook !i !x (WriteEvery n write)
         | (rem i n) == 0 = return (write i x)
         | otherwise      = return mempty
@@ -140,7 +140,7 @@ loopUntilWithIO io cond step pop0 rng = go cond 0 rng pop0
           let (x', rng') = runRandom (step x) rng
           let i' = i + 1
           io i' x'
-          go (countdownCond cond) i' rng' x'
+          go (updateCond x' cond) i' rng' x'
 
 -- | Hooks to run every nth iteration starting from 0.
 -- The second argument is a function which takes generation count
@@ -152,20 +152,34 @@ data (Monad m, Monoid w) =>
 data Cond a =
       Iteration Int                  -- ^ becomes @True@ after /n/ iterations
     | IfFitness ([Fitness] -> Bool)  -- ^ population fitness satisfies some condition
+    | forall b . Eq b => GensNoChange
+      { cond'gensnochange ::  Int -- ^ max number of generations for an indicator to be unchanged
+      , cond'nochangefunc ::  [Fitness] -> b     -- ^ some indicator
+      , cond'nochangecount :: Maybe (b, Int) }   -- ^ counter (Nothing initially)
     | Or (Cond a) (Cond a)
     | And (Cond a) (Cond a)
 
 evalCond :: (Cond a) -> Population a -> Bool
 evalCond (Iteration n) _  = n <= 0
-evalCond (IfFitness cond) p = cond . map takeFitness $ p
+evalCond (IfFitness cond) p = cond . takeFitnesses $ p
+evalCond (GensNoChange n _ Nothing) _ = n <= 1
+evalCond (GensNoChange n f (Just (prev, count))) p =
+    let new = f . map takeFitness $ p
+    in  (new == prev) && (count + 1 > n)
 evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
 evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
 
-countdownCond :: Cond a -> Cond a
-countdownCond (Iteration n) = Iteration (n-1)
-countdownCond (And c1 c2) = And (countdownCond c1) (countdownCond c2)
-countdownCond (Or c1 c2) = Or (countdownCond c1) (countdownCond c2)
-countdownCond c = c
+updateCond :: Population a -> Cond a -> Cond a
+updateCond _ (Iteration n) = Iteration (n-1)
+updateCond p (GensNoChange n f Nothing) =
+    GensNoChange n f (Just (f (takeFitnesses p), 1)) -- called 1st time _after_ the 1st iteration
+updateCond p (GensNoChange n f (Just (v, c))) =
+    let v' = f (takeFitnesses p) in if v' == v
+       then GensNoChange n f (Just (v, c+1))
+       else GensNoChange n f (Just (v', 1))
+updateCond p (And c1 c2) = And (updateCond p c1) (updateCond p c2)
+updateCond p (Or c1 c2) = Or (updateCond p c1) (updateCond p c2)
+updateCond _ c = c
 
 -- | Evaluate fitness for all genomes in the population.
 evalFitness :: FitnessFunction a -> [Genome a] -> Population a
@@ -180,3 +194,6 @@ doCrossovers parents xover = do
   (children', parents') <- xover parents
   rest <- doCrossovers parents' xover
   return $ children' ++ rest
+
+takeFitnesses :: Population a -> [Fitness]
+takeFitnesses = map takeFitness

@@ -9,13 +9,14 @@ import Test.HUnit
 import Text.Printf
 import Data.List (intercalate)
 import System.IO (hPutStrLn, stderr)
+import Control.Monad (replicateM)
 
 import Tests.Common
 
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Selection (sortByFitness)
-import Moo.GeneticAlgorithm.Run (Cond(..))
-
+import Moo.GeneticAlgorithm.Selection
+import Moo.GeneticAlgorithm.Run
+import Moo.GeneticAlgorithm.Random
 
 pr = hPutStrLn stderr
 
@@ -64,4 +65,30 @@ testRosenbrock = TestList
       pr $ "best:    " ++ (intercalate " " (map (printf "%.5f") bestG))
       pr $ "error:   " ++ (printf "%.5g" dist)
       assertBool ("error >= " ++ show tolerance) (dist < tolerance)
+  , "Rosenbrock 2D GM/UNDX/GensNoChange 10" ~: do
+      let maxiters = 2000
+      let popsize = 101
+      let elite = 11
+      let nochange = 10
+      let fitness xs _ = rosenbrock $ xs
+      let select = minimizing $ tournamentSelect 3 (popsize - elite)
+      let stop = (GensNoChange nochange (round.(*1e3).maximum) Nothing) `Or` (Iteration maxiters)
+      let step = nextGeneration elite fitness select undx (gauss 1.0 2)
+      let log = WriteEvery 1 (\_ p -> [maximum . map takeFitness $ p])
+      let ga = loopUntilWithHooks [log] stop step
+
+      rng <- newPureMT
+      let (pop, hist) = flip evalRandom rng $ do
+                          gens0 <- replicateM popsize . replicateM 2 $ getRandomR (-10,10)
+                          let pop0 = evalFitness fitness gens0
+                          ga pop0
+
+      let best = takeGenome . head $ sortByCost pop
+      pr ""
+      pr $ "best:    " ++ (intercalate " " (map (printf "%.5f") best))
+      let lastbest = take nochange (reverse hist)
+      pr $ "last best: "
+      mapM_ pr (map show $ reverse lastbest)
+      assertBool "false positive on GensNoChange"
+                     (all id $ zipWith (==) lastbest (drop 1 lastbest))
   ]
