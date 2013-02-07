@@ -149,6 +149,7 @@ getRandomBinaryGenomes :: Int -- ^ how many genomes to generate
                        -> Rand ([Genome Bool])
 getRandomBinaryGenomes n len = getRandomGenomes n len (False,True)
 
+
 -- |Flips a random bit along the length of the genome with probability @p@.
 -- With probability @(1 - p)@ the genome remains unaffected.
 pointMutate :: Double -> MutationOp Bool

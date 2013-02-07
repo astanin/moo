@@ -211,4 +211,3 @@ gaussianMutate p sigma vars = mapM mutate vars
     mutate v  = withProbability p v $ \v -> do
           n <- getNormal
           return (v + sigma*n)
-
