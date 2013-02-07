@@ -32,7 +32,7 @@ testRosenbrock = TestList
       let tolerance = 1e-3  -- solution error
       let maxiters = 500
       let problem = RealMinimize rosenbrock [(-10,10),(-20,20)]  [1,1]
-      let solver = solverReal problem 101 11 undx (Iteration maxiters)
+      let solver = solverReal problem 101 11 undx (Generations maxiters)
       (pop, dist) <- runSolverReal problem solver
       let best = takeGenome . head $ sortByFitness pop
       pr ""
@@ -43,7 +43,7 @@ testRosenbrock = TestList
       let tolerance = 1e-6  -- fitness residual
       let maxiters = 500
       let problem = RealMinimize rosenbrock [(-20,20),(-20,20)] [1,1]
-      let stop = Iteration maxiters `Or` IfFitness ((>= -tolerance) . maximum)
+      let stop = Generations maxiters `Or` IfFitness ((>= -tolerance) . maximum)
       let solver = solverReal problem 101 11 sbx stop
       (pop, dist) <- runSolverReal problem solver
       let best = head $ sortByFitness pop
@@ -57,7 +57,7 @@ testRosenbrock = TestList
       let tolerance = 1e-3  -- solution error
       let maxiters = 500
       let problem = RealMinimize rosenbrock [(-20,20),(-20,20)] [1,1]
-      let stop = Iteration maxiters
+      let stop = Generations maxiters
       let solver = solverReal problem 101 11 blxa stop
       (pop, dist) <- runSolverReal problem solver
       let bestG = takeGenome . head $ sortByFitness pop
@@ -72,7 +72,7 @@ testRosenbrock = TestList
       let nochange = 10
       let fitness xs _ = rosenbrock $ xs
       let select = minimizing $ tournamentSelect 3 (popsize - elite)
-      let stop = (GensNoChange nochange (round.(*1e3).maximum) Nothing) `Or` (Iteration maxiters)
+      let stop = (GensNoChange nochange (round.(*1e3).maximum) Nothing) `Or` (Generations maxiters)
       let step = nextGeneration elite fitness select undx (gauss 1.0 2)
       let log = WriteEvery 1 (\_ p -> [maximum . map takeFitness $ p])
       let ga = loopUntilWithHooks [log] stop step

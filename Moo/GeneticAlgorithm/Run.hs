@@ -150,17 +150,18 @@ data (Monad m, Monoid w) =>
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
-      Iteration Int                  -- ^ becomes @True@ after /n/ iterations
-    | IfFitness ([Fitness] -> Bool)  -- ^ population fitness satisfies some condition
+      Generations Int                   -- ^ stop after @n@ generations
+    | IfFitness ([Fitness] -> Bool)     -- ^ stop when fitness satisfies the @predicate@
     | forall b . Eq b => GensNoChange
-      { cond'gensnochange ::  Int -- ^ max number of generations for an indicator to be unchanged
-      , cond'nochangefunc ::  [Fitness] -> b     -- ^ some indicator
-      , cond'nochangecount :: Maybe (b, Int) }   -- ^ counter (Nothing initially)
-    | Or (Cond a) (Cond a)
-    | And (Cond a) (Cond a)
+      { c'maxgens ::  Int                 -- ^ max number of generations for an indicator to be the same
+      , c'indicator ::  [Fitness] -> b    -- ^ stall indicator function
+      , c'counter :: Maybe (b, Int)       -- ^ a counter (initially @Nothing@)
+      }                                 -- ^ terminate when evolution stalls
+    | Or (Cond a) (Cond a)              -- ^ stop when at least one of two conditions holds
+    | And (Cond a) (Cond a)             -- ^ stop when both conditions hold
 
 evalCond :: (Cond a) -> Population a -> Bool
-evalCond (Iteration n) _  = n <= 0
+evalCond (Generations n) _  = n <= 0
 evalCond (IfFitness cond) p = cond . takeFitnesses $ p
 evalCond (GensNoChange n _ Nothing) _ = n <= 1
 evalCond (GensNoChange n f (Just (prev, count))) p =
@@ -170,7 +171,7 @@ evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
 evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
 
 updateCond :: Population a -> Cond a -> Cond a
-updateCond _ (Iteration n) = Iteration (n-1)
+updateCond _ (Generations n) = Generations (n-1)
 updateCond p (GensNoChange n f Nothing) =
     GensNoChange n f (Just (f (takeFitnesses p), 1)) -- called 1st time _after_ the 1st iteration
 updateCond p (GensNoChange n f (Just (v, c))) =

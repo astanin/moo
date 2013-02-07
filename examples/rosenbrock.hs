@@ -89,7 +89,7 @@ geneticAlgorithm mutate crossover = do
   -- initial population
   let initialize = replicateM popsize $ replicateM nvariables (getRandomR xrange)
   let step = nextGeneration elitesize fitness select crossover mutate
-  let stopcond = IfFitness ((>= -precision) . maximum) `Or` Iteration maxiters
+  let stopcond = IfFitness ((>= -precision) . maximum) `Or` Generations maxiters
   --
   let ga = loopUntilWithHooks [logStats] stopcond step
   runGA fitness initialize ga
