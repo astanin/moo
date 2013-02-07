@@ -1,20 +1,52 @@
 # -*- mode: org -*-
 
-** TODO Moo genetic algorithm library, first release [8/11]
+** TODO Moo genetic algorithm library, first release [9/13]
   - [X] SBX
   - [X] UNDX
-  - [ ] premature convergence check (GensNoChange)
+  - [X] premature convergence check (GensNoChange)
   - [X] loop-with-IO
   - [X] elite as SelectionOp
   - [X] fitness scaling as Population a -> Population a
   - [X] SelectionOp combinator
   - [X] preserve elite in crossover and mutation
   - [X] re-organize modules by coding type: binary, real-valued, permutation
-  - [ ] common framework to run GAs in all examples (CLI)
-  - [ ] tests (or use examples as tests)
+  - [ ] no-op mutation and crossover
+  - [ ] time limit
+  - [ ] rename Fitness to Objective; clean-up minimizing and maximizing selection ops
+  - [ ] don't require to evalFitness for the initial population
 
-** TODO: future releases [0/4]
+
+** TODO Tests [2/3]
+  - [X] Continuous problem (Rosenbrock) [4/4]
+    - [X] BLX
+    - [X] UNDX
+    - [X] SBX
+    - [X] Gaussian mutation
+  - [ ] Some binary problem [0/8]
+    - [ ] gray encoding
+    - [ ] gray real encoding
+    - [ ] binary encoding
+    - [ ] point mutation
+    - [ ] constant frequency mutation
+    - [ ] 1-point crossover
+    - [ ] 2-point crossover
+    - [ ] uniform crossover
+  - [X] Stop conditions [4/5]
+    - [X] # of generations
+    - [X] GensNoChange
+    - [X] fitness condition
+    - [X] Or
+    - [ ] And
+  - [ ] Loop constructs [/]
+    - [ ] loop
+    - [ ] loopWithLog
+    - [ ] loopIO
+
+
+** TODO: future releases [1/6]
   - [ ] permutation GAs, TSP example
-  - [ ] minimizing SelectionOp's
+  - [X] minimizing SelectionOp's
   - [ ] time-dependent mutation
   - [ ] NSGA-II
+  - [ ] reduce boilerplate for the common default scenarios
+  - [ ] common framework to run GAs in all examples (CLI)
