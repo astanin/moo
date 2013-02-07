@@ -75,7 +75,7 @@ testRosenbrock = TestList
       let stop = (GensNoChange nochange (round.(*1e3).maximum) Nothing) `Or` (Generations maxiters)
       let step = nextGeneration elite fitness select undx (gauss 1.0 2)
       let log = WriteEvery 1 (\_ p -> [maximum . map takeFitness $ p])
-      let ga = loopUntilWithHooks [log] stop step
+      let ga = loopWithLog log stop step
 
       rng <- newPureMT
       let (pop, hist) = flip evalRandom rng $ do

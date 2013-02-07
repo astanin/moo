@@ -11,17 +11,15 @@ module Moo.GeneticAlgorithm.Run (
   , nextGeneration
   , evalFitness
   -- * Iteration control
-  , loopUntil
-  , loopUntilWithHooks
-  , loopUntilWithIO
-  , Cond(..), WriterHook(..)
+  , loop, loopWithLog, loopIO
+  , Cond(..), LogHook(..)
 ) where
 
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection (sortByFitness)
 import Moo.GeneticAlgorithm.Types
 
-import Data.Monoid (Monoid, mempty, mconcat)
+import Data.Monoid (Monoid, mempty, mappend)
 
 -- | Helper function to run an entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
@@ -71,67 +69,67 @@ withElite n select = \population -> do
 -- | Run strict iterations of the genetic algorithm defined by @step@.
 -- Termination condition @cond@ is evaluated before every step.
 -- Return the result of the last step.
-{-# INLINE loopUntil #-}
-loopUntil :: (Monad m) =>
-             Cond a
-          -- ^ termination condition @cond@
-          -> (Population a -> m (Population a))
-          -- ^ @step@ function to produce the next generation
-          -> Population a
-          -- ^ initial population
-          -> m (Population a)
-           -- ^ final population
-loopUntil cond step pop0 = go cond pop0
+{-# INLINE loop #-}
+loop :: (Monad m)
+     => Cond a
+     -- ^ termination condition @cond@
+     -> (Population a -> m (Population a))
+     -- ^ @step@ function to produce the next generation
+     -> Population a
+     -- ^ initial population
+     -> m (Population a)
+      -- ^ final population
+loop cond step pop0 = go cond pop0
   where
     go cond !x
        | evalCond cond x  = return x
        | otherwise        = step x >>= \pop -> go (updateCond pop cond) pop
 
 -- | GA iteration interleaved with the same-monad logging hooks.
-{-# INLINE loopUntilWithHooks #-}
-loopUntilWithHooks :: (Monad m, Monoid w) =>
-                      [WriterHook a m w]
-                   -- ^ periodic side-effect actions, usually logging
-                   -> Cond a
-                   -- ^ termination condition @cond@
-                   -> (Population a -> m (Population a))
-                   -- ^ @step@ function to produce the next generation
-                   -> Population a
-                   -- ^ initial population
-                   -> m (Population a, w)
-                   -- ^ final population
-loopUntilWithHooks hooks cond step pop0 = go cond 0 mempty pop0
+{-# INLINE loopWithLog #-}
+loopWithLog :: (Monad m, Monoid w)
+     => LogHook a m w
+     -- ^ periodic logging action
+     -> Cond a
+     -- ^ termination condition @cond@
+     -> (Population a -> m (Population a))
+     -- ^ @step@ function to produce the next generation
+     -> Population a
+     -- ^ initial population
+     -> m (Population a, w)
+     -- ^ final population
+loopWithLog hook cond step pop0 = go cond 0 mempty pop0
   where
     -- go :: Cond a -> Int -> w -> Population a -> m (Population a, w)
     go cond !i !w !x = do
-      ws <- mapM (runHook i x) hooks
-      let w' = mconcat (w:ws)
+      let logitem = runHook i x hook
+      let w' = mappend w logitem
       if (evalCond cond x)
         then return (x, w')
         else step x >>= \pop -> go (updateCond pop cond) (i+1) w' pop
     runHook !i !x (WriteEvery n write)
-        | (rem i n) == 0 = return (write i x)
-        | otherwise      = return mempty
+        | (rem i n) == 0 = write i x
+        | otherwise      = mempty
 
 
 -- | GA iteration interleaved with IO (for logging or saving the
 -- intermediate results); it takes and returns the updated random
 -- number generator explicitly.
-{-# INLINE loopUntilWithIO #-}
-loopUntilWithIO :: (Int -> Population a -> IO ())
-                -- ^ an IO action which takes generation count and the current population;
-                -- it is executed for every new generation.
-                -> Cond a
-                -- ^ termination condition @cond@
-                -> (Population a -> Rand (Population a))
-                -- ^ @step@ function to produce the next generation
-                -> Population a
-                -- ^ initial population @pop0@
-                -> PureMT
-                -- ^ random number generator
-                -> IO (Population a, PureMT)
-                -- ^ final population and the new state of the random number generator
-loopUntilWithIO io cond step pop0 rng = go cond 0 rng pop0
+{-# INLINE loopIO #-}
+loopIO :: (Int -> Population a -> IO ())
+     -- ^ an IO action which takes generation count and the current population;
+     -- it is executed for every new generation.
+     -> Cond a
+     -- ^ termination condition @cond@
+     -> (Population a -> Rand (Population a))
+     -- ^ @step@ function to produce the next generation
+     -> Population a
+     -- ^ initial population @pop0@
+     -> PureMT
+     -- ^ random number generator
+     -> IO (Population a, PureMT)
+     -- ^ final population and the new state of the random number generator
+loopIO io cond step pop0 rng = go cond 0 rng pop0
   where
     -- go :: Cond a -> Int -> PureMT -> Population a -> IO (Population a, PureMT)
     go cond !i !rng !x
@@ -142,11 +140,10 @@ loopUntilWithIO io cond step pop0 rng = go cond 0 rng pop0
           io i' x'
           go (updateCond x' cond) i' rng' x'
 
--- | Hooks to run every nth iteration starting from 0.
--- The second argument is a function which takes generation count
--- and the current population, and returns some data to save.
-data (Monad m, Monoid w) =>
-    WriterHook a m w = WriteEvery Int (Int -> Population a -> w)
+-- | Logging to run every @n@th iteration starting from 0 (the first parameter).
+-- The logging function takes the current generation count and population.
+data (Monad m, Monoid w) => LogHook a m w =
+    WriteEvery Int (Int -> Population a -> w)
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =

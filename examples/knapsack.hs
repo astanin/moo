@@ -75,7 +75,7 @@ geneticAlgorithm things rng = do
   let pop0 = evalFitness fitness genomes0
   let nextGen = nextGeneration elitesize fitness select (onePointCrossover 0.5) (pointMutate 0.5)
   putStrLn "# generation bestWeight bestValue medianWeight medianValue"
-  (pop, rng'') <- loopUntilWithIO (logStats things) (Generations maxiters) nextGen pop0 rng'
+  (pop, rng'') <- loopIO (logStats things) (Generations maxiters) nextGen pop0 rng'
   return pop
 
 main = do

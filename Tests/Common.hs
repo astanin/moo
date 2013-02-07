@@ -70,7 +70,7 @@ runSolverReal problem solver = do
     let init = randomGenomesReal (s'popsize solver) (minimizeVarRange problem)
     let step = nextGeneration (s'elitesize solver) (s'fitness solver)
                (s'select solver) (s'crossover solver) (s'mutate solver)
-    let ga   = loopUntil (s'stopcond solver) step
+    let ga   = loop (s'stopcond solver) step
     pop <- runGA (s'fitness solver) init ga
     let best = takeGenome . head $ sortByFitness pop
     let dist = sqrt . sum . map (^2) $ zipWith (-) best (minimizeSolution problem)
