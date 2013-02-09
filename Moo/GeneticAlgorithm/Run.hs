@@ -8,11 +8,12 @@ Helper functions to run genetic algorithms and control iterations.
 module Moo.GeneticAlgorithm.Run (
   -- * Running algorithm
     runGA
+  , runIO
   , nextGeneration
   , evalFitness
   -- * Iteration control
   , loop, loopWithLog, loopIO
-  , Cond(..), LogHook(..)
+  , Cond(..), LogHook(..), IOHook(..)
 ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -20,18 +21,34 @@ import Moo.GeneticAlgorithm.Selection (sortByFitness)
 import Moo.GeneticAlgorithm.Types
 
 import Data.Monoid (Monoid, mempty, mappend)
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Control.Monad (liftM, when)
 
--- | Helper function to run an entire algorithm in the 'Rand' monad.
+-- | Helper function to run the entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
 runGA :: FitnessFunction a           -- ^ fitness function
       -> Rand [Genome a]             -- ^ function to create initial population
-      -> (Population a -> Rand b)    -- ^ genetic algorithm
+      -> (Population a -> Rand b)    -- ^ genetic algorithm, see also 'loop' and 'loopWithLog'
       -> IO b                        -- ^ final population
 runGA fitness initialize ga = do
   rng <- newPureMT
   let (genomes0, rng') = runRandom initialize rng
   let pop0 = evalFitness fitness genomes0
   return $ evalRandom (ga pop0) rng'
+
+-- | Helper function to run the entire algorithm in the 'IO' monad.
+runIO :: FitnessFunction a                    -- ^ fitness function
+      -> Rand [Genome a]                      -- ^ function to create initial population
+      -> (IORef PureMT -> Population a -> IO (Population a))
+                                              -- ^ genetic algorithm, see also 'loopIO'
+      -> IO (Population a)                    -- ^ final population
+runIO fitness initialize gaIO = do
+  rng <- newPureMT
+  let (genomes0, rng') = runRandom initialize rng
+  let pop0 = evalFitness fitness genomes0
+  rngref <- newIORef rng'
+  gaIO rngref pop0
 
 -- | A single step of the genetic algorithm.
 --
@@ -116,34 +133,58 @@ loopWithLog hook cond step pop0 = go cond 0 mempty pop0
 -- intermediate results); it takes and returns the updated random
 -- number generator explicitly.
 {-# INLINE loopIO #-}
-loopIO :: (Int -> Population a -> IO ())
-     -- ^ an IO action which takes generation count and the current population;
-     -- it is executed for every new generation.
+loopIO
+     :: [IOHook a]
+     -- ^ input-output actions, special and time-dependent stop conditions
      -> Cond a
      -- ^ termination condition @cond@
      -> (Population a -> Rand (Population a))
      -- ^ @step@ function to produce the next generation
+     -> IORef PureMT
+     -- ^ reference to random number generator
      -> Population a
      -- ^ initial population @pop0@
-     -> PureMT
-     -- ^ random number generator
-     -> IO (Population a, PureMT)
-     -- ^ final population and the new state of the random number generator
-loopIO io cond step pop0 rng = go cond 0 rng pop0
+     -> IO (Population a)
+     -- ^ final population
+loopIO hooks cond step rngref pop0 = do
+  rng <- readIORef rngref
+  start <- realToFrac `liftM` getPOSIXTime
+  (pop, rng') <- go start cond 0 rng pop0
+  writeIORef rngref rng'
+  return pop
   where
-    -- go :: Cond a -> Int -> PureMT -> Population a -> IO (Population a, PureMT)
-    go cond !i !rng !x
-       | evalCond cond x  = return (x, rng)
-       | otherwise        = do
-          let (x', rng') = runRandom (step x) rng
-          let i' = i + 1
-          io i' x'
-          go (updateCond x' cond) i' rng' x'
+    go start cond !i !rng !x = do
+      stop <- (any id) `liftM` (mapM (runhook start i x) hooks)
+      if (stop || evalCond cond x)
+         then return (x, rng)
+         else do
+           let (x', rng') = runRandom (step x) rng
+           let i' = i + 1
+           let cond' = updateCond x' cond
+           go start cond' i' rng' x'
+
+    -- runhook returns True to terminate the loop
+    runhook _ i x (DoEvery n io) = do
+             when ((rem i n) == 0) (io i x)
+             return False
+    runhook _ _ _ (StopWhen iotest)  = iotest
+    runhook start _ _ (TimeLimit limit)  = do
+             now <- realToFrac `liftM` getPOSIXTime
+             return (now >= start + limit)
 
 -- | Logging to run every @n@th iteration starting from 0 (the first parameter).
 -- The logging function takes the current generation count and population.
 data (Monad m, Monoid w) => LogHook a m w =
     WriteEvery Int (Int -> Population a -> w)
+
+-- | Input-output actions, interactive and time-dependent stop conditions.
+data IOHook a
+    = DoEvery { io'n :: Int, io'action :: (Int -> Population a -> IO ()) }
+    -- ^ action to run every @n@th iteration, starting from 0
+    | StopWhen (IO Bool)
+    -- ^ custom or interactive stop condition
+    | TimeLimit { io't :: Double }
+    -- ^ terminate iteration after @t@ seconds
 
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
