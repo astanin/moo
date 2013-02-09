@@ -4,7 +4,7 @@
   with given maximum weight constraint.
 
   It is a binary genetic algorithm. This example interleaves computation
-  with logging in IO monad.
+  with logging in IO monad, and terminates by reaching a time limit.
 
   To run:
 
@@ -52,36 +52,42 @@ totalWeithtAndValue things taken = sumVals (0,0) $ zip taken things
 
 select = tournamentSelect 2 (popsize-elitesize)
 
-logStats :: Problem -> Int -> Population Bool -> IO ()
-logStats things iterno pop = do
-  let gs = map fst . sortByFitness $ pop  -- genomes
-  let best = head gs
-  let median = gs !! (length gs `div` 2)
-  let bvalue = snd $ totalWeithtAndValue things best
-  let mvalue = snd $ totalWeithtAndValue things median
-  putStrLn $ intercalate " " (map show [iterno, mvalue, bvalue])
-
 -- generate items to choose from: [(weight, value)]
-randomProblem ::  PureMT -> (Problem, PureMT)
-randomProblem rng = flip runRandom rng $ do
+randomProblem ::  IO Problem
+randomProblem = do
+  rng <- newPureMT
+  return . flip evalRandom rng $ do
                       weights <- replicateM items $ getRandomR itemWeight
                       values <- replicateM items $ getRandomR itemValue
                       return $ zip weights values
 
-geneticAlgorithm :: Problem -> PureMT -> IO (Population Bool)
-geneticAlgorithm things rng = do
-  let (genomes0, rng') = runRandom (replicateM popsize $ replicateM items getRandom) rng
+geneticAlgorithm :: Problem -> IO (Population Bool)
+geneticAlgorithm things = do
+  let initialize = replicateM popsize $ replicateM items getRandom
   let fitness = totalValue things
-  let pop0 = evalFitness fitness genomes0
   let nextGen = nextGeneration elitesize fitness select (onePointCrossover 0.5) (pointMutate 0.5)
-  putStrLn "# generation bestWeight bestValue medianWeight medianValue"
-  (pop, rng'') <- loopIO (logStats things) (Generations maxiters) nextGen pop0 rng'
-  return pop
+  runIO fitness initialize $ loopIO
+         [DoEvery 10 logStats, TimeLimit 0.1]  -- stop after 100 ms
+         (Generations maxBound)  -- effectively, forever; unless an IOHook condition triggers
+         nextGen
+
+  where
+
+    logStats :: Int -> Population Bool -> IO ()
+    logStats iterno pop = do
+      when (iterno == 0) $
+           putStrLn "# generation medianValue bestValue"
+      let gs = map fst . sortByFitness $ pop  -- genomes
+      let best = head gs
+      let median = gs !! (length gs `div` 2)
+      let bvalue = snd $ totalWeithtAndValue things best
+      let mvalue = snd $ totalWeithtAndValue things median
+      putStrLn $ intercalate " " (map show [iterno, mvalue, bvalue])
+
 
 main = do
-  rng <- newPureMT
-  let (things, rng') = randomProblem rng
-  pop <- geneticAlgorithm things rng'
+  things <- randomProblem
+  pop <- geneticAlgorithm things
   putStrLn "# final population:"
   let best = fst . head . sortByFitness $ pop
   let bestthings = zip best things
