@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ExistentialQuantification #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification, Rank2Types #-}
 {- |
 
 Helper functions to run genetic algorithms and control iterations.
@@ -10,10 +10,10 @@ module Moo.GeneticAlgorithm.Run (
     runGA
   , runIO
   , nextGeneration
-  , evalFitness
   -- * Iteration control
   , loop, loopWithLog, loopIO
   , Cond(..), LogHook(..), IOHook(..)
+  , PopulationState, StepResult(..), StepGA
 ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -27,50 +27,80 @@ import Control.Monad (liftM, when)
 
 -- | Helper function to run the entire algorithm in the 'Rand' monad.
 -- It takes care of generating a new random number generator.
-runGA :: FitnessFunction a           -- ^ fitness function
-      -> Rand [Genome a]             -- ^ function to create initial population
-      -> (Population a -> Rand b)    -- ^ genetic algorithm, see also 'loop' and 'loopWithLog'
+runGA :: Rand [Genome a]             -- ^ function to create initial population
+      -> ([Genome a] -> Rand b)       -- ^ genetic algorithm, see also 'loop' and 'loopWithLog'
       -> IO b                        -- ^ final population
-runGA fitness initialize ga = do
+runGA initialize ga = do
   rng <- newPureMT
   let (genomes0, rng') = runRandom initialize rng
-  let pop0 = evalFitness fitness genomes0
-  return $ evalRandom (ga pop0) rng'
+  return $ evalRandom (ga genomes0) rng'
 
 -- | Helper function to run the entire algorithm in the 'IO' monad.
-runIO :: FitnessFunction a                    -- ^ fitness function
-      -> Rand [Genome a]                      -- ^ function to create initial population
-      -> (IORef PureMT -> Population a -> IO (Population a))
-                                              -- ^ genetic algorithm, see also 'loopIO'
-      -> IO (Population a)                    -- ^ final population
-runIO fitness initialize gaIO = do
+runIO :: Rand [Genome a]                  -- ^ function to create initial population
+      -> (IORef PureMT -> [Genome a] -> IO (Population a))
+                                          -- ^ genetic algorithm, see also 'loopIO'
+      -> IO (Population a)                -- ^ final population
+runIO initialize gaIO = do
   rng <- newPureMT
   let (genomes0, rng') = runRandom initialize rng
-  let pop0 = evalFitness fitness genomes0
   rngref <- newIORef rng'
-  gaIO rngref pop0
+  gaIO rngref genomes0
 
--- | A single step of the genetic algorithm.
+{-| On life cycle of the genetic algorithm:
+
+>   [ start ]
+>       |
+>       v
+>   (genomes) -> [ calculate fitness ] -> (genomes + fitness) -> [ stop ]
+>       ^  ^                                       |
+>       |  `----------.                            v
+>   [ mutate ]        (elite) <-------------- [ select ]
+>       ^                                          |
+>       |                                          v
+>   (genomes) <---- [ crossover ] <------ (genomes + fitness)
+
+PopulationState can represent either @genomes@ or @genomes + fitness@. -}
+type PopulationState a = Either [Genome a] [Phenotype a]
+data StepResult a = StopGA a | ContinueGA a deriving (Show)
+
+
+-- | A single step of the genetic algorithm. See also 'nextGeneration'.
+type StepGA m a = Cond a             -- ^ stop condition
+                -> PopulationState a  -- ^ population of the current generation
+                -> m (StepResult (Population a))  -- ^ population of the next generation
+
+
+-- | Construct a single step of the genetic algorithm.
 --
 -- See "Moo.GeneticAlgorithm.Binary" and "Moo.GeneticAlgorithm.Continuous"
 -- for the building blocks of the algorithm.
 --
-nextGeneration ::
-    Int                   -- ^ @elite@, the number of genomes to keep intact
-    -> FitnessFunction a  -- ^ fitness function
-    -> SelectionOp a      -- ^ selection operator
-    -> CrossoverOp a      -- ^ crossover operator
-    -> MutationOp a       -- ^ mutation operator
-    -> Population a       -- ^ current population
-    -> Rand (Population a) -- ^ next generation
-nextGeneration elite fitness selectOp xoverOp mutationOp pop = do
-  genomes' <- withElite elite selectOp pop
-  let top = take elite genomes'
-  let rest = drop elite genomes'
-  genomes' <- shuffle rest         -- just in case if selectOp preserves order
-  genomes' <- doCrossovers genomes' xoverOp
-  genomes' <- mapM mutationOp genomes'
-  return $ evalFitness fitness (top ++ genomes')
+nextGeneration
+    :: Int                  -- ^ @elite@, the number of genomes to keep intact
+    -> FitnessFunction a    -- ^ fitness function
+    -> SelectionOp a        -- ^ selection operator
+    -> CrossoverOp a        -- ^ crossover operator
+    -> MutationOp a         -- ^ mutation operator
+    -> StepGA Rand a
+nextGeneration elite fitness selectOp xoverOp mutationOp stop input = do
+  let pop = either (evalFitness fitness) id input
+  if isGenomes input && evalCond stop pop
+    then return $ StopGA pop  -- stop before the first iteration
+    else do
+      genomes' <- withElite elite selectOp pop
+      let top = take elite genomes'
+      let rest = drop elite genomes'
+      genomes' <- shuffle rest         -- just in case if selectOp preserves order
+      genomes' <- doCrossovers genomes' xoverOp
+      genomes' <- mapM mutationOp genomes'
+      let newpop = evalFitness fitness (top ++ genomes')
+      if evalCond stop newpop
+         then return $ StopGA newpop
+         else return $ ContinueGA newpop
+
+  where
+    isGenomes (Left _) = True
+    isGenomes (Right _) = False
 
 -- | Select @n@ best genomes, then select more genomes from the
 -- /entire/ population (elite genomes inclusive). Elite genomes will
@@ -90,17 +120,19 @@ withElite n select = \population -> do
 loop :: (Monad m)
      => Cond a
      -- ^ termination condition @cond@
-     -> (Population a -> m (Population a))
+     -> StepGA m a
      -- ^ @step@ function to produce the next generation
-     -> Population a
+     -> [Genome a]
      -- ^ initial population
      -> m (Population a)
       -- ^ final population
-loop cond step pop0 = go cond pop0
+loop cond step genomes0 = go cond (Left genomes0)
   where
-    go cond !x
-       | evalCond cond x  = return x
-       | otherwise        = step x >>= \pop -> go (updateCond pop cond) pop
+    go cond !x = do
+       x' <- step cond x
+       case x' of
+         (StopGA pop) -> return pop
+         (ContinueGA pop) -> go (updateCond pop cond) (Right pop)
 
 -- | GA iteration interleaved with the same-monad logging hooks.
 {-# INLINE loopWithLog #-}
@@ -109,21 +141,23 @@ loopWithLog :: (Monad m, Monoid w)
      -- ^ periodic logging action
      -> Cond a
      -- ^ termination condition @cond@
-     -> (Population a -> m (Population a))
+     -> StepGA m a
      -- ^ @step@ function to produce the next generation
-     -> Population a
+     -> [Genome a]
      -- ^ initial population
      -> m (Population a, w)
      -- ^ final population
-loopWithLog hook cond step pop0 = go cond 0 mempty pop0
+loopWithLog hook cond step genomes0 = go cond 0 mempty (Left genomes0)
   where
-    -- go :: Cond a -> Int -> w -> Population a -> m (Population a, w)
     go cond !i !w !x = do
-      let logitem = runHook i x hook
-      let w' = mappend w logitem
-      if (evalCond cond x)
-        then return (x, w')
-        else step x >>= \pop -> go (updateCond pop cond) (i+1) w' pop
+      x' <- step cond x
+      case x' of
+        (StopGA pop) -> return (pop, w)
+        (ContinueGA pop) -> do
+                         let w' = mappend w (runHook i pop hook)
+                         let cond' = updateCond pop cond
+                         go cond' (i+1) w' (Right pop)
+
     runHook !i !x (WriteEvery n write)
         | (rem i n) == 0 = write i x
         | otherwise      = mempty
@@ -138,39 +172,49 @@ loopIO
      -- ^ input-output actions, special and time-dependent stop conditions
      -> Cond a
      -- ^ termination condition @cond@
-     -> (Population a -> Rand (Population a))
+     -> StepGA Rand a
      -- ^ @step@ function to produce the next generation
      -> IORef PureMT
-     -- ^ reference to random number generator
-     -> Population a
+     -- ^ reference to the random number generator
+     -> [Genome a]
      -- ^ initial population @pop0@
      -> IO (Population a)
      -- ^ final population
-loopIO hooks cond step rngref pop0 = do
+loopIO hooks cond step rngref genomes0 = do
   rng <- readIORef rngref
   start <- realToFrac `liftM` getPOSIXTime
-  (pop, rng') <- go start cond 0 rng pop0
+  (pop, rng') <- go start cond 0 rng (Left genomes0)
   writeIORef rngref rng'
   return pop
   where
     go start cond !i !rng !x = do
       stop <- (any id) `liftM` (mapM (runhook start i x) hooks)
-      if (stop || evalCond cond x)
-         then return (x, rng)
+      if (stop || either (const False) (evalCond cond) x)
+         then return (asPopulation x, rng)
          else do
-           let (x', rng') = runRandom (step x) rng
-           let i' = i + 1
-           let cond' = updateCond x' cond
-           go start cond' i' rng' x'
+           let (x', rng') = runRandom (step cond x) rng
+           case x' of
+             (StopGA pop) -> return (pop, rng')
+             (ContinueGA pop) ->
+                 do
+                   let i' = i + 1
+                   let cond' = updateCond pop cond
+                   go start cond' i' rng' (Right pop)
 
     -- runhook returns True to terminate the loop
     runhook _ i x (DoEvery n io) = do
-             when ((rem i n) == 0) (io i x)
+             when ((rem i n) == 0) (io i (asPopulation x))
              return False
     runhook _ _ _ (StopWhen iotest)  = iotest
     runhook start _ _ (TimeLimit limit)  = do
              now <- realToFrac `liftM` getPOSIXTime
              return (now >= start + limit)
+
+    -- assign dummy fitness to a genome
+    dummyFitness :: Genome a -> Phenotype a
+    dummyFitness g = (g, 0.0)
+
+    asPopulation = either (map dummyFitness) id
 
 -- | Logging to run every @n@th iteration starting from 0 (the first parameter).
 -- The logging function takes the current generation count and population.
@@ -180,7 +224,8 @@ data (Monad m, Monoid w) => LogHook a m w =
 -- | Input-output actions, interactive and time-dependent stop conditions.
 data IOHook a
     = DoEvery { io'n :: Int, io'action :: (Int -> Population a -> IO ()) }
-    -- ^ action to run every @n@th iteration, starting from 0
+    -- ^ action to run every @n@th iteration, starting from 0;
+    -- initially (at iteration 0) the fitness is zero.
     | StopWhen (IO Bool)
     -- ^ custom or interactive stop condition
     | TimeLimit { io't :: Double }

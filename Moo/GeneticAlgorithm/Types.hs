@@ -3,7 +3,7 @@ module Moo.GeneticAlgorithm.Types
     -- * Data structures
       Fitness
     , Genome
-    , Population
+    , Phenotype, Population
     , takeGenome, takeFitness
     -- * GA operators
     , FitnessFunction
@@ -19,12 +19,14 @@ import Moo.GeneticAlgorithm.Random
 
 type Fitness = Double
 type Genome a = [a]
-type Population a = [(Genome a, Fitness)]
+type Phenotype a = (Genome a, Fitness)
 
-takeGenome :: (Genome a, Fitness) -> Genome a
+type Population a = [Phenotype a]
+
+takeGenome :: Phenotype a -> Genome a
 takeGenome = fst
 
-takeFitness :: (Genome a, Fitness) -> Fitness
+takeFitness :: Phenotype a -> Fitness
 takeFitness = snd
 
 -- | A fitness functions assigns a fitness score to a genome. The rest of the

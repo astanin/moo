@@ -66,7 +66,7 @@ geneticAlgorithm things = do
   let initialize = replicateM popsize $ replicateM items getRandom
   let fitness = totalValue things
   let nextGen = nextGeneration elitesize fitness select (onePointCrossover 0.5) (pointMutate 0.5)
-  runIO fitness initialize $ loopIO
+  runIO initialize $ loopIO
          [DoEvery 10 logStats, TimeLimit 0.1]  -- stop after 100 ms
          (Generations maxBound)  -- effectively, forever; unless an IOHook condition triggers
          nextGen
