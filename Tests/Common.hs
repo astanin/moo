@@ -71,7 +71,7 @@ runSolverReal problem solver = do
     let step = nextGeneration (s'elitesize solver) (s'fitness solver)
                (s'select solver) (s'crossover solver) (s'mutate solver)
     let ga   = loop (s'stopcond solver) step
-    pop <- runGA (s'fitness solver) init ga
+    pop <- runGA init ga
     let best = takeGenome . head $ sortByFitness pop
     let dist = sqrt . sum . map (^2) $ zipWith (-) best (minimizeSolution problem)
     return (pop, dist)

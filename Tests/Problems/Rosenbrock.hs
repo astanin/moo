@@ -76,12 +76,9 @@ testRosenbrock = TestList
       let step = nextGeneration elite fitness select undx (gauss 1.0 2)
       let log = WriteEvery 1 (\_ p -> [maximum . map takeFitness $ p])
       let ga = loopWithLog log stop step
+      let init = replicateM popsize . replicateM 2 $ getRandomR (-10,10)
 
-      rng <- newPureMT
-      let (pop, hist) = flip evalRandom rng $ do
-                          gens0 <- replicateM popsize . replicateM 2 $ getRandomR (-10,10)
-                          let pop0 = evalFitness fitness gens0
-                          ga pop0
+      (pop, hist) <- runGA init ga
 
       let best = takeGenome . head $ sortByCost pop
       pr ""
