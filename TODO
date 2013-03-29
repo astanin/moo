@@ -1,6 +1,6 @@
 # -*- mode: org -*-
 
-** TODO Moo genetic algorithm library, first release [12/13]
+** TODO Moo genetic algorithm library, first release [13/13]
   - [X] SBX
   - [X] UNDX
   - [X] premature convergence check (GensNoChange)
@@ -12,7 +12,7 @@
   - [X] re-organize modules by coding type: binary, real-valued, permutation
   - [X] no-op mutation and crossover
   - [X] time limit
-  - [ ] rename Fitness to Objective; clean-up minimizing and maximizing selection ops
+  - [X] rename Fitness to Objective; clean-up minimizing and maximizing selection ops
   - [X] don't require to evalFitness for the initial population
 
 
