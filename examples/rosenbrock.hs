@@ -14,7 +14,7 @@
 
        % gnuplot
        > set logscale y ; set xlabel 'generation' ;
-       > plot 'output.txt' u 1:(-$2) w l t 'median', '' u 1:(-$3) w l t 'best' lt 3
+       > plot 'output.txt' u 1:2 w l t 'median', '' u 1:3 w l t 'best' lt 3
 
 
 -}
@@ -42,11 +42,11 @@ precision = 1e-5
 maxiters = 2000 :: Int
 elitesize = 10
 
--- fitness function is maximized  when Rosenbrock function is minimized
-fitness xs _ = negate $ rosenbrock xs
+-- Rosenbrock function is minimized
+objective xs _ = rosenbrock xs
 
 -- selection: tournament selection
-select = tournamentSelect 3 (popsize-elitesize)
+select = tournamentSelect Minimizing 3 (popsize-elitesize)
 
 -- Gaussian mutation
 mutate =
@@ -74,22 +74,22 @@ printUsage = do
   xops = intercalate "|" (map fst crossoverOps)
 
 logStats = WriteEvery 10 $ \iterno pop ->
-             let pop' =  sortByFitness pop
-                 bestfitness = snd $ head pop'
-                 medianfitness = snd $ pop' !! (length pop' `div` 2)
-             in  [(iterno, medianfitness, bestfitness)]
+             let pop' =  bestFirst Minimizing pop
+                 bestobjval = takeObjectiveValue $ head pop'
+                 medianobjval = takeObjectiveValue $ pop' !! (length pop' `div` 2)
+             in  [(iterno, medianobjval, bestobjval)]
 
-printStats :: [(Int, Fitness, Fitness)] -> IO ()
+printStats :: [(Int, Objective, Objective)] -> IO ()
 printStats stats = do
-  printf "# %-10s %15s %15s\n" "generation" "medianFitness" "bestFitness"
+  printf "# %-10s %15s %15s\n" "generation" "medianObjective" "bestObjective"
   flip mapM_ stats $ \(iterno, median, best) ->
       printf "%12d %15.3g %15.3g\n" iterno median best
 
 geneticAlgorithm mutate crossover = do
   -- initial population
   let initialize = replicateM popsize $ replicateM nvariables (getRandomR xrange)
-  let stop = IfFitness ((>= -precision) . maximum) `Or` Generations maxiters
-  let step = nextGeneration elitesize fitness select crossover mutate
+  let stop = IfObjective ((<= precision) . minimum) `Or` Generations maxiters
+  let step = nextGeneration Minimizing objective select elitesize crossover mutate
   --
   let ga = loopWithLog logStats stop step
   runGA initialize ga
@@ -97,7 +97,7 @@ geneticAlgorithm mutate crossover = do
 
 printBest :: Population Double -> IO ()
 printBest pop = do
-  let bestGenome = takeGenome . head $ sortByFitness pop
+  let bestGenome = takeGenome . head $ bestFirst Minimizing pop
   let vals = map (\x -> printf "%.5f" x) bestGenome
   putStrLn $ "# best solution: " ++ (intercalate ", " vals)
 
@@ -113,10 +113,10 @@ main = do
        printStats stats
        printBest pop
        -- exit status depends on convergence
-       let bestF = takeFitness . head $ sortByFitness pop
+       let bestF = takeObjectiveValue . head $ bestFirst Minimizing pop
        if (abs bestF <= precision)
           then exitWith ExitSuccess
           else do
-            printf "# failed to converge: best fitness=%.5f, target=-%g\n" bestF precision
+            printf "# failed to converge: best residual=%.5f, target=-%g\n" bestF precision
             exitWith (ExitFailure 2)  -- failed to find a solution
     _ -> printUsage

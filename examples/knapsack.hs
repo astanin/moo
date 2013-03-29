@@ -50,7 +50,7 @@ totalWeithtAndValue things taken = sumVals (0,0) $ zip taken things
     sumVals (totalW, totalV) []        = (totalW, totalV)  -- all items in the knapsack
 
 
-select = tournamentSelect 2 (popsize-elitesize)
+select = tournamentSelect Maximizing 2 (popsize-elitesize)
 
 -- generate items to choose from: [(weight, value)]
 randomProblem ::  IO Problem
@@ -65,7 +65,8 @@ geneticAlgorithm :: Problem -> IO (Population Bool)
 geneticAlgorithm things = do
   let initialize = replicateM popsize $ replicateM items getRandom
   let fitness = totalValue things
-  let nextGen = nextGeneration elitesize fitness select (onePointCrossover 0.5) (pointMutate 0.5)
+  let nextGen = nextGeneration Maximizing fitness select elitesize
+                          (onePointCrossover 0.5) (pointMutate 0.5)
   runIO initialize $ loopIO
          [DoEvery 10 logStats, TimeLimit 0.1]  -- stop after 100 ms
          (Generations maxBound)  -- effectively, forever; unless an IOHook condition triggers
@@ -77,7 +78,7 @@ geneticAlgorithm things = do
     logStats iterno pop = do
       when (iterno == 0) $
            putStrLn "# generation medianValue bestValue"
-      let gs = map fst . sortByFitness $ pop  -- genomes
+      let gs = map takeGenome . bestFirst Maximizing $ pop  -- genomes
       let best = head gs
       let median = gs !! (length gs `div` 2)
       let bvalue = snd $ totalWeithtAndValue things best
@@ -89,7 +90,7 @@ main = do
   things <- randomProblem
   pop <- geneticAlgorithm things
   putStrLn "# final population:"
-  let best = fst . head . sortByFitness $ pop
+  let best = takeGenome . head . bestFirst Maximizing $ pop
   let bestthings = zip best things
   let taken = intercalate ", " . map (showItem . snd) $ filter fst bestthings
   let left = intercalate ", " . map (showItem . snd) $ filter (not . fst) bestthings
