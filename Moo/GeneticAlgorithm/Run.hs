@@ -17,7 +17,7 @@ module Moo.GeneticAlgorithm.Run (
 ) where
 
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Selection (sortByFitness)
+import Moo.GeneticAlgorithm.Selection (ProblemType(..), bestFirst)
 import Moo.GeneticAlgorithm.Types
 
 import Data.Monoid (Monoid, mempty, mappend)
@@ -48,19 +48,28 @@ runIO initialize gaIO = do
 
 {-| On life cycle of the genetic algorithm:
 
+>
 >   [ start ]
 >       |
 >       v
->   (genomes) -> [ calculate fitness ] -> (genomes + fitness) -> [ stop ]
+>   (genomes) --> [calculate objective] --> (evaluated genomes) --> [ stop ]
 >       ^  ^                                       |
->       |  `----------.                            v
+>       |  |                                       |
+>       |  `-----------.                           |
+>       |               \                          v
 >   [ mutate ]        (elite) <-------------- [ select ]
 >       ^                                          |
+>       |                                          |
+>       |                                          |
 >       |                                          v
->   (genomes) <---- [ crossover ] <------ (genomes + fitness)
+>   (genomes) <----- [ crossover ] <-------- (evaluted genomes)
+>
 
-PopulationState can represent either @genomes@ or @genomes + fitness@. -}
+PopulationState can represent either @genomes@ or @evaluated genomed@.
+-}
 type PopulationState a = Either [Genome a] [Phenotype a]
+
+-- | A data type to distinguish the last and intermediate steps results.
 data StepResult a = StopGA a | ContinueGA a deriving (Show)
 
 
@@ -76,24 +85,25 @@ type StepGA m a = Cond a             -- ^ stop condition
 -- for the building blocks of the algorithm.
 --
 nextGeneration
-    :: Int                  -- ^ @elite@, the number of genomes to keep intact
-    -> FitnessFunction a    -- ^ fitness function
+    :: ProblemType          -- ^ a type of the optimization @problem@
+    -> ObjectiveFunction a  -- ^ objective function
     -> SelectionOp a        -- ^ selection operator
+    -> Int                  -- ^ @elite@, the number of genomes to keep intact
     -> CrossoverOp a        -- ^ crossover operator
     -> MutationOp a         -- ^ mutation operator
     -> StepGA Rand a
-nextGeneration elite fitness selectOp xoverOp mutationOp stop input = do
-  let pop = either (evalFitness fitness) id input
+nextGeneration problem objective selectOp elite xoverOp mutationOp stop input = do
+  let pop = either (evalObjective objective) id input
   if isGenomes input && evalCond stop pop
     then return $ StopGA pop  -- stop before the first iteration
     else do
-      genomes' <- withElite elite selectOp pop
+      genomes' <- withElite problem elite selectOp pop
       let top = take elite genomes'
       let rest = drop elite genomes'
       genomes' <- shuffle rest         -- just in case if selectOp preserves order
       genomes' <- doCrossovers genomes' xoverOp
       genomes' <- mapM mutationOp genomes'
-      let newpop = evalFitness fitness (top ++ genomes')
+      let newpop = evalObjective objective (top ++ genomes')
       if evalCond stop newpop
          then return $ StopGA newpop
          else return $ ContinueGA newpop
@@ -105,13 +115,13 @@ nextGeneration elite fitness selectOp xoverOp mutationOp stop input = do
 -- | Select @n@ best genomes, then select more genomes from the
 -- /entire/ population (elite genomes inclusive). Elite genomes will
 -- be the first in the list.
-withElite :: Int -> SelectionOp a -> SelectionOp a
-withElite n select = \population -> do
+withElite :: ProblemType -> Int -> SelectionOp a -> SelectionOp a
+withElite problem n select = \population -> do
   let elite = take n . eliteGenomes $ population
   selected <- select population
   return (elite ++ selected)
   where
-    eliteGenomes = map fst . sortByFitness
+    eliteGenomes = map fst . bestFirst problem
 
 -- | Run strict iterations of the genetic algorithm defined by @step@.
 -- Termination condition @cond@ is evaluated before every step.
@@ -210,11 +220,11 @@ loopIO hooks cond step rngref genomes0 = do
              now <- realToFrac `liftM` getPOSIXTime
              return (now >= start + limit)
 
-    -- assign dummy fitness to a genome
-    dummyFitness :: Genome a -> Phenotype a
-    dummyFitness g = (g, 0.0)
+    -- assign dummy objective value to a genome
+    dummyObjective :: Genome a -> Phenotype a
+    dummyObjective g = (g, 0.0)
 
-    asPopulation = either (map dummyFitness) id
+    asPopulation = either (map dummyObjective) id
 
 -- | Logging to run every @n@th iteration starting from 0 (the first parameter).
 -- The logging function takes the current generation count and population.
@@ -225,7 +235,7 @@ data (Monad m, Monoid w) => LogHook a m w =
 data IOHook a
     = DoEvery { io'n :: Int, io'action :: (Int -> Population a -> IO ()) }
     -- ^ action to run every @n@th iteration, starting from 0;
-    -- initially (at iteration 0) the fitness is zero.
+    -- initially (at iteration 0) the objective value is zero.
     | StopWhen (IO Bool)
     -- ^ custom or interactive stop condition
     | TimeLimit { io't :: Double }
@@ -234,10 +244,10 @@ data IOHook a
 -- | Iterations stop when the condition evaluates as @True@.
 data Cond a =
       Generations Int                   -- ^ stop after @n@ generations
-    | IfFitness ([Fitness] -> Bool)     -- ^ stop when fitness satisfies the @predicate@
+    | IfObjective ([Objective] -> Bool) -- ^ stop when objective values satisfy the @predicate@
     | forall b . Eq b => GensNoChange
       { c'maxgens ::  Int                 -- ^ max number of generations for an indicator to be the same
-      , c'indicator ::  [Fitness] -> b    -- ^ stall indicator function
+      , c'indicator ::  [Objective] -> b  -- ^ stall indicator function
       , c'counter :: Maybe (b, Int)       -- ^ a counter (initially @Nothing@)
       }                                 -- ^ terminate when evolution stalls
     | Or (Cond a) (Cond a)              -- ^ stop when at least one of two conditions holds
@@ -245,10 +255,10 @@ data Cond a =
 
 evalCond :: (Cond a) -> Population a -> Bool
 evalCond (Generations n) _  = n <= 0
-evalCond (IfFitness cond) p = cond . takeFitnesses $ p
+evalCond (IfObjective cond) p = cond . map takeObjectiveValue $ p
 evalCond (GensNoChange n _ Nothing) _ = n <= 1
 evalCond (GensNoChange n f (Just (prev, count))) p =
-    let new = f . map takeFitness $ p
+    let new = f . map takeObjectiveValue $ p
     in  (new == prev) && (count + 1 > n)
 evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
 evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
@@ -256,18 +266,20 @@ evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
 updateCond :: Population a -> Cond a -> Cond a
 updateCond _ (Generations n) = Generations (n-1)
 updateCond p (GensNoChange n f Nothing) =
-    GensNoChange n f (Just (f (takeFitnesses p), 1)) -- called 1st time _after_ the 1st iteration
+     -- called 1st time _after_ the 1st iteration
+    let counter = (Just (f (map takeObjectiveValue p), 1))
+    in GensNoChange n f counter
 updateCond p (GensNoChange n f (Just (v, c))) =
-    let v' = f (takeFitnesses p) in if v' == v
+    let v' = f (map takeObjectiveValue p) in if v' == v
        then GensNoChange n f (Just (v, c+1))
        else GensNoChange n f (Just (v', 1))
 updateCond p (And c1 c2) = And (updateCond p c1) (updateCond p c2)
 updateCond p (Or c1 c2) = Or (updateCond p c1) (updateCond p c2)
 updateCond _ c = c
 
--- | Evaluate fitness for all genomes in the population.
-evalFitness :: FitnessFunction a -> [Genome a] -> Population a
-evalFitness fitFun gs =
+-- | Evaluate objective function for all genomes in the population.
+evalObjective :: ObjectiveFunction a -> [Genome a] -> Population a
+evalObjective fitFun gs =
   let fs = map (`fitFun` gs) gs
   in  zip gs fs
 
@@ -278,6 +290,3 @@ doCrossovers parents xover = do
   (children', parents') <- xover parents
   rest <- doCrossovers parents' xover
   return $ children' ++ rest
-
-takeFitnesses :: Population a -> [Fitness]
-takeFitnesses = map takeFitness

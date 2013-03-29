@@ -1,12 +1,13 @@
 module Moo.GeneticAlgorithm.Types
     (
     -- * Data structures
-      Fitness
-    , Genome
-    , Phenotype, Population
-    , takeGenome, takeFitness
+      Genome
+    , Objective
+    , Phenotype
+    , Population
+    , takeGenome, takeObjectiveValue
     -- * GA operators
-    , FitnessFunction
+    , ObjectiveFunction
     , SelectionOp
     , CrossoverOp
     , MutationOp
@@ -17,30 +18,32 @@ module Moo.GeneticAlgorithm.Types
 
 import Moo.GeneticAlgorithm.Random
 
-type Fitness = Double
+-- | A genetic representation of an individual solution.
 type Genome a = [a]
-type Phenotype a = (Genome a, Fitness)
 
+-- | A measure of the observed performance. It may be called cost
+-- for minimization problems, or fitness for maximization problems.
+type Objective = Double
+
+-- | A genome associated with its observed 'Objective' value.
+type Phenotype a = (Genome a, Objective)
+
+-- | An entire population of observed 'Phenotype's.
 type Population a = [Phenotype a]
 
 takeGenome :: Phenotype a -> Genome a
 takeGenome = fst
 
-takeFitness :: Phenotype a -> Fitness
-takeFitness = snd
+takeObjectiveValue :: Phenotype a -> Objective
+takeObjectiveValue = snd
 
--- | A fitness functions assigns a fitness score to a genome. The rest of the
--- individuals of that generation is also provided in case the fitness is
--- in proportion to its neighbours. Genetic algorithm maximizes the fitness.
+-- | A function to evaluate a genome. It may be called a cost function
+-- for minimization problems, or a fitness function for maximization
+-- problems.
 --
 -- Some genetic algorithm operators, like 'rouletteSelect', require
--- non-negative fitness.  To solve minimization problems consider
--- transforming the fitness value as
---
--- @
--- F(x) = 1/(1+f(x))
--- @
-type FitnessFunction a = Genome a -> [Genome a] -> Fitness
+-- the 'Objective' to be non-negative.
+type ObjectiveFunction a = Genome a -> [Genome a] -> Objective
 
 -- | A selection operator is responsible for selection. It takes pairs of
 -- genomes and their fitness and is responsible for returning one or more

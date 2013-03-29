@@ -43,7 +43,7 @@ randomGenomesReal popsize ranges = replicateM popsize randomGenome
 data Solver a = Solver {
       s'popsize :: Int
     , s'elitesize :: Int
-    , s'fitness :: FitnessFunction a
+    , s'objective :: ObjectiveFunction a
     , s'select :: SelectionOp a
     , s'crossover :: CrossoverOp a
     , s'mutate :: MutationOp a
@@ -57,8 +57,8 @@ solverReal (RealMinimize f vranges sol) popsize elitesize crossover stopcond =
     let nvars = length vranges
         s = 0.1 * average (map (uncurry subtract) vranges)
         mutate = gauss s nvars
-        fitness xs _ = negate (f xs)
-        select = tournamentSelect 3 (popsize - elitesize)
+        fitness xs _ = f xs
+        select = tournamentSelect Minimizing 3 (popsize - elitesize)
     in  Solver popsize elitesize fitness select crossover mutate stopcond
 
 
@@ -67,12 +67,14 @@ runSolverReal :: RealProblem
               -> IO (Population Double, Double)
               -- ^ final population and euclidean distance from the known solution
 runSolverReal problem solver = do
+    let ptype = Minimizing
     let init = randomGenomesReal (s'popsize solver) (minimizeVarRange problem)
-    let step = nextGeneration (s'elitesize solver) (s'fitness solver)
-               (s'select solver) (s'crossover solver) (s'mutate solver)
+    let step = nextGeneration  ptype (s'objective solver)
+               (s'select solver) (s'elitesize solver)
+               (s'crossover solver) (s'mutate solver)
     let ga   = loop (s'stopcond solver) step
     pop <- runGA init ga
-    let best = takeGenome . head $ sortByFitness pop
+    let best = takeGenome . head $ bestFirst ptype pop
     let dist = sqrt . sum . map (^2) $ zipWith (-) best (minimizeSolution problem)
     return (pop, dist)
 
