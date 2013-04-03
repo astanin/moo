@@ -16,7 +16,7 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 
 import Control.Monad.Mersenne.Random
-import Control.Monad (liftM, replicateM)
+import Control.Monad (replicateM)
 
 -- |Modify value with probability @p@.
 withProbability :: Double -> a -> (a -> Rand a) -> Rand a
@@ -29,22 +29,20 @@ withProbability p x modify = do
 -- | Generate @n@ random genomes of length @len@ made of elements
 -- in the range @(from,to)@. Return a list of genomes and a new state of
 -- random number generator.
-randomGenomes :: (Enum a) => PureMT -> Int -> Int -> (a, a) ->  ([Genome a], PureMT)
+randomGenomes :: (Random a, Ord a)
+              => PureMT -> Int -> Int -> (a, a) ->  ([Genome a], PureMT)
 randomGenomes rng n len (from, to) =
-    let lo = fromEnum from
-        hi = fromEnum to
+    let lo = min from to
+        hi = max from to
     in flip runRandom rng $
-       (nLists len . map toEnum) `liftM` replicateM (n*len) (getRandomR (lo,hi))
-  where nLists :: Int -> [a] -> [[a]]
-        nLists _ [] = []
-        nLists n ls = let (h,t) = splitAt n ls in h : nLists n t
+        replicateM n $ replicateM len $ getRandomR (lo,hi)
 
 -- | Generate @n@ random genomes of length @len@ made of elements
 -- in the range @(from,to)@. Return a list of genomes.
-getRandomGenomes :: (Enum a)
-                 => Int -- ^ how many genomes to generate
-                 -> Int -- ^ genome length
-                 ->  (a, a) -- ^ range of genome bit values
+getRandomGenomes :: (Random a, Ord a)
+                 => Int -- ^ @n@, how many genomes to generate
+                 -> Int -- ^ @len@, genome length
+                 ->  (a, a) -- ^ @range@ of genome bit values
                  -> Rand ([Genome a])
 getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
