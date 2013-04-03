@@ -20,8 +20,7 @@
 -}
 
 import Moo.GeneticAlgorithm.Continuous
-import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Run
+
 import Control.Monad
 import Data.List
 import System.Environment (getArgs)

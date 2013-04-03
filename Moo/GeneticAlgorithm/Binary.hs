@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
 Binary genetic algorithms. Candidates solutions are represented as bit-strings.
@@ -32,14 +33,17 @@ module Moo.GeneticAlgorithm.Binary (
   , splitEvery
   -- * Initialization
   , getRandomBinaryGenomes
+  -- * Selection
+  , module Moo.GeneticAlgorithm.Selection
+  -- * Crossover
+  , module Moo.GeneticAlgorithm.Crossover
   -- * Mutation
   , pointMutate
   , asymmetricMutate
   , constFrequencyMutate
-  -- * Crossover
-  , module Moo.GeneticAlgorithm.Crossover
-  -- * Selection
-  , module Moo.GeneticAlgorithm.Selection
+  -- * Control
+  , module Moo.GeneticAlgorithm.Random
+  , module Moo.GeneticAlgorithm.Run
 ) where
 
 import Codec.Binary.Gray.List
@@ -49,6 +53,8 @@ import Moo.GeneticAlgorithm.Crossover
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.Run
+import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes, withProbability)
 
 -- | How many bits are needed to represent a range of integer numbers

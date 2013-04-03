@@ -125,7 +125,6 @@ withElite problem n select = \population -> do
     eliteGenomes = map fst . bestFirst problem
 
 -- | Run strict iterations of the genetic algorithm defined by @step@.
--- Termination condition @cond@ is evaluated before every step.
 -- Return the result of the last step.
 {-# INLINE loop #-}
 loop :: (Monad m)

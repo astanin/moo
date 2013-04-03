@@ -8,39 +8,49 @@ Portability  : portable
 
 A library for custom genetic algorithms.
 
-Quick start:
+@
+-----------
+Quick Start
+-----------
+@
 
-  * "Moo.GeneticAlgorithm.Types"
+Import
 
-  * either "Moo.GeneticAlgorithm.Binary" or "Moo.GeneticAlgorithm.Continuous"
+  * either "Moo.GeneticAlgorithm.Binary"
 
-  * "Moo.GeneticAlgorithm.Run"
+  * or "Moo.GeneticAlgorithm.Continuous"
 
 Genetic algorithms are used to find good solutions to optimization
 and search problems. They mimic the process of natural evolution
 and selection.
 
-A genetic algorithm deals with a /population/ of candidate
-solutions.  Each candidate solution is represented with a
-/genome/. On every iteration the best genomes are
-/selected/. The next generation is produced through /crossover/
-(recombination of the parents) and /mutation/ (a random change in the
-genome) of the selected genomes. This process of selection --
-crossover -- mutation is repeated until a good enough solution appears
-or all hope is lost.
+A genetic algorithm deals with a /population/ of candidate solutions.
+Each candidate solution is represented with a 'Genome'. On every
+iteration the best genomes are /selected/ ('SelectionOp'). The next
+generation is produced through /crossover/ (recombination of the
+parents, 'CrossoverOp') and /mutation/ (a random change in the genome,
+'MutationOp') of the selected genomes. This process of selection --
+crossover -- mutation is repeated until a good solution appears or all
+hope is lost.
 
 Genetic algorithms are often defined in terms of minimizing a cost
 function or maximizing fitness. This library refers to observed
 performance of a genome as 'Objective', which can be minimized as well
 as maximized.
 
-/How to write a genetic algorithm/
+
+@
+--------------------------------
+How to write a genetic algorithm
+--------------------------------
+@
 
   1. Provide an encoding and decoding functions to convert from model
      variables to genomes and back. See /How to choose encoding/ below.
 
-  2. Write a custom objective function. Its type should be
-     'ObjectiveFunction' @a@.
+  2. Write a custom objective function. Its type should be an instance
+     of 'ObjectiveFunction' @a@. Functions of type @Genome a -> Objective@
+     are commonly used.
 
   3. Optionally write custom selection ('SelectionOp'), crossover
      ('CrossoverOp') and mutation ('MutationOp') operators or just use
@@ -51,7 +61,7 @@ as maximized.
 
   5. Write a function to generate an initial population.
      "Moo.GeneticAlgorithm.Random" provides necessary functions to
-     generate random variables.
+     generate random variables; 'getRandomGenomes' can be used too.
 
 Library functions which need access to random number generator work in
 'Rand' monad.  You may use a high-level wrapper 'runGA' (or
@@ -59,7 +69,11 @@ Library functions which need access to random number generator work in
 number generator and running the entire algorithm.
 
 
-/How to choose encoding/
+@
+----------------------
+How to choose encoding
+----------------------
+@
 
  * For problems with discrete search space, binary (or Gray)
    encoding of the bit-string is usually used.
@@ -73,27 +87,37 @@ number generator and running the entire algorithm.
    To build a continuous genetic algorithm, import
    "Moo.GeneticAlgorithm.Continuous".
 
-/Other modules/
+
+@
+-------------
+Other modules
+-------------
+@
 
 "Moo.GeneticAlgorithm.Types":
   types for data structures and operators.
 
-"Moo.GeneticAlgorithm.Crossover":
-  crossover operations. Mostly intended for binary GAs.
-
 "Moo.GeneticAlgorithm.Selection":
   several selection operators.
 
-"Moo.GeneticAlgorithm.Random":
-  facilities related to random number generation.
+"Moo.GeneticAlgorithm.Crossover":
+  crossover operations. Mostly intended for binary GAs.
 
 "Moo.GeneticAlgorithm.Run":
    bring everything together and actually run the algorithm.
 
-"Moo.GeneticAlgorithm.Utilities", "Moo.GeneticAlgorithm.Statistics":
-  common non-deterministic and statistic functions.
+"Moo.GeneticAlgorithm.Random":
+  facilities related to random number generation.
 
-/Examples/
+"Moo.GeneticAlgorithm.Utilities", "Moo.GeneticAlgorithm.Statistics":
+  common non-deterministic and statistical functions.
+
+
+@
+--------
+Examples
+--------
+@
 
 See @examples/@ folder of the source distribution.
 

@@ -1,8 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
 Continuous (real-valued) genetic algorithms. Candidate solutions are
-represented as vectors of real-valued variables.
+represented as lists of real-valued variables.
 
 -}
 
@@ -13,16 +14,19 @@ module Moo.GeneticAlgorithm.Continuous
     module Moo.GeneticAlgorithm.Types
   -- * Initialization
   , getRandomGenomes
-  -- * Mutation
-  , gaussianMutate
+  -- * Selection
+  , module Moo.GeneticAlgorithm.Selection
   -- * Crossover
   , module Moo.GeneticAlgorithm.Crossover
   , blendCrossover
   , unimodalCrossover
   , unimodalCrossoverRP
   , simulatedBinaryCrossover
-  -- * Selection
-  , module Moo.GeneticAlgorithm.Selection
+  -- * Mutation
+  , gaussianMutate
+  -- * Control
+  , module Moo.GeneticAlgorithm.Random
+  , module Moo.GeneticAlgorithm.Run
 ) where
 
 import Control.Monad (liftM, replicateM)
@@ -33,6 +37,8 @@ import Moo.GeneticAlgorithm.LinAlg
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.Run
+import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes, withProbability)
 
 -- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
