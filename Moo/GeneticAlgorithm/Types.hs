@@ -60,17 +60,6 @@ instance (a1 ~ a2) =>
     ObjectiveFunction ([Genome a1] -> [Objective]) a2 where
         evalObjective f gs = zip gs (f gs)
 
--- | Evaluate fitness (cost) genome by genome taking all other genomes
--- in consideration too.
-instance (a1 ~ a2) =>
-    ObjectiveFunction (Genome a1 -> [Genome a1] -> Objective) a2 where
-        evalObjective = evalObjectiveBackCompat
-
-{-# DEPRECATED evalObjectiveBackCompat "old ObjectiveFunction type for BC" #-}
-evalObjectiveBackCompat :: (Genome a -> [Genome a] -> Objective) -> [Genome a] -> Population a
-evalObjectiveBackCompat f gs = map (\g -> (g, f g gs)) gs
-
-
 -- | A selection operator is responsible for selection. It takes pairs of
 -- genomes and their fitness and is responsible for returning one or more
 -- individuals.
