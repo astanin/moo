@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, GADTs #-}
+
 module Moo.GeneticAlgorithm.Types
     (
     -- * Data structures
@@ -5,9 +7,10 @@ module Moo.GeneticAlgorithm.Types
     , Objective
     , Phenotype
     , Population
-    , takeGenome, takeObjectiveValue
+    , takeGenome
+    , takeObjectiveValue
     -- * GA operators
-    , ObjectiveFunction
+    , ObjectiveFunction(..)
     , SelectionOp
     , CrossoverOp
     , MutationOp
@@ -37,13 +40,36 @@ takeGenome = fst
 takeObjectiveValue :: Phenotype a -> Objective
 takeObjectiveValue = snd
 
--- | A function to evaluate a genome. It may be called a cost function
--- for minimization problems, or a fitness function for maximization
+-- | A function to evaluate a genome should be an instance of
+-- 'ObjectiveFunction' class. It may be called a cost function for
+-- minimization problems, or a fitness function for maximization
 -- problems.
 --
 -- Some genetic algorithm operators, like 'rouletteSelect', require
 -- the 'Objective' to be non-negative.
-type ObjectiveFunction a = Genome a -> [Genome a] -> Objective
+class ObjectiveFunction f a where
+    evalObjective :: f -> [Genome a] -> Population a
+
+-- | Evaluate fitness (cost) values genome per genome.
+instance (a1 ~ a2) =>
+    ObjectiveFunction (Genome a1 -> Objective) a2 where
+        evalObjective f = map (\g -> (g, f g))
+
+-- | Evaluate all fitness (cost) values at once.
+instance (a1 ~ a2) =>
+    ObjectiveFunction ([Genome a1] -> [Objective]) a2 where
+        evalObjective f gs = zip gs (f gs)
+
+-- | Evaluate fitness (cost) genome by genome taking all other genomes
+-- in consideration too.
+instance (a1 ~ a2) =>
+    ObjectiveFunction (Genome a1 -> [Genome a1] -> Objective) a2 where
+        evalObjective = evalObjectiveBackCompat
+
+{-# DEPRECATED evalObjectiveBackCompat "old ObjectiveFunction type for BC" #-}
+evalObjectiveBackCompat :: (Genome a -> [Genome a] -> Objective) -> [Genome a] -> Population a
+evalObjectiveBackCompat f gs = map (\g -> (g, f g gs)) gs
+
 
 -- | A selection operator is responsible for selection. It takes pairs of
 -- genomes and their fitness and is responsible for returning one or more

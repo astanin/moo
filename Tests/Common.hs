@@ -9,8 +9,11 @@ import Moo.GeneticAlgorithm.Random
 import Data.List (foldl')
 import Control.Monad (replicateM)
 
+
+type RealFunctionND = [Double] -> Double
+
 data RealProblem = RealMinimize {
-      minimizeFunction :: [Double] -> Double  -- ^ function to minimize
+      minimizeFunction :: RealFunctionND      -- ^ function to minimize
     , minimizeVarRange :: [(Double, Double)]  -- ^ search space
     , minimizeSolution :: [Double]            -- ^ problem solution
     }
@@ -40,10 +43,10 @@ randomGenomesReal popsize ranges = replicateM popsize randomGenome
       randomGenome = mapM (\varRange -> getRandomR varRange) ranges
 
 
-data Solver a = Solver {
+data (ObjectiveFunction objectivefn a) => Solver objectivefn a = Solver {
       s'popsize :: Int
     , s'elitesize :: Int
-    , s'objective :: ObjectiveFunction a
+    , s'objective :: objectivefn
     , s'select :: SelectionOp a
     , s'crossover :: CrossoverOp a
     , s'mutate :: MutationOp a
@@ -52,18 +55,18 @@ data Solver a = Solver {
 
 
 -- default solver for real-valued problems
-solverReal :: RealProblem -> Int -> Int -> CrossoverOp Double -> Cond Double -> Solver Double
+solverReal :: RealProblem -> Int -> Int -> CrossoverOp Double -> Cond Double
+           -> Solver RealFunctionND Double
 solverReal (RealMinimize f vranges sol) popsize elitesize crossover stopcond =
     let nvars = length vranges
         s = 0.1 * average (map (uncurry subtract) vranges)
         mutate = gauss s nvars
-        fitness xs _ = f xs
         select = tournamentSelect Minimizing 3 (popsize - elitesize)
-    in  Solver popsize elitesize fitness select crossover mutate stopcond
+    in  Solver popsize elitesize f select crossover mutate stopcond
 
 
 runSolverReal :: RealProblem
-              -> Solver Double
+              -> Solver RealFunctionND Double
               -> IO (Population Double, Double)
               -- ^ final population and euclidean distance from the known solution
 runSolverReal problem solver = do

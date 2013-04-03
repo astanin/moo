@@ -85,8 +85,9 @@ type StepGA m a = Cond a             -- ^ stop condition
 -- for the building blocks of the algorithm.
 --
 nextGeneration
-    :: ProblemType          -- ^ a type of the optimization @problem@
-    -> ObjectiveFunction a  -- ^ objective function
+    :: (ObjectiveFunction objectivefn a)
+    => ProblemType          -- ^ a type of the optimization @problem@
+    -> objectivefn          -- ^ objective function
     -> SelectionOp a        -- ^ selection operator
     -> Int                  -- ^ @elite@, the number of genomes to keep intact
     -> CrossoverOp a        -- ^ crossover operator
@@ -276,12 +277,6 @@ updateCond p (GensNoChange n f (Just (v, c))) =
 updateCond p (And c1 c2) = And (updateCond p c1) (updateCond p c2)
 updateCond p (Or c1 c2) = Or (updateCond p c1) (updateCond p c2)
 updateCond _ c = c
-
--- | Evaluate objective function for all genomes in the population.
-evalObjective :: ObjectiveFunction a -> [Genome a] -> Population a
-evalObjective fitFun gs =
-  let fs = map (`fitFun` gs) gs
-  in  zip gs fs
 
 -- | Take a list of parents, run crossovers, and return a list of children.
 doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]

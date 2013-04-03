@@ -66,11 +66,11 @@ testRosenbrock = TestList
       pr $ "error:   " ++ (printf "%.5g" dist)
       assertBool ("error >= " ++ show tolerance) (dist < tolerance)
   , "Rosenbrock 2D GM/UNDX/GensNoChange 10" ~: do
-      let maxiters = 2000
+      let maxiters = 5000
       let popsize = 101
       let elite = 11
       let nochange = 10
-      let objective xs _ = rosenbrock $ xs
+      let objective = (\xs _ -> rosenbrock xs) :: ([Double] -> [[Double]] -> Double)
       let select = tournamentSelect Minimizing 3 (popsize - elite)
       let stop = (GensNoChange nochange (round.(*1e3).maximum) Nothing) `Or` (Generations maxiters)
       let step = nextGeneration Minimizing objective select elite undx (gauss 1.0 2)
