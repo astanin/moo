@@ -1,4 +1,4 @@
-Copyright (c)2011-2012, Sergey Astanin
+Copyright (c)2011-2013, Sergey Astanin
 Copyright (c)2011, Erlend Hamberg
 
 All rights reserved.
@@ -14,9 +14,10 @@ modification, are permitted provided that the following conditions are met:
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-    * Neither the name of Erlend Hamberg nor the names of other
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
+    * Neither the name of Erlend Hamberg, nor the name of Sergey
+      Astanin, nor the names of other contributors may be used to
+      endorse or promote products derived from this software without
+      specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT

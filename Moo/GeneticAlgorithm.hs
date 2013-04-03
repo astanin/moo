@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 {- |
-Copyright    : 2010-2011 Erlend Hamberg, 2011-2012 Sergey Astanin
+Copyright    : 2010-2011 Erlend Hamberg, 2011-2013 Sergey Astanin
 License      : BSD3
 Stability    : experimental
 Portability  : portable
