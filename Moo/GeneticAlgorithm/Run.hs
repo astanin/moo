@@ -101,7 +101,7 @@ nextGeneration problem objective selectOp elite xoverOp mutationOp stop input = 
       genomes' <- withElite problem elite selectOp pop
       let top = take elite genomes'
       let rest = drop elite genomes'
-      genomes' <- shuffle rest         -- just in case if selectOp preserves order
+      genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
       genomes' <- doCrossovers genomes' xoverOp
       genomes' <- mapM mutationOp genomes'
       let newpop = evalObjective objective (top ++ genomes')

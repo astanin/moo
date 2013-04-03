@@ -89,7 +89,7 @@ rouletteSelect n xs = replicateM n roulette1
     rand <- (sumScores*) `liftM` getDouble
     return $ (fst . head . dropWhile ((rand >) . snd)) xs'
 
--- |Performs tournament selection amoing @size@ individuals and
+-- |Performs tournament selection among @size@ individuals and
 -- returns the winner. Repeat @n@ times.
 tournamentSelect :: ProblemType  -- ^ type of the optimization problem
                  -> Int -- ^ size of the tournament group

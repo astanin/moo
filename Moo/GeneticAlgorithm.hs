@@ -55,7 +55,7 @@ How to write a genetic algorithm
   3. Optionally write custom selection ('SelectionOp'), crossover
      ('CrossoverOp') and mutation ('MutationOp') operators or just use
      some standard operators provided by this library. Operators specific
-     to binary or continous algorithms are provided by
+     to binary or continuous algorithms are provided by
      "Moo.GeneticAlgorithm.Binary" and "Moo.GeneticAlgorithm.Continuous"
      modules respectively.
 
@@ -79,7 +79,7 @@ How to choose encoding
 
  * For problems with discrete search space, binary (or Gray)
    encoding of the bit-string is usually used.
-   A bit-string is represtented as a list of @Bool@ values (@[Bool]@).
+   A bit-string is represented as a list of @Bool@ values (@[Bool]@).
    To build a binary genetic algorithm, import "Moo.GeneticAlgorithm.Binary".
 
  * For problems with continuous search space, it is possible to use a

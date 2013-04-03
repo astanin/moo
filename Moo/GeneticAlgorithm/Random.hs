@@ -34,7 +34,7 @@ getRandomR :: Random a => (a, a) -> Rand a
 getRandomR range = Rand $ \s -> let (r, s') = randomR range s in R r s'
 
 -- | Yield a new randomly selected value of type @a@.
--- See 'System.Random.random' for for details.
+-- See 'System.Random.random' for details.
 getRandom :: Random a => Rand a
 getRandom = Rand $ \g -> let (r, g') = random g in R r g'
 

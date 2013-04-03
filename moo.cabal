@@ -1,18 +1,18 @@
 name:               moo
-category:           AI, Algorithms, Optimisation
+category:           AI, Algorithms, Optimisation, Optimization
 build-type:         Simple
 version:            1.0
 synopsis:           Genetic algorithm library
 description:        Moo library provides building blocks to build custom
                     genetic algorithms in Haskell. They can be used to
-                    find solutions to optimisation and search problems.
+                    find solutions to optimization and search problems.
                     .
                     Variants supported out of the box: binary (using
                     bit-strings) and continuous (real-valued).
                     .
                     Binary GAs: binary and Gray encoding; point mutation;
                     one-point, two-point, and uniform crossover.
-                    Continuous GAs: gaussian mutation; BLX-α, UNDX, and
+                    Continuous GAs: Gaussian mutation; BLX-α, UNDX, and
                     SBX crossover.
                     Selection operators: roulette, and tournament;
                     with optional elitism and scaling.
