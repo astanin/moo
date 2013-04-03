@@ -54,14 +54,16 @@ How to write a genetic algorithm
 
   3. Optionally write custom selection ('SelectionOp'), crossover
      ('CrossoverOp') and mutation ('MutationOp') operators or just use
-     some standard operators provided by this library.
+     some standard operators provided by this library. Operators specific
+     to binary or continous algorithms are provided by
+     "Moo.GeneticAlgorithm.Binary" and "Moo.GeneticAlgorithm.Continuous"
+     modules respectively.
 
   4. Use 'nextGeneration' to create a single step of the algorithm,
      control the iterative process with 'loop', 'loopWithLog', or 'loopIO'.
 
-  5. Write a function to generate an initial population.
-     "Moo.GeneticAlgorithm.Random" provides necessary functions to
-     generate random variables; 'getRandomGenomes' can be used too.
+  5. Write a function to generate an initial population; for random
+     uniform initialization use 'getRandomGenomes' or 'getRandomBinaryGenomes'.
 
 Library functions which need access to random number generator work in
 'Rand' monad.  You may use a high-level wrapper 'runGA' (or
@@ -130,3 +132,5 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Utilities
+import Moo.GeneticAlgorithm.Binary
+import Moo.GeneticAlgorithm.Continuous
