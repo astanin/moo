@@ -114,8 +114,8 @@ sortByFitnessDesc = sortBy (flip compare `on` snd)
 sortByCostAsc :: Population a -> Population a
 sortByCostAsc = sortBy (compare `on` snd)
 
--- | Reorders a list of (genome,objective-value) pairs,
--- by putting the
+-- | Reorders a list of individual solutions,
+-- by putting the best in the head of the list.
 bestFirst :: ProblemType -> Population a -> Population a
 bestFirst Maximizing = sortByFitnessDesc
 bestFirst Minimizing = sortByCostAsc
