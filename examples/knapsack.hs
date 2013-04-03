@@ -20,7 +20,6 @@
 import Moo.GeneticAlgorithm.Binary
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Run
-import Moo.GeneticAlgorithm.Selection
 import Control.Monad
 import Data.List (intercalate)
 
@@ -34,11 +33,11 @@ itemValue = (0,9 :: Value)
 maxTotalWeight = items*2 :: Weight
 
 popsize = 11
-maxiters = 1000
 elitesize = 1
 
 -- fitness function to maximize
-totalValue things taken _ = fromIntegral . snd $ totalWeithtAndValue things taken
+totalValue :: Problem -> [Bool] -> Objective
+totalValue things taken = fromIntegral . snd $ totalWeithtAndValue things taken
 
 totalWeithtAndValue :: Problem -> Genome Bool -> (Weight, Value)
 totalWeithtAndValue things taken = sumVals (0,0) $ zip taken things

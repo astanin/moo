@@ -20,12 +20,10 @@
 -}
 
 import Moo.GeneticAlgorithm.Continuous
-import Moo.GeneticAlgorithm.Utilities
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Run
 import Control.Monad
 import Data.List
-import Data.Ord (comparing)
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
 import Text.Printf (printf)
@@ -33,28 +31,29 @@ import Text.Printf (printf)
 rosenbrock :: [Double] -> Double
 rosenbrock xs = sum . map f $ zip xs (drop 1 xs)
   where
-   f (x1, x2) = 100 * (x2 - x1^2)^2 + (x1 - 1)^2
+   f (x1, x2) = 100.0 * (x2 - x1^(2::Int))^(2::Int) + (x1 - 1)^(2::Int)
 
 nvariables = 3
 xrange = (-30.0, 30.0)
 popsize = 100
 precision = 1e-5
-maxiters = 2000 :: Int
+maxiters = 4000 :: Int
 elitesize = 10
 
 -- Rosenbrock function is minimized
-objective xs _ = rosenbrock xs
+objective :: [Double] -> Objective
+objective xs = rosenbrock xs
 
 -- selection: tournament selection
 select = tournamentSelect Minimizing 3 (popsize-elitesize)
 
--- Gaussian mutation
-mutate =
-    let p = 0.5/fromIntegral nvariables
+-- Gaussian mutation, mutate fraction @genomeschanged@ of the population
+gm genomeschanged =
+    let p = 1.0 - (1.0 - genomeschanged)**(1.0 / fromIntegral nvariables)
         s = 0.01*(snd xrange - fst xrange)
     in  gaussianMutate p s
 
-mutationOps = [ ("gm", mutate) ]
+mutationOps = [ ("gm", gm 0.33) ]
 
 -- BLX-0.5 crossover
 blxa = blendCrossover 0.5
@@ -81,7 +80,7 @@ logStats = WriteEvery 10 $ \iterno pop ->
 
 printStats :: [(Int, Objective, Objective)] -> IO ()
 printStats stats = do
-  printf "# %-10s %15s %15s\n" "generation" "medianObjective" "bestObjective"
+  printf "# %-10s %15s %15s\n" "generation" "median" "best"
   flip mapM_ stats $ \(iterno, median, best) ->
       printf "%12d %15.3g %15.3g\n" iterno median best
 
@@ -105,6 +104,7 @@ printBest pop = do
 main = do
   args <- getArgs
   conf <- case args of
+           []       -> return (lookup "gm" mutationOps, lookup "undx" crossoverOps)
            (m:x:[]) -> return (lookup m mutationOps, lookup x crossoverOps)
            _        -> printUsage
   case conf of
@@ -117,6 +117,6 @@ main = do
        if (abs bestF <= precision)
           then exitWith ExitSuccess
           else do
-            printf "# failed to converge: best residual=%.5f, target=-%g\n" bestF precision
+            printf "# failed to converge: best residual=%.5g, target=%g\n" bestF precision
             exitWith (ExitFailure 2)  -- failed to find a solution
     _ -> printUsage
