@@ -86,13 +86,13 @@ decodeBinary :: (Bits b, Integral b) => (b, b) -> [Bool] -> b
 decodeBinary = decodeWithCode id
 
 -- | Encode a real number in the range @(from, to)@ (inclusive)
--- width @n@ equally spaced discretization values to binary Gray code.
+-- with @n@ equally spaced discrete values in binary Gray code.
 encodeGrayReal :: (RealFrac a) => (a, a) -> Int -> a -> [Bool]
 encodeGrayReal range n = encodeGray (0, n-1) . toDiscreteR range n
 
 -- | Decode a binary sequence using Gray code to a real value in the
 -- range @(from, to)@, assuming it was discretized with @n@ equally
--- spaced values.
+-- spaced values (see 'encodeGrayReal').
 decodeGrayReal :: (RealFrac a) => (a, a) -> Int -> [Bool] -> a
 decodeGrayReal range n = fromDiscreteR range n . decodeGray (0, n-1)
 
