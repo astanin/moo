@@ -201,7 +201,7 @@ simulatedBinaryCrossover _ _  = error "bad number of parents"
 -- |For every variable in the genome with probability @p@ replace its
 -- value @v@ with @v + sigma*N(0,1)@, where @N(0,1)@ is a normally
 -- distributed random variable with mean equal 0 and variance equal 1.
--- With probability @(1 - n*p)@, where @n@ is the number
+-- With probability @(1 - p)^n@, where @n@ is the number
 -- of variables, the genome remains unaffected.
 gaussianMutate :: Double  -- ^ probability @p@
                -> Double  -- ^ @sigma@
