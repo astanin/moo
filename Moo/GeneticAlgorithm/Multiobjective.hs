@@ -26,7 +26,6 @@ import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
 import Data.List (sortBy, groupBy)
 
-
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
 -- values of @p@ is better than the respective value of @q@, and the other
 -- are not worse.
@@ -45,30 +44,39 @@ dominates ptypes p q =
 
 
 type EvaluatedGenome a = (Genome a, [Objective])
-data DomRank a = DomRank { dr'dominatedBy :: Int
-                         , dr'dominates :: [EvaluatedGenome a] }
-    deriving (Show, Eq)
+
+data IntermediateRank a = IntermediateRank {
+      ir'dominatedBy :: Int
+    , ir'dominates :: [EvaluatedGenome a]
+    } deriving (Show, Eq)
+
+
+data RankedSolution a = RankedSolution {
+      rs'genome :: EvaluatedGenome a
+    , rs'nondominationRank :: Int  -- 0 is the best
+    , rs'localCrowdingDistnace :: Double
+    } deriving (Show, Eq)
 
 
 -- | Build a list of non-dominated fronts. The best solutions are in the first front.
+-- FIXME: this is probably O(m N^3 log N), replace with the fast imperative non-dominated sort
 nondominatedSort :: [ProblemType] -> [EvaluatedGenome a] -> [[EvaluatedGenome a]]
 nondominatedSort ptypes gs =
-    let drs = map (dr'dominatedBy . genomeDomRank ptypes gs) gs
-        -- FIXME: this is probably O(m N^3 log N), replace with the imperative fast non-dominated sort
+    let drs = map (ir'dominatedBy . rankGenome ptypes gs) gs
         fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
     in  map (map fst) fronts
 
 
 -- | Calculate the number of solutions which dominate the genome,
 -- and build a set of solutions which the genome dominates
-genomeDomRank :: [ProblemType] -> [EvaluatedGenome a] -> EvaluatedGenome a -> DomRank a
-genomeDomRank ptypes allGenomes genome =
+rankGenome :: [ProblemType] -> [EvaluatedGenome a] -> EvaluatedGenome a -> IntermediateRank a
+rankGenome ptypes allGenomes genome =
     let this = snd genome
         -- dominating are better than this genome
         dominating = filter (\(_,other) -> dominates ptypes other this) allGenomes
         -- this genome is better than dominated ones
         dominated  = filter (\(_,other) -> dominates ptypes this other) allGenomes
-    in  DomRank (length dominating) dominated
+    in  IntermediateRank (length dominating) dominated
 
 
 -- | Crowding distance of a point @p@, as defined by Deb et
@@ -104,3 +112,35 @@ crowdingDistances pop@(objvals:_) =
 
 sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
 sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
+
+-- | Given there is non-domination rank @rank_i@, and local crowding
+-- distance @distance_i@ assigned to every individual @i@, the partial
+-- order between individuals @i@ and @q@ is defined by relation
+--
+-- @i >: j@ if @rank_i < rank_j@ or (@rank_i = rank_j@ and @distance_i
+-- > distance_j@).
+--
+crowdedCompare :: RankedSolution a -> RankedSolution a -> Ordering
+crowdedCompare (RankedSolution gi ranki disti) (RankedSolution gj rankj distj) =
+    case (ranki < rankj, ranki == rankj, disti > distj) of
+      (True, _, _) -> GT
+      (_, True, True) -> GT
+      (_, True, False) -> if disti == distj
+                          then EQ
+                          else LT
+      _  -> LT
+
+
+-- | Assign non-domination rank and crowding distances to all solutions.
+--rankAllSolutions :: [ProblemType] -> [EvaluatedGenome a] -> [RankedSolution a]
+rankAllSolutions ptypes genomes =
+    let -- non-dominated fronts
+        fronts = nondominatedSort ptypes genomes
+        -- for every non-dominated front
+        frontsDists = map (crowdingDistances . map snd) fronts
+        ranks = iterate (+1) 1
+    in  concatMap rankedSolutions1 (zip3 fronts ranks frontsDists)
+  where
+    rankedSolutions1 :: ([EvaluatedGenome a], Int, [Double]) -> [RankedSolution a]
+    rankedSolutions1 input@(front, rank, dists) =
+        zipWith (\g d -> RankedSolution g rank d) front dists
