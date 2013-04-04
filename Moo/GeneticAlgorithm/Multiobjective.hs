@@ -20,6 +20,10 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Selection
 
 
+import Data.Function (on)
+import Data.List (sortBy, groupBy)
+
+
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
 -- values of @p@ is better than the respective value of @q@, and the other
 -- are not worse.
@@ -44,10 +48,12 @@ data DomRank a = DomRank { dr'dominatedBy :: Int
 
 
 -- | Build a list of non-dominated fronts. The best solutions are in the first front.
-fastNondominatedSort :: [ProblemType] -> [EvaluatedGenome a] -> [[EvaluatedGenome a]]
-fastNondominatedSort ptypes gs =
-    let granks = map (genomeDomRank ptypes gs) gs
-    in  undefined
+nondominatedSort :: [ProblemType] -> [EvaluatedGenome a] -> [[EvaluatedGenome a]]
+nondominatedSort ptypes gs =
+    let drs = map (dr'dominatedBy . genomeDomRank ptypes gs) gs
+        -- FIXME: this is probably O(m N^3 log N), replace with imperative fast non-dominated sort
+        fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
+    in  map (map fst) fronts
 
 
 -- | Calculate the number of solutions which dominate the genome,

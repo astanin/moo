@@ -34,4 +34,10 @@ testMultiobjective =
         assertEqual "last genome"
                     (DomRank {dr'dominatedBy = 0, dr'dominates = (take 3 genomes)})
                     (genomeDomRank [Minimizing,Minimizing] genomes (last genomes))
+    , "non-dominated sort" ~: do
+        let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
+                      , ([3], [1,1.5]), ([3,3], [1.5, 0.5]), ([4], [0,0::Double])]
+        assertEqual "non-dominated fronts"
+                    [[[4]],[[3],[3,3]],[[1]],[[2],[2,2]]]
+                    (map (map fst) $ nondominatedSort [Minimizing,Minimizing] genomes)
     ]
