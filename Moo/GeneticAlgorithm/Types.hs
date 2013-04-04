@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Types
     , takeGenome
     , takeObjectiveValue
     -- * GA operators
+    , ProblemType (..)
     , ObjectiveFunction(..)
     , SelectionOp
     , CrossoverOp
@@ -39,6 +40,10 @@ takeGenome = fst
 
 takeObjectiveValue :: Phenotype a -> Objective
 takeObjectiveValue = snd
+
+-- | A type of optimization problem: whether the objective function
+-- has to be miminized, or maximized.
+data ProblemType = Minimizing | Maximizing deriving (Show, Eq)
 
 -- | A function to evaluate a genome should be an instance of
 -- 'ObjectiveFunction' class. It may be called a cost function for

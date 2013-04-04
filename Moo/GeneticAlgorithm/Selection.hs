@@ -15,7 +15,6 @@ module Moo.GeneticAlgorithm.Selection
   , sigmaScale
   , rankScale
   -- * Helpers
-  , ProblemType(..)
   , bestFirst
   ) where
 
@@ -28,10 +27,6 @@ import Control.Arrow (second)
 import Data.List (sortBy)
 import Data.Function (on)
 
-
--- | A type of optimization problem: whether the objective function
--- has to be miminized, or maximized.
-data ProblemType = Minimizing | Maximizing deriving (Show, Eq)
 
 -- | Apply given scaling or other transform to population before selection.
 withPopulationTransform :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a

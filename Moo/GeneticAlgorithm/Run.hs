@@ -17,7 +17,7 @@ module Moo.GeneticAlgorithm.Run (
 ) where
 
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Selection (ProblemType(..), bestFirst)
+import Moo.GeneticAlgorithm.Selection (bestFirst)
 import Moo.GeneticAlgorithm.Types
 
 import Data.Monoid (Monoid, mempty, mappend)
