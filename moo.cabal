@@ -51,9 +51,9 @@ Library
     other-modules:      Moo.GeneticAlgorithm.LinAlg
 
 
-Test-Suite test-problems
+Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
-  Main-Is:              test-problems.hs
+  Main-Is:              moo-tests.hs
   Other-Modules:        Tests.Common
                       , Tests.Problems.Rosenbrock
                       , Moo.GeneticAlgorithm
