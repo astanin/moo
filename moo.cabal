@@ -37,6 +37,7 @@ Library
                       , random-shuffle >= 0.0.2
                       , mtl >= 2
                       , time
+                      , array
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Types
@@ -79,6 +80,7 @@ Test-Suite moo-tests
     , gray-code >= 0.2.1
     , mtl
     , time
+    , array
 
 source-repository head
   type:     git

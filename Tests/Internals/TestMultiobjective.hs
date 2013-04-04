@@ -40,4 +40,10 @@ testMultiobjective =
         assertEqual "non-dominated fronts"
                     [[[4]],[[3],[3,3]],[[1]],[[2],[2,2]]]
                     (map (map fst) $ nondominatedSort [Minimizing,Minimizing] genomes)
+    , "calculate crowding distance" ~: do
+        let inf = 1.0/0.0 :: Double
+        assertEqual "two points" [inf, inf] $ crowdingDistances [[1],[2]]
+        assertEqual "4 points" [inf, 2.5, inf, 2.0] $ crowdingDistances [[1.0], [2.0], [4.0], [3.5]]
+        assertEqual "4 points 2D" [inf, 2.0, inf, 0.75, 2.0] $
+                    crowdingDistances [[3,1], [1.75,1.75], [1,3], [2,2], [2.125,2.125]]
     ]

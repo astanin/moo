@@ -20,6 +20,9 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Selection
 
 
+import Control.Monad (forM_)
+import Data.Array (Array, array, (!), elems)
+import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
 import Data.List (sortBy, groupBy)
 
@@ -51,7 +54,7 @@ data DomRank a = DomRank { dr'dominatedBy :: Int
 nondominatedSort :: [ProblemType] -> [EvaluatedGenome a] -> [[EvaluatedGenome a]]
 nondominatedSort ptypes gs =
     let drs = map (dr'dominatedBy . genomeDomRank ptypes gs) gs
-        -- FIXME: this is probably O(m N^3 log N), replace with imperative fast non-dominated sort
+        -- FIXME: this is probably O(m N^3 log N), replace with the imperative fast non-dominated sort
         fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
     in  map (map fst) fronts
 
@@ -66,3 +69,38 @@ genomeDomRank ptypes allGenomes genome =
         -- this genome is better than dominated ones
         dominated  = filter (\(_,other) -> dominates ptypes this other) allGenomes
     in  DomRank (length dominating) dominated
+
+
+-- | Crowding distance of a point @p@, as defined by Deb et
+-- al. (2002), is an estimate (the sum of dimensions in their
+-- pseudocode) of the largest cuboid enclosing the point without
+-- including any other point in the population.
+crowdingDistances :: [[Objective]] -> [Double]
+crowdingDistances [] = []
+crowdingDistances pop@(objvals:_) =
+    let m = length objvals  -- number of objectives
+        n = length pop      -- number of genomes
+        inf = 1.0/0.0 :: Double
+        sortByObjective i = sortIndicesBy (compare `on` (!! i)) pop
+        -- (genome-idx, objective-idx) -> objective value
+        ovTable = array ((0,0), (n-1, m-1))
+                  [ ((i, objid), (pop !! i) !! objid)
+                  | i <- [0..(n-1)], objid <- [0..(m-1)] ]
+        -- calculate crowding distances
+        distances = runSTArray $ do
+          ss <- newArray (0, n-1) 0.0  -- initialize distances
+          forM_ [0..(m-1)] $ \objid -> do    -- for every objective
+            let ixs = sortByObjective objid
+              -- for all inner points
+            forM_ (zip3 ixs (drop 1 ixs) (drop 2 ixs)) $ \(iprev, i, inext) -> do
+              sum_of_si <- readArray ss i
+              let si = (ovTable ! (inext, objid)) - (ovTable ! (iprev, objid))
+              writeArray ss i (sum_of_si + si)
+            writeArray ss (head ixs) inf   -- boundary points have infinite cuboids
+            writeArray ss (last ixs) inf
+          return ss
+    in elems distances
+
+
+sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
+sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
