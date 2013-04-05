@@ -5,7 +5,7 @@ import Test.HUnit
 
 
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Multiobjective
+import Moo.GeneticAlgorithm.Multiobjective.NSGA2
 
 
 testMultiobjective =

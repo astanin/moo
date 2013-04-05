@@ -51,6 +51,7 @@ Library
                       , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.Statistics
     other-modules:      Moo.GeneticAlgorithm.LinAlg
+                      , Moo.GeneticAlgorithm.Multiobjective.NSGA2
 
 
 Test-Suite moo-tests
@@ -63,6 +64,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Continuous
+                      , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Run
@@ -70,6 +72,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Statistics
+                      , Moo.GeneticAlgorithm.Multiobjective.NSGA2
   Build-Depends:
       moo
     , base

@@ -1,12 +1,7 @@
 {- |
 
-Multiobjective optimization.
-
--}
-
-module Moo.GeneticAlgorithm.Multiobjective where
-
-{---- NSGA-II ----
+NSGA-II. A Fast Elitist Non-Dominated Sorting Genetic
+Algorithm for Multi-Objective Optimization.
 
 Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. A. M. T. (2002). A
 fast and elitist multiobjective genetic algorithm:
@@ -14,6 +9,8 @@ NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 182-197.
 
 -}
+
+module Moo.GeneticAlgorithm.Multiobjective.NSGA2 where
 
 
 import Moo.GeneticAlgorithm.Types
