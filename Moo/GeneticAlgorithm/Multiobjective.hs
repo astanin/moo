@@ -17,11 +17,10 @@ NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 
 
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Selection
 
 
 import Control.Monad (forM_)
-import Data.Array (Array, array, (!), elems)
+import Data.Array (array, (!), elems)
 import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
 import Data.List (sortBy, groupBy)
@@ -43,6 +42,7 @@ dominates ptypes p q =
     better1 (Maximizing, pv, qv) = pv > qv
 
 
+-- | A solution with all objective functions evaluated.
 type EvaluatedGenome a = (Genome a, [Objective])
 
 data IntermediateRank a = IntermediateRank {
@@ -51,10 +51,11 @@ data IntermediateRank a = IntermediateRank {
     } deriving (Show, Eq)
 
 
+-- | Solution and its non-dominated rank and local crowding distance.
 data RankedSolution a = RankedSolution {
       rs'genome :: EvaluatedGenome a
-    , rs'nondominationRank :: Int  -- 0 is the best
-    , rs'localCrowdingDistnace :: Double
+    , rs'nondominationRank :: Int  -- ^ @0@ is the best
+    , rs'localCrowdingDistnace :: Double  -- ^ @Infinity@ for less-crowded boundary points
     } deriving (Show, Eq)
 
 
@@ -117,11 +118,11 @@ sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
 -- distance @distance_i@ assigned to every individual @i@, the partial
 -- order between individuals @i@ and @q@ is defined by relation
 --
--- @i >: j@ if @rank_i < rank_j@ or (@rank_i = rank_j@ and @distance_i
--- > distance_j@).
+-- @i >: j@ if @rank_i < rank_j@ or (@rank_i = rank_j@ and @distance_i@
+-- @>@ @distance_j@).
 --
 crowdedCompare :: RankedSolution a -> RankedSolution a -> Ordering
-crowdedCompare (RankedSolution gi ranki disti) (RankedSolution gj rankj distj) =
+crowdedCompare (RankedSolution _ ranki disti) (RankedSolution _ rankj distj) =
     case (ranki < rankj, ranki == rankj, disti > distj) of
       (True, _, _) -> GT
       (_, True, True) -> GT
@@ -132,7 +133,7 @@ crowdedCompare (RankedSolution gi ranki disti) (RankedSolution gj rankj distj) =
 
 
 -- | Assign non-domination rank and crowding distances to all solutions.
---rankAllSolutions :: [ProblemType] -> [EvaluatedGenome a] -> [RankedSolution a]
+rankAllSolutions :: [ProblemType] -> [EvaluatedGenome a] -> [RankedSolution a]
 rankAllSolutions ptypes genomes =
     let -- non-dominated fronts
         fronts = nondominatedSort ptypes genomes
@@ -142,5 +143,5 @@ rankAllSolutions ptypes genomes =
     in  concatMap rankedSolutions1 (zip3 fronts ranks frontsDists)
   where
     rankedSolutions1 :: ([EvaluatedGenome a], Int, [Double]) -> [RankedSolution a]
-    rankedSolutions1 input@(front, rank, dists) =
+    rankedSolutions1 (front, rank, dists) =
         zipWith (\g d -> RankedSolution g rank d) front dists

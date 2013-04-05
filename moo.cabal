@@ -43,6 +43,7 @@ Library
                       , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Continuous
+                      , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Run
