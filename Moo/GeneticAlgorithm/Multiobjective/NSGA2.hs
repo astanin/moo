@@ -9,6 +9,12 @@ fast and elitist multiobjective genetic algorithm:
 NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 182-197.
 
+Functions to be used:
+
+  'nsgaiiRanking', 'nondominatedRanking'
+
+The others are exported for testing only.
+
 -}
 
 module Moo.GeneticAlgorithm.Multiobjective.NSGA2 where
@@ -144,6 +150,26 @@ rankAllSolutions ptypes genomes =
 
 
 type SingleObjectiveProblem fn = ( ProblemType , fn )
+type MultiObjectiveProblem fn = [SingleObjectiveProblem fn]
+
+
+-- | To every genome in the population, assign a single objective
+-- value according to its non-domination rank. This ranking is
+-- supposed to be used once in the beginning of the NSGA-II algorithm.
+nondominatedRanking
+    :: forall fn a . ObjectiveFunction fn a
+    => MultiObjectiveProblem fn     -- ^ list of @problems@
+    -> [Genome a]                   -- ^ a population of raw @genomes@
+    -> [Objective]
+nondominatedRanking problems genomes =
+    let ptypes = map fst problems
+        egs = evalAllObjectives problems genomes
+        fronts = nondominatedSort ptypes egs
+    in  concatMap assignRanks (zip fronts (iterate (+1) 1))
+  where
+    assignRanks :: ([EvaluatedGenome a], Int) -> [Objective]
+    assignRanks (gs, r) = map (fromIntegral . snd) $ zip gs (repeat r)
+
 
 -- | To every genome in the population, assign a single objective value
 -- according to its non-domination rank and local crowding distance
@@ -151,7 +177,7 @@ type SingleObjectiveProblem fn = ( ProblemType , fn )
 -- operator, and return sequence positions).
 nsgaiiRanking
     :: forall fn a . ObjectiveFunction fn a
-    => [SingleObjectiveProblem fn]  -- ^ list of @problems@
+    => MultiObjectiveProblem fn     -- ^ a list of @problems@
     -> [Genome a]                   -- ^ a population of raw @genomes@
     -> [Objective]
 nsgaiiRanking problems genomes =
@@ -164,8 +190,8 @@ nsgaiiRanking problems genomes =
 -- | Calculate multiple objective per every genome in the population.
 evalAllObjectives
     :: forall fn a . ObjectiveFunction fn a
-    => [SingleObjectiveProblem fn]
-    -> [Genome a]
+    => MultiObjectiveProblem fn    -- ^ a list of @problems@
+    -> [Genome a]                  -- ^ a population of raw @genomes@
     -> [EvaluatedGenome a]
 evalAllObjectives problems genomes =
     let pops_per_objective = map (\(_, f) -> evalObjective f genomes) problems
