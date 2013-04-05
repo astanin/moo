@@ -87,7 +87,6 @@ crowdingDistances pop@(objvals:_) =
     let m = length objvals  -- number of objectives
         n = length pop      -- number of genomes
         inf = 1.0/0.0 :: Double
-        sortByObjective i = sortIndicesBy (compare `on` (!! i)) pop
         -- (genome-idx, objective-idx) -> objective value
         ovTable = array ((0,0), (n-1, m-1))
                   [ ((i, objid), (pop !! i) !! objid)
@@ -96,7 +95,7 @@ crowdingDistances pop@(objvals:_) =
         distances = runSTArray $ do
           ss <- newArray (0, n-1) 0.0  -- initialize distances
           forM_ [0..(m-1)] $ \objid -> do    -- for every objective
-            let ixs = sortByObjective objid
+            let ixs = sortByObjective objid pop
               -- for all inner points
             forM_ (zip3 ixs (drop 1 ixs) (drop 2 ixs)) $ \(iprev, i, inext) -> do
               sum_of_si <- readArray ss i
@@ -106,10 +105,12 @@ crowdingDistances pop@(objvals:_) =
             writeArray ss (last ixs) inf
           return ss
     in elems distances
-
-
-sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
-sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
+  where
+    sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
+    sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
+    --
+    sortByObjective :: Int -> [[Objective]] -> [Int]
+    sortByObjective i pop = sortIndicesBy (compare `on` (!! i)) pop
 
 -- | Given there is non-domination rank @rank_i@, and local crowding
 -- distance @distance_i@ assigned to every individual @i@, the partial
