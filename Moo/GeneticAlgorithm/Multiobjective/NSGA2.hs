@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 {- |
 
 NSGA-II. A Fast Elitist Non-Dominated Sorting Genetic
@@ -20,7 +21,7 @@ import Control.Monad (forM_)
 import Data.Array (array, (!), elems)
 import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
-import Data.List (sortBy, groupBy)
+import Data.List (sortBy, groupBy, transpose)
 
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
 -- values of @p@ is better than the respective value of @q@, and the other
@@ -106,9 +107,6 @@ crowdingDistances pop@(objvals:_) =
           return ss
     in elems distances
   where
-    sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
-    sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
-    --
     sortByObjective :: Int -> [[Objective]] -> [Int]
     sortByObjective i pop = sortIndicesBy (compare `on` (!! i)) pop
 
@@ -143,3 +141,38 @@ rankAllSolutions ptypes genomes =
     rankedSolutions1 :: ([EvaluatedGenome a], Int, [Double]) -> [RankedSolution a]
     rankedSolutions1 (front, rank, dists) =
         zipWith (\g d -> RankedSolution g rank d) front dists
+
+
+type SingleObjectiveProblem fn = ( ProblemType , fn )
+
+-- | To every genome in the population, assign a single objective value
+-- according to its non-domination rank and local crowding distance
+-- (i.e. sort the population with NSGA-II crowded comparision
+-- operator, and return sequence positions).
+nsgaiiRanking
+    :: forall fn a . ObjectiveFunction fn a
+    => [SingleObjectiveProblem fn]  -- ^ list of @problems@
+    -> [Genome a]                   -- ^ a population of raw @genomes@
+    -> [Objective]
+nsgaiiRanking problems genomes =
+    let ptypes = map fst problems
+        evaledGenomes = evalAllObjectives problems genomes
+        rankedGenomes = rankAllSolutions ptypes evaledGenomes
+        ranks = sortIndicesBy crowdedCompare rankedGenomes
+    in  map fromIntegral ranks
+
+-- | Calculate multiple objective per every genome in the population.
+evalAllObjectives
+    :: forall fn a . ObjectiveFunction fn a
+    => [SingleObjectiveProblem fn]
+    -> [Genome a]
+    -> [EvaluatedGenome a]
+evalAllObjectives problems genomes =
+    let pops_per_objective = map (\(_, f) -> evalObjective f genomes) problems
+        ovs_per_objective = map (map takeObjectiveValue) pops_per_objective
+        ovs_per_genome = transpose ovs_per_objective
+    in  zip genomes ovs_per_genome
+
+
+sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
+sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))

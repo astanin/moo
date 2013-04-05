@@ -54,4 +54,19 @@ testMultiobjective =
                     (map rs'nondominationRank rs)
         assertEqual "in-front crowding distance" [inf, inf, 2.0, inf, inf]
                     (map rs'localCrowdingDistnace rs)
+    , "calculate all objectives for all genomes" ~: do
+        let genomes = [[8, 2], [2.0, 1.0], [1.0, 2.0], [4,4]]
+        let objectives = [(Minimizing, sum), (Maximizing, product)]
+                       :: [(ProblemType, [Double] -> Double)]
+        let correct = [([8.0,2.0],[10.0,16.0]),([2.0,1.0],[3.0,2.0])
+                      ,([1.0,2.0],[3.0,2.0]),([4.0,4.0],[8.0,16.0])]
+        assertEqual "two objective functions" correct $
+                    evalAllObjectives objectives genomes
+    , "NSGA-II ranking with crowding" ~: do
+        let correct = [3.0, 0.0, 1.0, 2.0]
+        let objectives = [(Minimizing, sum), (Maximizing, product)]
+                       :: [(ProblemType, [Double] -> Double)]
+        assertEqual "4 solutions" correct $
+                    nsgaiiRanking objectives [[8,2],[2,1],[0.999,2],[4,4]]
+
     ]
