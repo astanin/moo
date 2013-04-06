@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, GADTs, ExistentialQuantification #-}
 
 module Moo.GeneticAlgorithm.Types
     (
@@ -18,6 +18,11 @@ module Moo.GeneticAlgorithm.Types
     -- * Dummy operators
     , noMutation
     , noCrossover
+    -- * Life cycle
+    , StepGA
+    , Cond(..)
+    , PopulationState
+    , StepResult(..)
     ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -87,3 +92,50 @@ noCrossover genomes = return (genomes, [])
 -- | Don't mutate.
 noMutation :: MutationOp a
 noMutation = return
+
+
+-- | A single step of the genetic algorithm. See also 'nextGeneration'.
+type StepGA m a = Cond a              -- ^ stop condition
+                -> PopulationState a  -- ^ population of the current generation
+                -> m (StepResult (Population a))  -- ^ population of the next generation
+
+
+-- | Iterations stop when the condition evaluates as @True@.
+data Cond a =
+      Generations Int                   -- ^ stop after @n@ generations
+    | IfObjective ([Objective] -> Bool) -- ^ stop when objective values satisfy the @predicate@
+    | forall b . Eq b => GensNoChange
+      { c'maxgens ::  Int                 -- ^ max number of generations for an indicator to be the same
+      , c'indicator ::  [Objective] -> b  -- ^ stall indicator function
+      , c'counter :: Maybe (b, Int)       -- ^ a counter (initially @Nothing@)
+      }                                 -- ^ terminate when evolution stalls
+    | Or (Cond a) (Cond a)              -- ^ stop when at least one of two conditions holds
+    | And (Cond a) (Cond a)             -- ^ stop when both conditions hold
+
+
+{-| On life cycle of the genetic algorithm:
+
+>
+>   [ start ]
+>       |
+>       v
+>   (genomes) --> [calculate objective] --> (evaluated genomes) --> [ stop ]
+>       ^  ^                                       |
+>       |  |                                       |
+>       |  `-----------.                           |
+>       |               \                          v
+>   [ mutate ]        (elite) <-------------- [ select ]
+>       ^                                          |
+>       |                                          |
+>       |                                          |
+>       |                                          v
+>   (genomes) <----- [ crossover ] <-------- (evaluted genomes)
+>
+
+PopulationState can represent either @genomes@ or @evaluated genomed@.
+-}
+type PopulationState a = Either [Genome a] [Phenotype a]
+
+
+-- | A data type to distinguish the last and intermediate steps results.
+data StepResult a = StopGA a | ContinueGA a deriving (Show)

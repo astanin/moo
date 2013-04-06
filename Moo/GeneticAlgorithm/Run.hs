@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ExistentialQuantification, Rank2Types #-}
+{-# LANGUAGE BangPatterns, Rank2Types #-}
 {- |
 
 Helper functions to run genetic algorithms and control iterations.
@@ -13,7 +13,6 @@ module Moo.GeneticAlgorithm.Run (
   -- * Iteration control
   , loop, loopWithLog, loopIO
   , Cond(..), LogHook(..), IOHook(..)
-  , PopulationState, StepResult(..), StepGA
 ) where
 
 import Moo.GeneticAlgorithm.Random
@@ -45,39 +44,6 @@ runIO initialize gaIO = do
   let (genomes0, rng') = runRandom initialize rng
   rngref <- newIORef rng'
   gaIO rngref genomes0
-
-{-| On life cycle of the genetic algorithm:
-
->
->   [ start ]
->       |
->       v
->   (genomes) --> [calculate objective] --> (evaluated genomes) --> [ stop ]
->       ^  ^                                       |
->       |  |                                       |
->       |  `-----------.                           |
->       |               \                          v
->   [ mutate ]        (elite) <-------------- [ select ]
->       ^                                          |
->       |                                          |
->       |                                          |
->       |                                          v
->   (genomes) <----- [ crossover ] <-------- (evaluted genomes)
->
-
-PopulationState can represent either @genomes@ or @evaluated genomed@.
--}
-type PopulationState a = Either [Genome a] [Phenotype a]
-
--- | A data type to distinguish the last and intermediate steps results.
-data StepResult a = StopGA a | ContinueGA a deriving (Show)
-
-
--- | A single step of the genetic algorithm. See also 'nextGeneration'.
-type StepGA m a = Cond a             -- ^ stop condition
-                -> PopulationState a  -- ^ population of the current generation
-                -> m (StepResult (Population a))  -- ^ population of the next generation
-
 
 -- | Construct a single step of the genetic algorithm.
 --
@@ -240,18 +206,6 @@ data IOHook a
     -- ^ custom or interactive stop condition
     | TimeLimit { io't :: Double }
     -- ^ terminate iteration after @t@ seconds
-
--- | Iterations stop when the condition evaluates as @True@.
-data Cond a =
-      Generations Int                   -- ^ stop after @n@ generations
-    | IfObjective ([Objective] -> Bool) -- ^ stop when objective values satisfy the @predicate@
-    | forall b . Eq b => GensNoChange
-      { c'maxgens ::  Int                 -- ^ max number of generations for an indicator to be the same
-      , c'indicator ::  [Objective] -> b  -- ^ stall indicator function
-      , c'counter :: Maybe (b, Int)       -- ^ a counter (initially @Nothing@)
-      }                                 -- ^ terminate when evolution stalls
-    | Or (Cond a) (Cond a)              -- ^ stop when at least one of two conditions holds
-    | And (Cond a) (Cond a)             -- ^ stop when both conditions hold
 
 evalCond :: (Cond a) -> Population a -> Bool
 evalCond (Generations n) _  = n <= 0
