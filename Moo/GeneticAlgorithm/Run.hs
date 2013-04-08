@@ -18,6 +18,7 @@ module Moo.GeneticAlgorithm.Run (
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection (bestFirst)
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.StopCondition
 
 import Data.Monoid (Monoid, mempty, mappend)
 import Data.Time.Clock.POSIX (getPOSIXTime)
@@ -206,30 +207,6 @@ data IOHook a
     -- ^ custom or interactive stop condition
     | TimeLimit { io't :: Double }
     -- ^ terminate iteration after @t@ seconds
-
-evalCond :: (Cond a) -> Population a -> Bool
-evalCond (Generations n) _  = n <= 0
-evalCond (IfObjective cond) p = cond . map takeObjectiveValue $ p
-evalCond (GensNoChange n _ Nothing) _ = n <= 1
-evalCond (GensNoChange n f (Just (prev, count))) p =
-    let new = f . map takeObjectiveValue $ p
-    in  (new == prev) && (count + 1 > n)
-evalCond (Or c1 c2) x = evalCond c1 x || evalCond c2 x
-evalCond (And c1 c2) x = evalCond c1 x && evalCond c2 x
-
-updateCond :: Population a -> Cond a -> Cond a
-updateCond _ (Generations n) = Generations (n-1)
-updateCond p (GensNoChange n f Nothing) =
-     -- called 1st time _after_ the 1st iteration
-    let counter = (Just (f (map takeObjectiveValue p), 1))
-    in GensNoChange n f counter
-updateCond p (GensNoChange n f (Just (v, c))) =
-    let v' = f (map takeObjectiveValue p) in if v' == v
-       then GensNoChange n f (Just (v, c+1))
-       else GensNoChange n f (Just (v', 1))
-updateCond p (And c1 c2) = And (updateCond p c1) (updateCond p c2)
-updateCond p (Or c1 c2) = Or (updateCond p c1) (updateCond p c2)
-updateCond _ c = c
 
 -- | Take a list of parents, run crossovers, and return a list of children.
 doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
