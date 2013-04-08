@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Utilities
   -- * Non-deterministic functions
     getRandomGenomes
   , withProbability
+  , doCrossovers
 ) where
 
 import Moo.GeneticAlgorithm.Types
@@ -47,3 +48,11 @@ getRandomGenomes :: (Random a, Ord a)
 getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
                                in  R gs rng'
+
+-- | Take a list of parents, run crossovers, and return a list of children.
+doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
+doCrossovers []      _     = return []
+doCrossovers parents xover = do
+  (children', parents') <- xover parents
+  rest <- doCrossovers parents' xover
+  return $ children' ++ rest

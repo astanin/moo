@@ -19,6 +19,7 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection (bestFirst)
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.StopCondition
+import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 
 import Data.Monoid (Monoid, mempty, mappend)
 import Data.Time.Clock.POSIX (getPOSIXTime)
@@ -207,11 +208,3 @@ data IOHook a
     -- ^ custom or interactive stop condition
     | TimeLimit { io't :: Double }
     -- ^ terminate iteration after @t@ seconds
-
--- | Take a list of parents, run crossovers, and return a list of children.
-doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
-doCrossovers []      _     = return []
-doCrossovers parents xover = do
-  (children', parents') <- xover parents
-  rest <- doCrossovers parents' xover
-  return $ children' ++ rest
