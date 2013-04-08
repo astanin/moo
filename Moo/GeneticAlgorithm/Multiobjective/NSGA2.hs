@@ -11,9 +11,10 @@ NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 
 Functions to be used:
 
-  'nsgaiiRanking', 'nondominatedRanking'
+  'nsga2Ranking', 'nondominatedRanking',
+  'stepNSGA2', 'stepNSGA2default'
 
-The others are exported for testing only.
+The other functions are exported for testing only.
 
 -}
 
@@ -22,9 +23,13 @@ module Moo.GeneticAlgorithm.Multiobjective.NSGA2 where
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Multiobjective.Types
+import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Utilities (doCrossovers)
+import Moo.GeneticAlgorithm.StopCondition (evalCond)
+import Moo.GeneticAlgorithm.Selection (tournamentSelect)
 
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, (<=<))
 import Data.Array (array, (!), elems)
 import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
@@ -172,17 +177,18 @@ nondominatedRanking problems genomes =
 -- according to its non-domination rank and local crowding distance
 -- (i.e. sort the population with NSGA-II crowded comparision
 -- operator, and return sequence positions).
-nsgaiiRanking
+nsga2Ranking
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn     -- ^ a list of @problems@
     -> [Genome a]                   -- ^ a population of raw @genomes@
     -> [Objective]
-nsgaiiRanking problems genomes =
+nsga2Ranking problems genomes =
     let ptypes = map fst problems
         evaledGenomes = evalAllObjectives problems genomes
         rankedGenomes = rankAllSolutions ptypes evaledGenomes
         ranks = sortIndicesBy crowdedCompare rankedGenomes
     in  map fromIntegral ranks
+
 
 -- | Calculate multiple objective per every genome in the population.
 evalAllObjectives
@@ -199,3 +205,112 @@ evalAllObjectives problems genomes =
 
 sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
 sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
+
+-- | A single step of the NSGA-II algorithm (Non-Dominated Sorting
+-- Genetic Algorithm for Multi-Objective Optimization).
+--
+-- The next population is selected from a common pool of parents and
+-- their children minimizing the non-domination rank and maximizing
+-- the crowding distance within the same rank.
+-- The first generation of children is produced without taking
+-- crowding into account.
+--
+-- Reference:
+-- Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. A. M. T. (2002). A
+-- fast and elitist multiobjective genetic algorithm:
+-- NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
+-- 182-197.
+--
+-- Deb et al. used a binary tournament selection, base on crowded
+-- comparison operator. To achieve the same effect, use
+-- 'stepNSGA2default' (or 'stepNSGA2' with 'tournamentSelect'
+-- @Minimizing 2 n@, where @n@ is the size of the population).
+--
+stepNSGA2
+    :: forall fn a . ObjectiveFunction fn a
+    => MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    -> SelectionOp a
+    -> CrossoverOp a
+    -> MutationOp a
+    -> StepGA Rand a
+stepNSGA2 problems select crossover mutate stop input = do
+  case input of
+    (Left rawgenomes) ->
+        stepNSGA2'firstGeneration problems select crossover mutate stop rawgenomes
+    (Right rankedgenomes) ->
+        stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes
+
+
+-- | A single step of NSGA-II algorithm with binary tournament selection.
+-- See also 'stepNSGA2'.
+stepNSGA2default
+    :: forall fn a . ObjectiveFunction fn a
+    => MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    -> CrossoverOp a
+    -> MutationOp a
+    -> StepGA Rand a
+stepNSGA2default problems crossover mutate stop popstate =
+    let n = either length length popstate
+        select = tournamentSelect Minimizing 2 n
+    in  stepNSGA2 problems select crossover mutate stop popstate
+
+
+stepNSGA2'firstGeneration
+    :: forall fn a . ObjectiveFunction fn a
+    => MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    -> SelectionOp a
+    -> CrossoverOp a
+    -> MutationOp a
+    -> Cond a
+    -> [Genome a]
+    -> Rand (StepResult [Phenotype a])
+stepNSGA2'firstGeneration problems select crossover mutate stop genomes = do
+  let objective = nondominatedRanking problems
+  let phenotypes = evalObjective objective genomes
+  if (evalCond stop phenotypes)
+      then return $ StopGA phenotypes  -- stop before the first iteration
+      else do
+        let popsize = length phenotypes
+        selected <- (shuffle <=< select) phenotypes
+        newgenomes <- (mapM mutate) <=< (flip doCrossovers crossover) $ selected
+        let pool = newgenomes ++ genomes
+        stepNSGA2'poolSelection problems popsize stop pool
+
+
+-- | Use normal selection, crossover, mutation to produce new
+-- children.  Select from a common pool of parents and children the
+-- best according to the least non-domination rank and crowding.
+stepNSGA2'nextGeneration
+     :: forall fn a . ObjectiveFunction fn a
+     => MultiObjectiveProblem fn   -- ^ a list of objective functions
+     -> SelectionOp a
+     -> CrossoverOp a
+     -> MutationOp a
+     -> Cond a
+     -> [Phenotype a]
+     -> Rand (StepResult [Phenotype a])
+stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes = do
+  let popsize = length rankedgenomes
+  selected <- select rankedgenomes
+  newgenomes <- (mapM mutate) <=< flip doCrossovers crossover <=< shuffle $ selected
+  let pool = (map takeGenome rankedgenomes) ++ newgenomes
+  stepNSGA2'poolSelection problems popsize stop pool
+
+
+-- | Take a pool of phenotypes of size 2N, ordered by the crowded
+-- comparison operator, and select N best. Check if the stop condition
+-- is satisfied.
+stepNSGA2'poolSelection
+    :: forall fn a . ObjectiveFunction fn a
+    => MultiObjectiveProblem fn   -- ^ a list of @objective@ functions
+    -> Int                  -- ^ @n@, the number of solutions to select
+    -> Cond a               -- ^ @stop@ condition
+    -> [Genome a]           -- ^ a common pool of parents and their children
+    -> Rand (StepResult [Phenotype a])
+stepNSGA2'poolSelection problems n stop pool = do
+    let objective = nsga2Ranking problems
+    let rankedgenomes = evalObjective objective pool
+    let selected = take n rankedgenomes  -- :: [Phenotype a]
+    return $ if evalCond stop selected
+             then StopGA selected
+             else ContinueGA selected

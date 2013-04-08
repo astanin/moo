@@ -67,6 +67,6 @@ testMultiobjective =
         let objectives = [(Minimizing, sum), (Maximizing, product)]
                        :: [(ProblemType, [Double] -> Double)]
         assertEqual "4 solutions" correct $
-                    nsgaiiRanking objectives [[8,2],[2,1],[0.999,2],[4,4]]
+                    nsga2Ranking objectives [[8,2],[2,1],[0.999,2],[4,4]]
 
     ]

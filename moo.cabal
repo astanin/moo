@@ -52,6 +52,8 @@ Library
                       , Moo.GeneticAlgorithm.Statistics
     other-modules:      Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
+                      , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.StopCondition
 
 
 Test-Suite moo-tests
@@ -73,6 +75,8 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Statistics
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
+                      , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.StopCondition
   Build-Depends:
       moo
     , base

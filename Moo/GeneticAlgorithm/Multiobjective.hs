@@ -1,5 +1,12 @@
 module Moo.GeneticAlgorithm.Multiobjective
-    ( module Moo.GeneticAlgorithm.Multiobjective.NSGA2 )
-    where
+    (
+    -- * Types
+      SingleObjectiveProblem
+    , MultiObjectiveProblem
+    -- * NSGA-II: A non-dominated sorting genetic algorithm
+    , stepNSGA2
+    , stepNSGA2default
+    ) where
 
+import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Multiobjective.NSGA2
