@@ -21,6 +21,7 @@ module Moo.GeneticAlgorithm.Multiobjective.NSGA2 where
 
 
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.Multiobjective.Types
 
 
 import Control.Monad (forM_)
@@ -147,10 +148,6 @@ rankAllSolutions ptypes genomes =
     rankedSolutions1 :: ([EvaluatedGenome a], Int, [Double]) -> [RankedSolution a]
     rankedSolutions1 (front, rank, dists) =
         zipWith (\g d -> RankedSolution g rank d) front dists
-
-
-type SingleObjectiveProblem fn = ( ProblemType , fn )
-type MultiObjectiveProblem fn = [SingleObjectiveProblem fn]
 
 
 -- | To every genome in the population, assign a single objective
