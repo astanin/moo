@@ -57,9 +57,6 @@ data ProblemType = Minimizing | Maximizing deriving (Show, Eq)
 --
 -- Some genetic algorithm operators, like 'rouletteSelect', require
 -- the 'Objective' to be non-negative.
---
--- 'evalObjective' should preserve the order of solutions in the
--- population.
 class ObjectiveFunction f a where
     evalObjective :: f -> [Genome a] -> Population a
 
@@ -72,6 +69,13 @@ instance (a1 ~ a2) =>
 instance (a1 ~ a2) =>
     ObjectiveFunction ([Genome a1] -> [Objective]) a2 where
         evalObjective f gs = zip gs (f gs)
+
+-- | Evaluate fitness (cost) of all genomes, possibly changing their
+-- order.
+instance (a1 ~ a2) =>
+    ObjectiveFunction ([Genome a1] -> [(Genome a1, Objective)]) a2 where
+        evalObjective f gs = f gs
+
 
 -- | A selection operator is responsible for selection.
 type SelectionOp a = Population a -> Rand [Genome a]

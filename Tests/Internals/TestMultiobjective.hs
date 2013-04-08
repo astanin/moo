@@ -2,6 +2,8 @@ module Tests.Internals.TestMultiobjective where
 
 
 import Test.HUnit
+import Data.Function (on)
+import Data.List (sortBy)
 
 
 import Moo.GeneticAlgorithm.Types
@@ -63,10 +65,12 @@ testMultiobjective =
         assertEqual "two objective functions" correct $
                     evalAllObjectives objectives genomes
     , "NSGA-II ranking with crowding" ~: do
-        let correct = [3.0, 0.0, 1.0, 2.0]
+        let correct = [([4.0,4.0],1.0),([2.0,1.0],2.0)
+                      ,([0.999,2.0],3.0),([8.0,2.0],4.0)]
         let objectives = [(Minimizing, sum), (Maximizing, product)]
                        :: [(ProblemType, [Double] -> Double)]
         assertEqual "4 solutions" correct $
-                    nsga2Ranking objectives [[8,2],[2,1],[0.999,2],[4,4]]
+                    sortBy (compare `on` snd)
+                           (nsga2Ranking objectives [[8,2],[2,1],[0.999,2],[4,4]])
 
     ]

@@ -26,7 +26,7 @@ import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 import Moo.GeneticAlgorithm.StopCondition (evalCond)
-import Moo.GeneticAlgorithm.Selection (tournamentSelect)
+import Moo.GeneticAlgorithm.Selection (tournamentSelect, bestFirst)
 
 
 import Control.Monad (forM_, (<=<))
@@ -34,6 +34,7 @@ import Data.Array (array, (!), elems)
 import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
 import Data.List (sortBy, groupBy, transpose)
+
 
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
 -- values of @p@ is better than the respective value of @q@, and the other
@@ -126,18 +127,18 @@ crowdingDistances pop@(objvals:_) =
 -- distance @distance_i@ assigned to every individual @i@, the partial
 -- order between individuals @i@ and @q@ is defined by relation
 --
--- @i >: j@ if @rank_i < rank_j@ or (@rank_i = rank_j@ and @distance_i@
+-- @i ~ j@ if @rank_i < rank_j@ or (@rank_i = rank_j@ and @distance_i@
 -- @>@ @distance_j@).
 --
 crowdedCompare :: RankedSolution a -> RankedSolution a -> Ordering
 crowdedCompare (RankedSolution _ ranki disti) (RankedSolution _ rankj distj) =
     case (ranki < rankj, ranki == rankj, disti > distj) of
-      (True, _, _) -> GT
-      (_, True, True) -> GT
+      (True, _, _) -> LT
+      (_, True, True) -> LT
       (_, True, False) -> if disti == distj
                           then EQ
-                          else LT
-      _  -> LT
+                          else GT
+      _  -> GT
 
 
 -- | Assign non-domination rank and crowding distances to all solutions.
@@ -158,36 +159,42 @@ rankAllSolutions ptypes genomes =
 -- | To every genome in the population, assign a single objective
 -- value according to its non-domination rank. This ranking is
 -- supposed to be used once in the beginning of the NSGA-II algorithm.
+--
+-- 'nondominatedRanking' reorders the genomes.
 nondominatedRanking
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn     -- ^ list of @problems@
     -> [Genome a]                   -- ^ a population of raw @genomes@
-    -> [Objective]
+    -> [(Genome a, Objective)]
 nondominatedRanking problems genomes =
     let ptypes = map fst problems
         egs = evalAllObjectives problems genomes
         fronts = nondominatedSort ptypes egs
-    in  concatMap assignRanks (zip fronts (iterate (+1) 1))
+        ranks = concatMap assignRanks (zip fronts (iterate (+1) 1))
+    in  ranks
   where
-    assignRanks :: ([EvaluatedGenome a], Int) -> [Objective]
-    assignRanks (gs, r) = map (fromIntegral . snd) $ zip gs (repeat r)
+    assignRanks :: ([EvaluatedGenome a], Int) -> [(Genome a, Objective)]
+    assignRanks (gs, r) = map (\(eg, rank) -> (fst eg, fromIntegral rank)) $ zip gs (repeat r)
 
 
 -- | To every genome in the population, assign a single objective value
 -- according to its non-domination rank and local crowding distance
 -- (i.e. sort the population with NSGA-II crowded comparision
 -- operator, and return sequence positions).
+--
+-- 'nsga2Ranking' reorder the genomes.
 nsga2Ranking
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn     -- ^ a list of @problems@
     -> [Genome a]                   -- ^ a population of raw @genomes@
-    -> [Objective]
+    -> [(Genome a, Objective)]
 nsga2Ranking problems genomes =
     let ptypes = map fst problems
         evaledGenomes = evalAllObjectives problems genomes
         rankedGenomes = rankAllSolutions ptypes evaledGenomes
-        ranks = sortIndicesBy crowdedCompare rankedGenomes
-    in  map fromIntegral ranks
+        ranks = map (+1) $ sortIndicesBy crowdedCompare rankedGenomes
+    in  zip (map (fst . rs'genome) rankedGenomes)
+            (map fromIntegral ranks)
 
 
 -- | Calculate multiple objective per every genome in the population.
@@ -309,7 +316,7 @@ stepNSGA2'poolSelection
     -> Rand (StepResult [Phenotype a])
 stepNSGA2'poolSelection problems n stop pool = do
     let objective = nsga2Ranking problems
-    let rankedgenomes = evalObjective objective pool
+    let rankedgenomes = bestFirst Minimizing $ evalObjective objective pool
     let selected = take n rankedgenomes  -- :: [Phenotype a]
     return $ if evalCond stop selected
              then StopGA selected
