@@ -55,13 +55,13 @@ dominates ptypes p q =
 
 data IntermediateRank a = IntermediateRank {
       ir'dominatedBy :: Int
-    , ir'dominates :: [EvaluatedGenome a]
+    , ir'dominates :: [MultiPhenotype a]
     } deriving (Show, Eq)
 
 
 -- | Solution and its non-dominated rank and local crowding distance.
 data RankedSolution a = RankedSolution {
-      rs'genome :: EvaluatedGenome a
+      rs'genome :: MultiPhenotype a
     , rs'nondominationRank :: Int  -- ^ @0@ is the best
     , rs'localCrowdingDistnace :: Double  -- ^ @Infinity@ for less-crowded boundary points
     } deriving (Show, Eq)
@@ -69,7 +69,7 @@ data RankedSolution a = RankedSolution {
 
 -- | Build a list of non-dominated fronts. The best solutions are in the first front.
 -- FIXME: this is probably O(m N^3 log N), replace with the fast imperative non-dominated sort
-nondominatedSort :: [ProblemType] -> [EvaluatedGenome a] -> [[EvaluatedGenome a]]
+nondominatedSort :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
 nondominatedSort ptypes gs =
     let drs = map (ir'dominatedBy . rankGenome ptypes gs) gs
         fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
@@ -78,7 +78,7 @@ nondominatedSort ptypes gs =
 
 -- | Calculate the number of solutions which dominate the genome,
 -- and build a set of solutions which the genome dominates
-rankGenome :: [ProblemType] -> [EvaluatedGenome a] -> EvaluatedGenome a -> IntermediateRank a
+rankGenome :: [ProblemType] -> [MultiPhenotype a] -> MultiPhenotype a -> IntermediateRank a
 rankGenome ptypes allGenomes genome =
     let this = snd genome
         -- dominating are better than this genome
@@ -139,7 +139,7 @@ crowdedCompare (RankedSolution _ ranki disti) (RankedSolution _ rankj distj) =
 
 
 -- | Assign non-domination rank and crowding distances to all solutions.
-rankAllSolutions :: [ProblemType] -> [EvaluatedGenome a] -> [RankedSolution a]
+rankAllSolutions :: [ProblemType] -> [MultiPhenotype a] -> [RankedSolution a]
 rankAllSolutions ptypes genomes =
     let -- non-dominated fronts
         fronts = nondominatedSort ptypes genomes
@@ -148,7 +148,7 @@ rankAllSolutions ptypes genomes =
         ranks = iterate (+1) 1
     in  concatMap rankedSolutions1 (zip3 fronts ranks frontsDists)
   where
-    rankedSolutions1 :: ([EvaluatedGenome a], Int, [Double]) -> [RankedSolution a]
+    rankedSolutions1 :: ([MultiPhenotype a], Int, [Double]) -> [RankedSolution a]
     rankedSolutions1 (front, rank, dists) =
         zipWith (\g d -> RankedSolution g rank d) front dists
 
@@ -170,7 +170,7 @@ nondominatedRanking problems genomes =
         ranks = concatMap assignRanks (zip fronts (iterate (+1) 1))
     in  ranks
   where
-    assignRanks :: ([EvaluatedGenome a], Int) -> [(Genome a, Objective)]
+    assignRanks :: ([MultiPhenotype a], Int) -> [(Genome a, Objective)]
     assignRanks (gs, r) = map (\(eg, rank) -> (fst eg, fromIntegral rank)) $ zip gs (repeat r)
 
 
