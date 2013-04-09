@@ -29,11 +29,13 @@ import Moo.GeneticAlgorithm.StopCondition (evalCond)
 import Moo.GeneticAlgorithm.Selection (tournamentSelect, bestFirst)
 
 
-import Control.Monad (forM_, (<=<))
-import Data.Array (array, (!), elems)
-import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
+import Control.Monad (forM_, (<=<), when, liftM)
+import Control.Monad.ST (ST)
+import Data.Array (array, (!), elems, listArray)
+import Data.Array.ST (STArray, runSTArray, newArray, readArray, writeArray, getElems)
 import Data.Function (on)
 import Data.List (sortBy, groupBy)
+import Data.STRef
 
 
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
@@ -67,10 +69,126 @@ data RankedSolution a = RankedSolution {
     } deriving (Show, Eq)
 
 
--- | Build a list of non-dominated fronts. The best solutions are in the first front.
--- FIXME: this is probably O(m N^3 log N), replace with the fast imperative non-dominated sort
+-- | Fast non-dominated sort from (Deb et al. 2002).
+-- It is should be O(m N^2), with storage requirements of O(N^2).
 nondominatedSort :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
-nondominatedSort ptypes gs =
+nondominatedSort = nondominatedSortFast
+
+-- | This is a direct translation of the pseudocode from (Deb et al. 2002).
+nondominatedSortFast :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
+nondominatedSortFast ptypes gs =
+    let n = length gs   -- number of genomes
+        garray = listArray (0, n-1) gs
+        fronts = runSTArray $ do
+                     -- structure of sp array:
+                     -- sp [pi][0]    -- n_p, number of genomes dominating pi-th genome
+                     -- sp [pi][1]    -- size of S_p, how many genomes pi-th genome dominates
+                     -- sp [pi][2..]  -- indices of the genomes dominated by pi-th genome
+                     --               -- where pi in [0..n-1]
+                     --
+                     -- structure of the fronts array:
+                     -- fronts [0][i]        -- size of the i-th front
+                     -- fronts [1][start..start+fsizes[i]-1] -- indices of the elements of the i-th front
+                     --                                      -- where start = sum (take (i-1) fsizes)
+                     --
+                     -- domination table
+                     sp <- newArray ((0,0), (n-1, (n+2)-1)) 0 :: ST s (STArray s (Int,Int) Int)
+                     -- at most n fronts with 1 element each
+                     fronts <- newArray ((0,0), (1,n-1)) 0 :: ST s (STArray s (Int,Int) Int)
+                     forM_ (zip gs [0..]) $ \(p, pi) -> do  -- for each p in P
+                       forM_ (zip gs [0..]) $ \(q, qi) -> do  -- for each q in P
+                         let pvs = takeObjectiveValues p
+                         let qvs = takeObjectiveValues q
+                         when ( dominates ptypes pvs qvs ) $
+                              -- if p dominates q, include q in S_p
+                              includeInSp sp pi qi
+                         when ( dominates ptypes qvs pvs) $
+                              -- if q dominates p, increment n_p
+                              incrementNp sp pi
+                       np <- readArray sp (pi, 0)
+                       when (np == 0) $
+                            addToFront 0 fronts pi
+                     buildFronts sp fronts 0
+        frontSizes = takeWhile (>0) . take n $ elems fronts
+        frontElems = map (\i -> garray ! i) . drop n $ elems fronts
+    in  splitAll frontSizes frontElems
+
+  where
+
+    includeInSp sp pi qi = do
+      oldspsize <- readArray sp (pi, 1)
+      writeArray sp (pi, 2 + oldspsize) qi
+      writeArray sp (pi, 1) (oldspsize + 1)
+
+    incrementNp sp pi = do
+      oldnp <- readArray sp (pi, 0)
+      writeArray sp (pi, 0) (oldnp + 1)
+
+    -- size of the i-th front
+    frontSize fronts i =
+        readArray fronts (0, i)
+
+    frontStartIndex fronts frontno = do
+      -- start = sum (take (frontno-1) fsizes)
+      startref <- newSTRef 0
+      forM_ [0..(frontno-1)] $ \i -> do
+          oldstart <- readSTRef startref
+          l <- frontSize fronts i
+          writeSTRef startref (oldstart + l)
+      readSTRef startref
+
+    -- adjust fronts array by updating frontno-th front size and appending
+    -- pi to its elements; frontno should be the last front!
+    addToFront frontno fronts pi = do
+      -- update i-th front size and write an index in the correct position
+      start <- frontStartIndex fronts frontno
+      sz <- frontSize fronts frontno
+      writeArray fronts (1, start + sz) pi
+      writeArray fronts (0, frontno) (sz + 1)
+
+    -- elements of the i-th front
+    frontElems fronts i = do
+      start <- frontStartIndex fronts i
+      sz <- frontSize fronts i
+      felems <- newArray (0, sz-1) (-1) :: ST s (STArray s Int Int)
+      forM_ [0..sz-1] $ \elix ->
+          readArray fronts (1, start+elix) >>= writeArray felems elix
+      getElems felems
+
+    -- elements which are dominated by the element pi
+    dominatedSet sp pi = do
+      sz <- readArray sp (pi, 1)
+      delems <- newArray (0, sz-1) (-1) :: ST s (STArray s Int Int)
+      forM_ [0..sz-1] $ \elix ->
+          readArray sp (pi, 2+elix) >>= writeArray delems elix
+      getElems delems
+
+    buildFronts sp fronts i = do
+      fsz <- frontSize fronts i
+      if fsz <= 0
+         then return fronts
+         else do
+           felems <- frontElems fronts i
+           forM_ felems $ \pi -> do   -- for each member p in F_i
+               dominated <- dominatedSet sp pi
+               forM_ dominated $ \qi -> do  -- modify each member from the set S_p
+                    nq <- liftM (+ (-1::Int)) $ readArray sp (qi, 0)  -- decrement n_q by one
+                    writeArray sp (qi, 0) nq
+                    when (nq <= 0) $  -- if n_q is zero, q is a member of the next front
+                         addToFront (i+1) fronts qi
+           buildFronts sp fronts (i+1)
+
+    splitAll [] _ = []
+    splitAll _ [] = []
+    splitAll (sz:szs) els =
+        let (front, rest) = splitAt sz els
+        in  front : (splitAll szs rest)
+
+
+-- | Build a list of non-dominated fronts. The best solutions are in the first front.
+-- It is probably O(m N^3 log N).
+nondominatedSortSlow :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
+nondominatedSortSlow ptypes gs =
     let drs = map (ir'dominatedBy . rankGenome ptypes gs) gs
         fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
     in  map (map fst) fronts
@@ -205,6 +323,11 @@ sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
 -- the crowding distance within the same rank.
 -- The first generation of children is produced without taking
 -- crowding into account.
+-- Every solution is assigned a single objective value which is its
+-- sequence number after sorting with the crowded comparison operator.
+-- The smaller value corresponds to solutions which are not worse
+-- the one with the bigger value. Use 'evalAllObjectives' to restore
+-- individual objective values.
 --
 -- Reference:
 -- Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. A. M. T. (2002). A
