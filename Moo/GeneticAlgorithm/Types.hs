@@ -41,7 +41,7 @@ type Phenotype a = (Genome a, Objective)
 type Population a = [Phenotype a]
 
 
--- | 'takeGenome' extracts raw genome from any type which embeds it.
+-- | 'takeGenome' extracts a raw genome from any type which embeds it.
 class GenomeState gt a where
     takeGenome :: gt -> Genome a
 

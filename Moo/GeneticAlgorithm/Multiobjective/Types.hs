@@ -33,12 +33,13 @@ takeObjectiveValues = snd
 
 -- | Calculate multiple objective per every genome in the population.
 evalAllObjectives
-    :: forall fn a . ObjectiveFunction fn a
+    :: forall fn gt a . (ObjectiveFunction fn a, GenomeState gt a)
     => MultiObjectiveProblem fn    -- ^ a list of @problems@
-    -> [Genome a]                  -- ^ a population of raw @genomes@
+    -> [gt]                        -- ^ a population of @genomes@
     -> [MultiPhenotype a]
 evalAllObjectives problems genomes =
-    let pops_per_objective = map (\(_, f) -> evalObjective f genomes) problems
+    let rawgenomes = map takeGenome genomes
+        pops_per_objective = map (\(_, f) -> evalObjective f rawgenomes) problems
         ovs_per_objective = map (map takeObjectiveValue) pops_per_objective
         ovs_per_genome = transpose ovs_per_objective
-    in  zip genomes ovs_per_genome
+    in  zip rawgenomes ovs_per_genome
