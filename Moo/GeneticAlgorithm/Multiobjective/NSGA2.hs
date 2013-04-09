@@ -33,7 +33,7 @@ import Control.Monad (forM_, (<=<))
 import Data.Array (array, (!), elems)
 import Data.Array.ST (runSTArray, newArray, readArray, writeArray)
 import Data.Function (on)
-import Data.List (sortBy, groupBy, transpose)
+import Data.List (sortBy, groupBy)
 
 
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
@@ -52,9 +52,6 @@ dominates ptypes p q =
     better1 (Minimizing, pv, qv) = pv < qv
     better1 (Maximizing, pv, qv) = pv > qv
 
-
--- | A solution with all objective functions evaluated.
-type EvaluatedGenome a = (Genome a, [Objective])
 
 data IntermediateRank a = IntermediateRank {
       ir'dominatedBy :: Int
@@ -195,19 +192,6 @@ nsga2Ranking problems genomes =
         ranks = map (+1) $ sortIndicesBy crowdedCompare rankedGenomes
     in  zip (map (fst . rs'genome) rankedGenomes)
             (map fromIntegral ranks)
-
-
--- | Calculate multiple objective per every genome in the population.
-evalAllObjectives
-    :: forall fn a . ObjectiveFunction fn a
-    => MultiObjectiveProblem fn    -- ^ a list of @problems@
-    -> [Genome a]                  -- ^ a population of raw @genomes@
-    -> [EvaluatedGenome a]
-evalAllObjectives problems genomes =
-    let pops_per_objective = map (\(_, f) -> evalObjective f genomes) problems
-        ovs_per_objective = map (map takeObjectiveValue) pops_per_objective
-        ovs_per_genome = transpose ovs_per_objective
-    in  zip genomes ovs_per_genome
 
 
 sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]

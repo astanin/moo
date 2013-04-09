@@ -3,6 +3,9 @@ module Moo.GeneticAlgorithm.Multiobjective
     -- * Types
       SingleObjectiveProblem
     , MultiObjectiveProblem
+    , EvaluatedGenome
+    -- * Evaluation
+    , evalAllObjectives
     -- * NSGA-II: A non-dominated sorting genetic algorithm
     , stepNSGA2
     , stepNSGA2default

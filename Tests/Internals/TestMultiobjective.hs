@@ -7,6 +7,7 @@ import Data.List (sortBy)
 
 
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Multiobjective.NSGA2
 
 
