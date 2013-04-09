@@ -7,8 +7,12 @@ import Data.List (sortBy)
 
 
 import Moo.GeneticAlgorithm.Types
+import Moo.GeneticAlgorithm.Continuous
 import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Multiobjective.NSGA2
+
+
+import System.Random.Mersenne.Pure64 (pureMT)
 
 
 testMultiobjective =
@@ -73,5 +77,21 @@ testMultiobjective =
         assertEqual "4 solutions" correct $
                     sortBy (compare `on` snd)
                            (nsga2Ranking objectives [[8,2],[2,1],[0.999,2],[4,4]])
-
+    , "two NSGA-II steps" ~: do
+        let mop :: MultiObjectiveProblem ([Double] -> Double)
+            mop = [ (Minimizing, sum :: [Double] -> Double)
+                  , (Maximizing, product)]
+        let genomes = [[3,3], [9,1], [1,4], [2,2], [1,9], [4,1], [1,1], [4,2]]
+        let expected = [ ([2.0,2.0],1.0)   -- a mix of solutions from the non-dominated front;
+                       , ([2.0,2.0],2.0)   -- actual order depends on pureMT; this one is for
+                       , ([3.0,3.0],3.0)   -- (pureMT 1)
+                       , ([2.0,2.0],4.0)
+                       , ([2.0,2.0],5.0)
+                       , ([2.0,2.0],6.0)
+                       , ([1.0,1.0],7.0)
+                       , ([1.0,1.0],8.0) ]
+        let result = flip evalRandom (pureMT 1) $
+                     loop (Generations 1)
+                     (stepNSGA2default mop noCrossover noMutation) genomes
+        assertEqual "solutions and ranking" expected result
     ]
