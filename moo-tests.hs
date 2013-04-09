@@ -3,9 +3,11 @@ import Test.HUnit
 
 import Tests.Problems.Rosenbrock (testRosenbrock)
 import Tests.Internals.TestMultiobjective (testMultiobjective)
+import Tests.Internals.TestFundamentals (testFundamentals)
 
 allTests = TestList
-  [ testMultiobjective
+  [ testFundamentals
+  , testMultiobjective
   , testRosenbrock ]
 
 main = do

@@ -7,7 +7,7 @@ module Moo.GeneticAlgorithm.Types
     , Objective
     , Phenotype
     , Population
-    , takeGenome
+    , GenomeState(..)
     , takeObjectiveValue
     -- * GA operators
     , ProblemType (..)
@@ -40,8 +40,19 @@ type Phenotype a = (Genome a, Objective)
 -- | An entire population of observed 'Phenotype's.
 type Population a = [Phenotype a]
 
-takeGenome :: Phenotype a -> Genome a
-takeGenome = fst
+
+-- | 'takeGenome' extracts raw genome from any type which embeds it.
+class GenomeState gt a where
+    takeGenome :: gt -> Genome a
+
+
+instance (a1 ~ a2) => GenomeState (Genome a1) a2 where
+    takeGenome = id
+
+
+instance (a1 ~ a2) => GenomeState (Phenotype a1) a2 where
+    takeGenome = fst
+
 
 takeObjectiveValue :: Phenotype a -> Objective
 takeObjectiveValue = snd

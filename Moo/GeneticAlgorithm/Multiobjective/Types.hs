@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE MultiParamTypeClasses, Rank2Types, GADTs, FlexibleInstances #-}
 
 module Moo.GeneticAlgorithm.Multiobjective.Types
     ( SingleObjectiveProblem
@@ -21,6 +21,10 @@ type MultiObjectiveProblem fn = [SingleObjectiveProblem fn]
 
 -- | An individual with all objective functions evaluated.
 type MultiPhenotype a = (Genome a, [Objective])
+
+
+instance a1 ~ a2 => GenomeState (MultiPhenotype a1) a2 where
+    takeGenome = fst
 
 
 takeObjectiveValues :: MultiPhenotype a -> [Objective]
