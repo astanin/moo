@@ -66,11 +66,11 @@ rouletteSelect n xs = replicateM n roulette1
   where
   fs = map takeObjectiveValue xs
   gs = map takeGenome xs
-  xs' = zip gs (scanl1 (+) fs)
+  xs' = zip xs (scanl1 (+) fs)
   sumScores = (snd . last) xs'
   roulette1 = do
     rand <- (sumScores*) `liftM` getDouble
-    return $ (head . dropWhile ((rand >) . snd)) xs'
+    return $ (fst . head . dropWhile ((rand >) . snd)) xs'
 
 -- |Performs tournament selection among @size@ individuals and
 -- returns the winner. Repeat @n@ times.

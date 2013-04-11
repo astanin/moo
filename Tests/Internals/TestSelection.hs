@@ -17,7 +17,7 @@ dummyGenome objval = ([], objval)
 
 testSelection =
     TestList
-    [ "tournamentSelection" ~: do
+    [ "tournamentSelect" ~: do
         let resultMin = flip evalRandom (pureMT 1) $
                         tournamentSelect Minimizing 3 4 $
                         map dummyGenome [3,2,4]
@@ -33,4 +33,10 @@ testSelection =
                     map takeObjectiveValue resultMax
         assertEqual "10 times best of 4 (seed 1)" [10,10,9,9,10,9,9,9,3,7] $
                     map takeObjectiveValue resultMany
+    , "rouletteSelect" ~: do
+       let gs = map dummyGenome [1, 9]
+       let tries = 100 * 1000 :: Int
+       let numOfNines = length . filter (==9.0) . map takeObjectiveValue
+                        . flip evalRandom (pureMT 1) $ rouletteSelect tries $ gs
+       assertEqual "9 is selected from [1,9] 90% of time" 90 (numOfNines `div` 1000)
     ]
