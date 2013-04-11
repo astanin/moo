@@ -11,7 +11,6 @@ NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 
 Functions to be used:
 
-  'nsga2Ranking', 'nondominatedRanking',
   'stepNSGA2', 'stepNSGA2default'
 
 The other functions are exported for testing only.
@@ -26,7 +25,7 @@ import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 import Moo.GeneticAlgorithm.StopCondition (evalCond)
-import Moo.GeneticAlgorithm.Selection (tournamentSelect, bestFirst)
+import Moo.GeneticAlgorithm.Selection (tournamentSelect)
 
 
 import Control.Monad (forM_, (<=<), when, liftM)
@@ -57,7 +56,7 @@ dominates ptypes p q =
 
 -- | Solution and its non-dominated rank and local crowding distance.
 data RankedSolution a = RankedSolution {
-      rs'genome :: MultiPhenotype a
+      rs'phenotype :: MultiPhenotype a
     , rs'nondominationRank :: Int  -- ^ @0@ is the best
     , rs'localCrowdingDistnace :: Double  -- ^ @Infinity@ for less-crowded boundary points
     } deriving (Show, Eq)
@@ -230,14 +229,15 @@ crowdedCompare (RankedSolution _ ranki disti) (RankedSolution _ rankj distj) =
 
 
 -- | Assign non-domination rank and crowding distances to all solutions.
-rankAllSolutions :: [ProblemType] -> [MultiPhenotype a] -> [RankedSolution a]
+-- Return a list of non-domination fronts.
+rankAllSolutions :: [ProblemType] -> [MultiPhenotype a] -> [[RankedSolution a]]
 rankAllSolutions ptypes genomes =
     let -- non-dominated fronts
         fronts = nondominatedSort ptypes genomes
         -- for every non-dominated front
         frontsDists = map (crowdingDistances . map snd) fronts
         ranks = iterate (+1) 1
-    in  concatMap rankedSolutions1 (zip3 fronts ranks frontsDists)
+    in  map rankedSolutions1 (zip3 fronts ranks frontsDists)
   where
     rankedSolutions1 :: ([MultiPhenotype a], Int, [Double]) -> [RankedSolution a]
     rankedSolutions1 (front, rank, dists) =
@@ -248,7 +248,7 @@ rankAllSolutions ptypes genomes =
 -- value according to its non-domination rank. This ranking is
 -- supposed to be used once in the beginning of the NSGA-II algorithm.
 --
--- 'nondominatedRanking' reorders the genomes.
+-- Note: 'nondominatedRanking' reorders the genomes.
 nondominatedRanking
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn     -- ^ list of @problems@
@@ -266,23 +266,35 @@ nondominatedRanking problems genomes =
 
 
 -- | To every genome in the population, assign a single objective value
--- according to its non-domination rank and local crowding distance
+-- equal to its non-domination rank, and sort genomes by the decreasing
+-- local crowding distance within every rank
 -- (i.e. sort the population with NSGA-II crowded comparision
--- operator, and return sequence positions).
---
--- 'nsga2Ranking' reorder the genomes.
+-- operator)
 nsga2Ranking
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn     -- ^ a list of @problems@
+    -> Int                          -- ^ @n@, number of top-ranked genomes to select
     -> [Genome a]                   -- ^ a population of raw @genomes@
-    -> [(Genome a, Objective)]
-nsga2Ranking problems genomes =
+    -> [(MultiPhenotype a, Double)] -- ^ selected genomes with their non-domination ranks
+nsga2Ranking problems n genomes =
     let ptypes = map fst problems
         evaledGenomes = evalAllObjectives problems genomes
-        rankedGenomes = rankAllSolutions ptypes evaledGenomes
-        ranks = map (+1) $ sortIndicesBy crowdedCompare rankedGenomes
-    in  zip (map (fst . rs'genome) rankedGenomes)
-            (map fromIntegral ranks)
+        fronts = rankAllSolutions ptypes evaledGenomes
+        frontSizes = map length fronts
+        nFullFronts = length . takeWhile (< n) $ scanl1 (+) frontSizes
+        partialSize = n - (sum (take nFullFronts frontSizes))
+        (frontsFull, frontsPartial) = splitAt nFullFronts fronts
+        fromFullFronts = concatMap (map assignRank) frontsFull
+        fromPartialFront = concatMap (map assignRank
+                                      . take partialSize
+                                      . sortBy crowdedCompare) $
+                           take 1 frontsPartial
+    in  fromFullFronts ++ fromPartialFront
+  where
+    assignRank eg =
+        let r = fromIntegral $ rs'nondominationRank eg
+            phenotype = rs'phenotype $ eg
+        in  (phenotype, r)
 
 
 sortIndicesBy :: (a -> a -> Ordering) -> [a] -> [Int]
@@ -395,8 +407,9 @@ stepNSGA2'poolSelection
     -> [Genome a]           -- ^ a common pool of parents and their children
     -> Rand (StepResult [Phenotype a])
 stepNSGA2'poolSelection problems n stop pool = do
-    let objective = nsga2Ranking problems
-    let rankedgenomes = bestFirst Minimizing $ evalObjective objective pool
+    -- nsga2Ranking returns genomes properly sorted already
+    let rankedgenomes = let grs = nsga2Ranking problems n pool
+                        in  map (\(mp,r) -> (takeGenome mp, r)) grs
     let selected = take n rankedgenomes  -- :: [Phenotype a]
     return $ if evalCond stop selected
              then StopGA selected

@@ -2,6 +2,7 @@ module Tests.Internals.TestMultiobjective where
 
 
 import Test.HUnit
+import Control.Monad (forM_)
 import Data.Function (on)
 import Data.List (sortBy)
 
@@ -33,14 +34,6 @@ testMultiobjective =
                     True (dominates problems best good23)
         assertEqual "worst doesn't dominate best"
                     False (dominates problems worst best)
-    , "calculate domination rank and dominated set" ~: do
-        let genomes = [([1], [2, 2]), ([2], [3, 2]), ([3], [1,1]), ([4], [0,0::Double])]
-        assertEqual "first genome"
-                    (IntermediateRank {ir'dominatedBy = 2, ir'dominates = [([2],[3.0,2.0])]})
-                    (rankGenome [Minimizing,Minimizing] genomes (head genomes))
-        assertEqual "last genome"
-                    (IntermediateRank {ir'dominatedBy = 0, ir'dominates = (take 3 genomes)})
-                    (rankGenome [Minimizing,Minimizing] genomes (last genomes))
     , "non-dominated sort" ~: do
         let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
                       , ([3], [1,1.5]), ([3,3], [1.5, 0.5]), ([4], [0,0::Double])]
@@ -55,7 +48,7 @@ testMultiobjective =
                     crowdingDistances [[3,1], [1.75,1.75], [1,3], [2,2], [2.125,2.125]]
     , "rank with crowding" ~: do
         let gs = map (\x -> ([], x)) [[2,1],[1,2],[3,1],[1.9,1.9],[1,3]]
-        let rs = rankAllSolutions [Minimizing,Minimizing] gs
+        let rs = concat $ rankAllSolutions [Minimizing,Minimizing] gs
         let inf = 1.0/0.0 :: Double
         assertEqual "non-dom ranks" [1,1,1,2,2]
                     (map rs'nondominationRank rs)
@@ -70,28 +63,49 @@ testMultiobjective =
         assertEqual "two objective functions" correct $
                     evalAllObjectives objectives genomes
     , "NSGA-II ranking with crowding" ~: do
-        let correct = [([4.0,4.0],1.0),([2.0,1.0],2.0)
-                      ,([0.999,2.0],3.0),([8.0,2.0],4.0)]
-        let objectives = [(Minimizing, sum), (Maximizing, product)]
-                       :: [(ProblemType, [Double] -> Double)]
-        assertEqual "4 solutions" correct $
-                    sortBy (compare `on` snd)
-                           (nsga2Ranking objectives [[8,2],[2,1],[0.999,2],[4,4]])
+        let mp = [ (Minimizing, (!!0))
+                 , (Minimizing, (!!1))
+                 ] :: [(ProblemType, [Double] -> Double)]
+        let gs = [ [5,1], [1,5], [2,4], [3,3]  -- first front
+                 , [6,6]                       -- third front
+                 , [6,2], [5,3], [4,4], [2,6]  -- second front
+                 ] :: [[Double]]
+        let expected7 = [(([5.0,1.0],[5.0,1.0]),1.0)
+                        ,(([1.0,5.0],[1.0,5.0]),1.0) -- order is preserved in the first front:
+                        ,(([2.0,4.0],[2.0,4.0]),1.0) -- [2,4] is more crowded than [3,3]
+                        ,(([3.0,3.0],[3.0,3.0]),1.0) -- but it doesn't matter for full fronts
+                        ,(([6.0,2.0],[6.0,2.0]),2.0)
+                        ,(([2.0,6.0],[2.0,6.0]),2.0) -- is front boundary point, and goes before [4,4]
+                        ,(([4.0,4.0],[4.0,4.0]),2.0) -- is less crowded than [5,3]
+                        -- [5,3] is more crowded and is truncated
+                        -- [6,6] is in the third front and is truncated
+                        ]
+        let result7 = nsga2Ranking mp 7 gs
+        assertEqual "7 solutions" expected7 result7
+    , "NSGA-II ranking (output length)" ~: do
+        let mp = [ (Minimizing, (!!0))
+                 , (Minimizing, (!!1))
+                 ] :: [(ProblemType, [Double] -> Double)]
+        let gs = [ [5,1], [1,5], [2,4], [3,3]  -- first front
+                 , [6,6]                       -- third front
+                 , [6,2], [5,3], [4,4], [2,6]  -- second front
+                 ] :: [[Double]]
+        forM_ [0..(length gs)] $ \n -> do
+          assertEqual (show n ++ " solutions") n $ length (nsga2Ranking mp n gs)
+        assertEqual "max # of solutions" (length gs) $ length (nsga2Ranking mp maxBound gs)
     , "two NSGA-II steps" ~: do
-        let mop :: MultiObjectiveProblem ([Double] -> Double)
-            mop = [ (Minimizing, sum :: [Double] -> Double)
-                  , (Maximizing, product)]
-        let genomes = [[3,3], [9,1], [1,4], [2,2], [1,9], [4,1], [1,1], [4,2]]
-        let expected = [ ([2.0,2.0],1.0)   -- a mix of solutions from the non-dominated front;
-                       , ([2.0,2.0],2.0)   -- actual order depends on pureMT; this one is for
-                       , ([3.0,3.0],3.0)   -- (pureMT 1)
-                       , ([2.0,2.0],4.0)
-                       , ([2.0,2.0],5.0)
-                       , ([2.0,2.0],6.0)
-                       , ([1.0,1.0],7.0)
-                       , ([1.0,1.0],8.0) ]
+        let mp = [ (Minimizing, (!!0))
+                 , (Minimizing, (!!1))
+                 ] :: [(ProblemType, [Double] -> Double)]
+        let gs = [ [5,1], [1,5], [2,4], [3,3]  -- first front
+                 , [6,6]                       -- third front
+                 , [6,2], [5,3], [4,4], [2,6]  -- second front
+                 ] :: [[Double]]
+        let expected = [([1.0,5.0],1.0),([5.0,1.0],1.0),([1.0,5.0],1.0)
+                       ,([5.0,1.0],1.0),([3.0,3.0],1.0),([3.0,3.0],1.0)
+                       ,([2.0,4.0],1.0),([2.0,4.0],1.0),([1.0,5.0],1.0)]
         let result = flip evalRandom (pureMT 1) $
                      loop (Generations 1)
-                     (stepNSGA2default mop noCrossover noMutation) genomes
+                     (stepNSGA2default mp noCrossover noMutation) gs
         assertEqual "solutions and ranking" expected result
     ]
