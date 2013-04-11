@@ -12,7 +12,6 @@ module Moo.GeneticAlgorithm.Selection
   -- * Scaling
   , withPopulationTransform
   , withScale
-  , sigmaScale
   , rankScale
   -- * Helpers
   , bestFirst
@@ -20,7 +19,6 @@ module Moo.GeneticAlgorithm.Selection
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Statistics (variance, average)
 
 import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
@@ -37,16 +35,6 @@ withScale :: (Objective -> Objective) -> SelectionOp a -> SelectionOp a
 withScale f select =
     let scale = map (second f)
     in  withPopulationTransform scale select
-
--- | Sigma scaling. Objective values of all genomes are scaled with
--- respect to standard devation of the values of objective function.
-sigmaScale :: Population a -> Population a
-sigmaScale pop = map (second f_scale) pop
-    where
-      fs = map takeObjectiveValue pop
-      sigma = sqrt . variance $ fs
-      f_avg = average fs
-      f_scale f = 1+(f-f_avg)/(2*sigma)
 
 -- | Replace objective function values in the population with their
 -- ranks.  For a population of size @n@, a genome with the best value
