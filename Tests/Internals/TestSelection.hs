@@ -39,4 +39,11 @@ testSelection =
        let numOfNines = length . filter (==9.0) . map takeObjectiveValue
                         . flip evalRandom (pureMT 1) $ rouletteSelect tries $ gs
        assertEqual "9 is selected from [1,9] 90% of time" 90 (numOfNines `div` 1000)
+    , "rankScale" ~: do
+        let expected = [([30.0],1.0),([10.0],2.0),([2.0],3.0),([0.0],4.0)]
+        let expectedMax = [([0.0],1.0),([2.0],2.0),([10.0],3.0),([30.0],4.0)]
+        let result = rankScale Minimizing (map (\x -> ([x],x)) [2,10,0,30])
+        let resultMax = rankScale Maximizing (map (\x -> ([x],x)) [2,10,0,30])
+        assertEqual "min problem" expected result
+        assertEqual "max problem" expectedMax resultMax
     ]
