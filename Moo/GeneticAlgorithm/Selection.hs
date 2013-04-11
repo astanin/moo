@@ -82,7 +82,7 @@ rouletteSelect n xs = replicateM n roulette1
   sumScores = (snd . last) xs'
   roulette1 = do
     rand <- (sumScores*) `liftM` getDouble
-    return $ (fst . head . dropWhile ((rand >) . snd)) xs'
+    return $ (head . dropWhile ((rand >) . snd)) xs'
 
 -- |Performs tournament selection among @size@ individuals and
 -- returns the winner. Repeat @n@ times.
@@ -94,7 +94,7 @@ tournamentSelect problem size n xs = replicateM n tournament1
   where
   tournament1 = do
     contestants <- randomSample size xs
-    let winner = takeGenome . head $ bestFirst problem contestants
+    let winner = head $ bestFirst problem contestants
     return winner
 
 -- | Sort population by decreasing objective function (also known as
