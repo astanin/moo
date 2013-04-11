@@ -6,14 +6,13 @@ Selection operators for genetic algorithms.
 
 module Moo.GeneticAlgorithm.Selection
   (
-  -- * Selection
     rouletteSelect
   , tournamentSelect
-  -- * Scaling
+  -- ** Scaling
   , withPopulationTransform
   , withScale
   , rankScale
-  -- * Helpers
+  -- ** Sorting
   , bestFirst
   ) where
 

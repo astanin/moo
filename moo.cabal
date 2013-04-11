@@ -42,14 +42,14 @@ Library
                       , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Continuous
-                      , Moo.GeneticAlgorithm.Selection
-                      , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.Statistics
     other-modules:      Moo.GeneticAlgorithm.LinAlg
-
+                      , Moo.GeneticAlgorithm.Utilities
+                      , Moo.GeneticAlgorithm.StopCondition
+                      , Moo.GeneticAlgorithm.Selection
+                      , Moo.GeneticAlgorithm.Crossover
 
 Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
@@ -68,6 +68,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Statistics
+                      , Moo.GeneticAlgorithm.StopCondition
   Build-Depends:
       moo
     , base

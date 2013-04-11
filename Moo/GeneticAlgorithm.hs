@@ -91,31 +91,6 @@ How to choose encoding
 
 
 @
--------------
-Other modules
--------------
-@
-
-"Moo.GeneticAlgorithm.Types":
-  types for data structures and operators.
-
-"Moo.GeneticAlgorithm.Selection":
-  several selection operators.
-
-"Moo.GeneticAlgorithm.Crossover":
-  crossover operations. Mostly intended for binary GAs.
-
-"Moo.GeneticAlgorithm.Run":
-   bring everything together and actually run the algorithm.
-
-"Moo.GeneticAlgorithm.Random":
-  facilities related to random number generation.
-
-"Moo.GeneticAlgorithm.Utilities", "Moo.GeneticAlgorithm.Statistics":
-  common non-deterministic and statistical functions.
-
-
-@
 --------
 Examples
 --------
