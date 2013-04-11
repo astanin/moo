@@ -1,12 +1,14 @@
 import System.Exit
 import Test.HUnit
 
-import Tests.Problems.Rosenbrock (testRosenbrock)
-import Tests.Internals.TestMultiobjective (testMultiobjective)
 import Tests.Internals.TestFundamentals (testFundamentals)
+import Tests.Internals.TestSelection (testSelection)
+import Tests.Internals.TestMultiobjective (testMultiobjective)
+import Tests.Problems.Rosenbrock (testRosenbrock)
 
 allTests = TestList
   [ testFundamentals
+  , testSelection
   , testMultiobjective
   , testRosenbrock ]
 

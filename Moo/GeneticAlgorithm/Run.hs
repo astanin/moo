@@ -66,7 +66,7 @@ nextGeneration problem objective selectOp elite xoverOp mutationOp stop input = 
   if isGenomes input && evalCond stop pop
     then return $ StopGA pop  -- stop before the first iteration
     else do
-      genomes' <- withElite problem elite selectOp pop
+      genomes' <- liftM (map takeGenome) $ withElite problem elite selectOp pop
       let top = take elite genomes'
       let rest = drop elite genomes'
       genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
@@ -90,7 +90,7 @@ withElite problem n select = \population -> do
   selected <- select population
   return (elite ++ selected)
   where
-    eliteGenomes = map fst . bestFirst problem
+    eliteGenomes = bestFirst problem
 
 -- | Run strict iterations of the genetic algorithm defined by @step@.
 -- Return the result of the last step.

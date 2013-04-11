@@ -15,6 +15,8 @@ module Moo.GeneticAlgorithm.Random
     -- * Random samples and shuffles
     , randomSample
     , shuffle
+    -- * Building blocks
+    , withProbability
     -- * Re-exports from random number generator packages
     , getBool, getInt, getWord, getInt64, getWord64, getDouble
     , runRandom, evalRandom, newPureMT
@@ -99,3 +101,11 @@ randomShuffle elements len g =
         lastGen [] = g   -- didn't use the generator yet
         lastGen (lst:[]) = lst
         lastGen gens = lastGen (drop 1 gens)
+
+-- |Modify value with probability @p@.
+withProbability :: Double -> a -> (a -> Rand a) -> Rand a
+withProbability p x modify = do
+  t <- getDouble
+  if t < p
+     then modify x
+     else return x

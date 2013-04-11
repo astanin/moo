@@ -40,44 +40,44 @@ Library
                       , array
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
-                      , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Multiobjective
-                      , Moo.GeneticAlgorithm.Selection
-                      , Moo.GeneticAlgorithm.Crossover
-                      , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Utilities
+                      , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Statistics
-    other-modules:      Moo.GeneticAlgorithm.LinAlg
+                      , Moo.GeneticAlgorithm.Types
+    other-modules:      Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.StopCondition
-
+                      , Moo.GeneticAlgorithm.Utilities
 
 Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
   Main-Is:              moo-tests.hs
   Other-Modules:        Tests.Common
-                      , Tests.Problems.Rosenbrock
                       , Tests.Internals.TestFundamentals
                       , Tests.Internals.TestMultiobjective
+                      , Tests.Internals.TestSelection
+                      , Tests.Problems.Rosenbrock
                       , Moo.GeneticAlgorithm
-                      , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Continuous
-                      , Moo.GeneticAlgorithm.Multiobjective
-                      , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
-                      , Moo.GeneticAlgorithm.Run
-                      , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.LinAlg
-                      , Moo.GeneticAlgorithm.Statistics
+                      , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.Random
+                      , Moo.GeneticAlgorithm.Run
+                      , Moo.GeneticAlgorithm.Selection
+                      , Moo.GeneticAlgorithm.Statistics
                       , Moo.GeneticAlgorithm.StopCondition
+                      , Moo.GeneticAlgorithm.Types
+                      , Moo.GeneticAlgorithm.Utilities
   Build-Depends:
       moo
     , base

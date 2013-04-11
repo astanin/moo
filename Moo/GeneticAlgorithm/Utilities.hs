@@ -9,7 +9,6 @@ module Moo.GeneticAlgorithm.Utilities
   (
   -- * Non-deterministic functions
     getRandomGenomes
-  , withProbability
   , doCrossovers
 ) where
 
@@ -18,14 +17,6 @@ import Moo.GeneticAlgorithm.Random
 
 import Control.Monad.Mersenne.Random
 import Control.Monad (replicateM)
-
--- |Modify value with probability @p@.
-withProbability :: Double -> a -> (a -> Rand a) -> Rand a
-withProbability p x modify = do
-  t <- getDouble
-  if t < p
-     then modify x
-     else return x
 
 -- | Generate @n@ random genomes of length @len@ made of elements
 -- in the range @(from,to)@. Return a list of genomes and a new state of

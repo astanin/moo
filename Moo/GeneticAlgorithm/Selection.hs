@@ -6,21 +6,18 @@ Selection operators for genetic algorithms.
 
 module Moo.GeneticAlgorithm.Selection
   (
-  -- * Selection
     rouletteSelect
   , tournamentSelect
-  -- * Scaling
+  -- ** Scaling
   , withPopulationTransform
   , withScale
-  , sigmaScale
   , rankScale
-  -- * Helpers
+  -- ** Sorting
   , bestFirst
   ) where
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Statistics (variance, average)
 
 import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
@@ -37,16 +34,6 @@ withScale :: (Objective -> Objective) -> SelectionOp a -> SelectionOp a
 withScale f select =
     let scale = map (second f)
     in  withPopulationTransform scale select
-
--- | Sigma scaling. Objective values of all genomes are scaled with
--- respect to standard devation of the values of objective function.
-sigmaScale :: Population a -> Population a
-sigmaScale pop = map (second f_scale) pop
-    where
-      fs = map takeObjectiveValue pop
-      sigma = sqrt . variance $ fs
-      f_avg = average fs
-      f_scale f = 1+(f-f_avg)/(2*sigma)
 
 -- | Replace objective function values in the population with their
 -- ranks.  For a population of size @n@, a genome with the best value
@@ -77,8 +64,7 @@ rouletteSelect :: Int -> SelectionOp a
 rouletteSelect n xs = replicateM n roulette1
   where
   fs = map takeObjectiveValue xs
-  gs = map takeGenome xs
-  xs' = zip gs (scanl1 (+) fs)
+  xs' = zip xs (scanl1 (+) fs)
   sumScores = (snd . last) xs'
   roulette1 = do
     rand <- (sumScores*) `liftM` getDouble
@@ -94,7 +80,7 @@ tournamentSelect problem size n xs = replicateM n tournament1
   where
   tournament1 = do
     contestants <- randomSample size xs
-    let winner = takeGenome . head $ bestFirst problem contestants
+    let winner = head $ bestFirst problem contestants
     return winner
 
 -- | Sort population by decreasing objective function (also known as

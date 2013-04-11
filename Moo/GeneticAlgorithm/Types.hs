@@ -87,9 +87,9 @@ instance (a1 ~ a2) =>
     ObjectiveFunction ([Genome a1] -> [(Genome a1, Objective)]) a2 where
         evalObjective f gs = f gs
 
-
--- | A selection operator is responsible for selection.
-type SelectionOp a = Population a -> Rand [Genome a]
+-- | A selection operator selects a subset (probably with repetition)
+-- of genomes for reproduction via crossover and mutation.
+type SelectionOp a = Population a -> Rand (Population a)
 
 -- | A crossover operator takes some /parent/ genomes and returns some
 -- /children/ along with the remaining parents. Many crossover

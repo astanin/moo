@@ -6,16 +6,16 @@ Common crossover operators for genetic algorithms.
 
 module Moo.GeneticAlgorithm.Crossover
   (
-  -- * Crossover
     onePointCrossover
   , twoPointCrossover
   , uniformCrossover
   , noCrossover
+  , doCrossovers
 ) where
 
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Utilities (withProbability)
+import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 
 import Control.Monad (liftM)
 

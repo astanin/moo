@@ -370,7 +370,7 @@ stepNSGA2'firstGeneration problems select crossover mutate stop genomes = do
       then return $ StopGA phenotypes  -- stop before the first iteration
       else do
         let popsize = length phenotypes
-        selected <- (shuffle <=< select) phenotypes
+        selected <- liftM (map takeGenome) $ (shuffle <=< select) phenotypes
         newgenomes <- (mapM mutate) <=< (flip doCrossovers crossover) $ selected
         let pool = newgenomes ++ genomes
         stepNSGA2'poolSelection problems popsize stop pool
@@ -390,7 +390,7 @@ stepNSGA2'nextGeneration
      -> Rand (StepResult [Phenotype a])
 stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes = do
   let popsize = length rankedgenomes
-  selected <- select rankedgenomes
+  selected <- liftM (map takeGenome) $ select rankedgenomes
   newgenomes <- (mapM mutate) <=< flip doCrossovers crossover <=< shuffle $ selected
   let pool = (map takeGenome rankedgenomes) ++ newgenomes
   stepNSGA2'poolSelection problems popsize stop pool
