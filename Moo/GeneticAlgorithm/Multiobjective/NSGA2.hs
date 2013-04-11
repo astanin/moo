@@ -34,7 +34,7 @@ import Control.Monad.ST (ST)
 import Data.Array (array, (!), elems, listArray)
 import Data.Array.ST (STArray, runSTArray, newArray, readArray, writeArray, getElems)
 import Data.Function (on)
-import Data.List (sortBy, groupBy)
+import Data.List (sortBy)
 import Data.STRef
 
 
@@ -53,12 +53,6 @@ dominates ptypes p q =
     better1 :: (ProblemType, Objective, Objective) -> Bool
     better1 (Minimizing, pv, qv) = pv < qv
     better1 (Maximizing, pv, qv) = pv > qv
-
-
-data IntermediateRank a = IntermediateRank {
-      ir'dominatedBy :: Int
-    , ir'dominates :: [MultiPhenotype a]
-    } deriving (Show, Eq)
 
 
 -- | Solution and its non-dominated rank and local crowding distance.
@@ -183,27 +177,6 @@ nondominatedSortFast ptypes gs =
     splitAll (sz:szs) els =
         let (front, rest) = splitAt sz els
         in  front : (splitAll szs rest)
-
-
--- | Build a list of non-dominated fronts. The best solutions are in the first front.
--- It is probably O(m N^3 log N).
-nondominatedSortSlow :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
-nondominatedSortSlow ptypes gs =
-    let drs = map (ir'dominatedBy . rankGenome ptypes gs) gs
-        fronts = groupBy ((==) `on` snd) . sortBy (compare `on` snd) $ zip gs drs
-    in  map (map fst) fronts
-
-
--- | Calculate the number of solutions which dominate the genome,
--- and build a set of solutions which the genome dominates
-rankGenome :: [ProblemType] -> [MultiPhenotype a] -> MultiPhenotype a -> IntermediateRank a
-rankGenome ptypes allGenomes genome =
-    let this = snd genome
-        -- dominating are better than this genome
-        dominating = filter (\(_,other) -> dominates ptypes other this) allGenomes
-        -- this genome is better than dominated ones
-        dominated  = filter (\(_,other) -> dominates ptypes this other) allGenomes
-    in  IntermediateRank (length dominating) dominated
 
 
 -- | Crowding distance of a point @p@, as defined by Deb et
