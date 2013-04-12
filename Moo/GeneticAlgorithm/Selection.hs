@@ -64,7 +64,6 @@ rouletteSelect :: Int -> SelectionOp a
 rouletteSelect n xs = replicateM n roulette1
   where
   fs = map takeObjectiveValue xs
-  gs = map takeGenome xs
   xs' = zip xs (scanl1 (+) fs)
   sumScores = (snd . last) xs'
   roulette1 = do
