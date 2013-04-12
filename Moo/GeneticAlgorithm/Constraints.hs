@@ -7,6 +7,7 @@ module Moo.GeneticAlgorithm.Constraints
     , numberOfViolations
     , degreeOfViolation
     , constrainedTournament
+    , withDeathPenalty
     ) where
 
 
@@ -160,3 +161,18 @@ constrainedCompare ptype (objval1, violation1) (objval2, violation2) =
                               Maximizing -> compare objval2 objval1
           (True, False) -> GT  -- second (feasible) solution is preferred
           (False, True) -> LT  -- first (feasible) solution is preferred
+
+
+-- | Kill all infeasible solutions after every step of the genetic algorithm.
+withDeathPenalty :: (Monad m, Real b)
+                 => [Constraint a b]  -- ^ constraints
+                 -> StepGA m a        -- ^ unconstrained step
+                 -> StepGA m a        -- ^ constrained step
+withDeathPenalty cs step =
+    \stop popstate -> do
+      stepresult <- step stop popstate
+      case stepresult of
+        StopGA pop -> return (StopGA (killInfeasible pop))
+        ContinueGA pop -> return (ContinueGA (killInfeasible pop))
+  where
+    killInfeasible = filter (\p -> (takeGenome p) `isFeasible` cs)
