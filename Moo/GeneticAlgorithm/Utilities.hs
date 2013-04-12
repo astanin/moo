@@ -46,8 +46,11 @@ doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
 doCrossovers []      _     = return []
 doCrossovers parents xover = do
   (children', parents') <- xover parents
-  rest <- doCrossovers parents' xover
-  return $ children' ++ rest
+  if null children'
+     then return []
+     else do
+       rest <- doCrossovers parents' xover
+       return $ children' ++ rest
 
 
 -- | Produce exactly @n@ offsprings by repeatedly running the @crossover@
@@ -64,4 +67,6 @@ doNCrossovers n parents xover =
         | i <= 0     = return . take n . concat $ children
         | otherwise  = do
       (children', _) <- xover =<< shuffle parents
-      doAnotherNCrossovers (i - length children') (children':children)
+      if (null children')
+          then doAnotherNCrossovers 0 children  -- no more children
+          else doAnotherNCrossovers (i - length children') (children':children)
