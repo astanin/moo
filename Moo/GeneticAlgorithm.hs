@@ -63,7 +63,8 @@ How to write a genetic algorithm
      control the iterative process with 'loop', 'loopWithLog', or 'loopIO'.
 
   5. Write a function to generate an initial population; for random
-     uniform initialization use 'getRandomGenomes' or 'getRandomBinaryGenomes'.
+     uniform initialization use 'getRandomGenomes',
+     'getRandomGenomesRs' or 'getRandomBinaryGenomes'.
 
 Library functions which need access to random number generator work in
 'Rand' monad.  You may use a high-level wrapper 'runGA' (or
