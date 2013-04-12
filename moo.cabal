@@ -41,6 +41,7 @@ Library
     exposed-modules:    Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
+                      , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Random
@@ -60,6 +61,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Types
                       , Moo.GeneticAlgorithm.Binary
+                      , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
