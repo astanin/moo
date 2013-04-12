@@ -1,6 +1,8 @@
 module Moo.GeneticAlgorithm.Constraints
     ( ConstraintFunction
-    , Constraint(..), greaterThan, greaterThanOrEqual
+    , Constraint()
+    , lessThan, lessThanOrEqual
+    , greaterThan, greaterThanOrEqual, equal
     , isFeasible
     , numberOfViolations
     , degreeOfViolation
@@ -21,7 +23,7 @@ import Data.Function (on)
 type ConstraintFunction a b = Genome a -> b
 
 
--- | A constraint.
+-- A constraint.
 --
 -- Defining a constraint as a pair of function and its boundary value
 -- (vs just a boolean valued function) allows for estimating the
@@ -38,20 +40,25 @@ data (Num b) => Constraint a b
     -- function value is equal to the constraint value
 
 
-instance (Show b, Num b) => Show (Constraint a b) where
-    show (LessThan _ v) = "_ < " ++ show v
-    show (LessThanOrEqual _ v) = "_ <= " ++ show v
-    show (Equal _ v) = "_ == " ++ show v
+-- | Strict inequality
+lessThan :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
+lessThan = LessThan
 
+-- | Non-strict inequality
+lessThanOrEqual :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
+lessThanOrEqual = LessThanOrEqual
 
--- | An auxiliary constructor for strict inequality constraint.
+-- | Strict inequality
 greaterThan :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
 greaterThan f v = LessThan (negate . f) (negate v)
 
-
--- | An auxiliary constructor for non-strict inequality constraint.
+-- | Non-strict inequality
 greaterThanOrEqual :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
 greaterThanOrEqual f v = LessThanOrEqual (negate . f) (negate v)
+
+-- | Strict equality
+equal :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
+equal = Equal
 
 
 -- | Returns @True@ if a @genome@ represents a feasible solution
