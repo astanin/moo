@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Utilities
   -- * Non-deterministic functions
     getRandomGenomes
   , doCrossovers
+  , doNCrossovers
 ) where
 
 import Moo.GeneticAlgorithm.Types
@@ -40,10 +41,27 @@ getRandomGenomes n len range = Rand $ \rng ->
                                let (gs, rng') = randomGenomes rng n len range
                                in  R gs rng'
 
--- | Take a list of parents, run crossovers, and return a list of children.
+-- | Crossover all available parents. Parents are not repeated.
 doCrossovers :: [Genome a] -> CrossoverOp a -> Rand [Genome a]
 doCrossovers []      _     = return []
 doCrossovers parents xover = do
   (children', parents') <- xover parents
   rest <- doCrossovers parents' xover
   return $ children' ++ rest
+
+
+-- | Produce exactly @n@ offsprings by repeatedly running the @crossover@
+-- operator between randomly selected parents (possibly repeated).
+doNCrossovers :: Int   -- ^ @n@, number of offsprings to generate
+              -> [Genome a]  -- ^ @parents@' genomes
+              -> CrossoverOp a  -- ^ @crossover@ operator
+              -> Rand [Genome a]
+doNCrossovers _ [] _ = return []
+doNCrossovers n parents xover =
+    doAnotherNCrossovers n []
+  where
+    doAnotherNCrossovers i children
+        | i <= 0     = return . take n . concat $ children
+        | otherwise  = do
+      (children', _) <- xover =<< shuffle parents
+      doAnotherNCrossovers (i - length children') (children':children)

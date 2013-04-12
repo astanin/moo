@@ -57,6 +57,7 @@ Test-Suite moo-tests
   Main-Is:              moo-tests.hs
   Other-Modules:        Tests.Common
                       , Tests.Problems.Rosenbrock
+                      , Tests.Internals.TestCrossover
                       , Tests.Internals.TestSelection
                       , Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Types

@@ -11,11 +11,12 @@ module Moo.GeneticAlgorithm.Crossover
   , uniformCrossover
   , noCrossover
   , doCrossovers
+  , doNCrossovers
 ) where
 
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Utilities (doCrossovers)
+import Moo.GeneticAlgorithm.Utilities
 
 import Control.Monad (liftM)
 
