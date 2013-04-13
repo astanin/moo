@@ -1,9 +1,9 @@
 module Moo.GeneticAlgorithm.Constraints
-    ( ConstraintFunction
+    (
+      ConstraintFunction
     , Constraint()
-    , lessThan, lessThanOrEqual
-    , greaterThan, greaterThanOrEqual, equal
-    , isFeasible, filterFeasible
+    , (.<.), (.<=.), (.>.), (.>=.), (.==.), (.<=..<=.), (.<..<.)
+    , isFeasible
     -- ** Constrained initalization (TODO)
     -- ** Constrained selection
     , withDeathPenalty
@@ -27,11 +27,13 @@ import Data.Function (on)
 type ConstraintFunction a b = Genome a -> b
 
 
--- A constraint.
---
 -- Defining a constraint as a pair of function and its boundary value
 -- (vs just a boolean valued function) allows for estimating the
 -- degree of constraint violation when necessary.
+
+-- | Define constraints using '.<.', '.<=.', '.>.', '.>=.', and '.==.'
+-- operators, with 'ConstraintFunction' on the left hand side.
+-- For double inequality constraints use '.<=..<=.' and '.<..<.'.
 data (Num b) => Constraint a b
     = LessThan (ConstraintFunction a b) b
     -- ^ strict inequality constraint,
@@ -42,27 +44,31 @@ data (Num b) => Constraint a b
     | Equal (ConstraintFunction a b) b
     -- ^ equality constraint,
     -- function value is equal to the constraint value
+    | InInterval (ConstraintFunction a b) (Bool, b) (Bool, b)
+    -- ^ double inequality, boolean flags indicate if the
+    -- bound is inclusive.
 
 
--- | Strict inequality
-lessThan :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
-lessThan = LessThan
+(.<.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.<.) = LessThan
 
--- | Non-strict inequality
-lessThanOrEqual :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
-lessThanOrEqual = LessThanOrEqual
+(.<=.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.<=.) = LessThanOrEqual
 
--- | Strict inequality
-greaterThan :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
-greaterThan f v = LessThan (negate . f) (negate v)
+(.>.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.>.) f v = LessThan (negate . f) (negate v)
 
--- | Non-strict inequality
-greaterThanOrEqual :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
-greaterThanOrEqual f v = LessThanOrEqual (negate . f) (negate v)
+(.>=.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.>=.) f v = LessThanOrEqual (negate . f) (negate v)
 
--- | Strict equality
-equal :: (Num b, Show b) => ConstraintFunction a b -> b -> Constraint a b
-equal = Equal
+(.==.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.==.) = Equal
+
+(.<=..<=.) :: (Num b) => b -> b -> ((ConstraintFunction a b) -> Constraint a b)
+l .<=..<=. r = \cf -> InInterval cf (True, l) (True, r)
+
+(.<..<.) :: (Num b) => b -> b -> ((ConstraintFunction a b) -> Constraint a b)
+l .<..<. r = \cf -> InInterval cf (False, l) (False, r)
 
 
 -- | Returns @True@ if a @genome@ represents a feasible solution
@@ -74,6 +80,12 @@ satisfiesConstraint :: (Real b)
 satisfiesConstraint g (LessThan f v)  = f g < v
 satisfiesConstraint g (LessThanOrEqual f v) = f g <= v
 satisfiesConstraint g (Equal f v) = f g == v
+satisfiesConstraint g (InInterval f (inclusive1,v1) (inclusive2,v2)) =
+    let v' = f g
+        c1 = if inclusive1 then v1 <= v' else v1 < v'
+        c2 = if inclusive2 then v' <= v2 else v' < v2
+    in  c1 && c2
+
 
 
 -- | Returns @True@ if a @genome@ represents a feasible solution,
@@ -85,7 +97,7 @@ isFeasible :: (Real b)
 isFeasible constraints genome = all (genome `satisfiesConstraint`) constraints
 
 
--- | A simple estimate of the degree of feasibility.
+-- | A simple estimate of the degree of (in)feasibility.
 --
 -- Count the number of constraint violations. Return @0@ if the solution is feasible.
 numberOfViolations :: (Real b)
@@ -97,7 +109,7 @@ numberOfViolations constraints genome =
     in  length $ filter not satisfied
 
 
--- | An estimate of the degree of feasibility.
+-- | An estimate of the degree of (in)feasibility.
 --
 -- Given @f_j@ is the excess of @j@-th constraint function value,
 -- return @sum |f_j|^beta@.  For strict inequality constraints, return
@@ -127,6 +139,20 @@ degreeOfViolation beta eta constraints genome =
         in  if v' == v
             then 0.0
             else (abs $ v' - v) ** beta
+    violation (InInterval f (incleft, l) (incright, r)) =
+        let v' = f genome
+            leftok = if incleft
+                     then l <= v'
+                     else l < v'
+            rightok = if incright
+                      then r <= v'
+                      else r < v'
+        in  case (leftok, rightok) of
+            (True, True) -> 0.0
+            (False, _)   -> (abs $ l - v') ** beta
+                            + (fromIntegral . fromEnum . not $ incleft) * eta
+            (_, False)   -> (abs $ v' - r) ** beta
+                            + (fromIntegral . fromEnum . not $ incright) * eta
 
 
 -- | Constrained tournament selection prefers feasible solutions over infeasible,
