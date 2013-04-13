@@ -4,10 +4,12 @@ import Test.HUnit
 import Tests.Problems.Rosenbrock (testRosenbrock)
 import Tests.Internals.TestSelection (testSelection)
 import Tests.Internals.TestCrossover (testCrossover)
+import Tests.Internals.TestConstraints (testConstraints)
 
 allTests = TestList
   [ testSelection
   , testCrossover
+  , testConstraints
   , testRosenbrock ]
 
 main = do

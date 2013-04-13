@@ -4,7 +4,8 @@ module Moo.GeneticAlgorithm.Constraints
     , Constraint()
     , (.<.), (.<=.), (.>.), (.>=.), (.==.), (.<=..<=.), (.<..<.)
     , isFeasible
-    -- ** Constrained initalization (TODO)
+    -- ** Constrained initalization
+    , getConstrainedGenomesRs
     -- ** Constrained selection
     , withDeathPenalty
     , withFinalDeathPenalty
@@ -16,6 +17,7 @@ module Moo.GeneticAlgorithm.Constraints
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
 
 
 import Control.Arrow (first)
@@ -95,6 +97,23 @@ isFeasible :: (Real b)
            -> Genome a          -- ^ genome
            -> Bool
 isFeasible constraints genome = all (genome `satisfiesConstraint`) constraints
+
+
+-- | Generate @n@ feasible random genomes with individual genome elements
+-- bounded by @ranges@.
+getConstrainedGenomesRs :: (Random a, Ord a, Real b)
+    => [Constraint a b]   -- ^ constraints
+    -> Int                -- ^ @n@, how many genomes to generate
+    -> [(a, a)]           -- ^ ranges for individual genome elements
+    -> Rand ([Genome a])  -- ^ random feasible genomes
+getConstrainedGenomesRs constraints n ranges
+  | n <= 0            = return []
+  | otherwise         = do
+  candidates <- getRandomGenomesRs n ranges
+  let feasible = filter (isFeasible constraints) candidates
+  let found = length feasible
+  more <- getConstrainedGenomesRs constraints (n - found) ranges
+  return $ feasible ++ more
 
 
 -- | A simple estimate of the degree of (in)feasibility.
