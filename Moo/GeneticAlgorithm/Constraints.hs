@@ -3,11 +3,14 @@ module Moo.GeneticAlgorithm.Constraints
     , Constraint()
     , lessThan, lessThanOrEqual
     , greaterThan, greaterThanOrEqual, equal
-    , isFeasible
+    , isFeasible, filterFeasible
+    -- ** Constrained initalization (TODO)
+    -- ** Constrained selection
+    , withDeathPenalty
+    , withFinalDeathPenalty
+    , constrainedTournament
     , numberOfViolations
     , degreeOfViolation
-    , constrainedTournament
-    , withDeathPenalty
     ) where
 
 
@@ -76,10 +79,10 @@ satisfiesConstraint g (Equal f v) = f g == v
 -- | Returns @True@ if a @genome@ represents a feasible solution,
 -- i.e. satisfies all @constraints@.
 isFeasible :: (Real b)
-           => Genome a          -- ^ genome
-           -> [Constraint a b]  -- ^ constraints
+           => [Constraint a b]  -- ^ constraints
+           -> Genome a          -- ^ genome
            -> Bool
-isFeasible genome constraints = all (genome `satisfiesConstraint`) constraints
+isFeasible constraints genome = all (genome `satisfiesConstraint`) constraints
 
 
 -- | A simple estimate of the degree of feasibility.
@@ -180,6 +183,15 @@ constrainedCompare ptype (objval1, violation1) (objval2, violation2) =
 
 
 -- | Kill all infeasible solutions after every step of the genetic algorithm.
+--
+-- “Death penalty is very popular within the evolution strategies community,
+-- but it is limited to problems in which the feasible search space is convex
+-- and constitutes a reasonably large portion of the whole search space,” --
+-- (Coello 1999).
+--
+-- Coello, C. A. C., & Carlos, A. (1999). A survey of constraint
+-- handling techniques used with evolutionary algorithms.
+-- Lania-RI-99-04, Laboratorio Nacional de Informática Avanzada.
 withDeathPenalty :: (Monad m, Real b)
                  => [Constraint a b]  -- ^ constraints
                  -> StepGA m a        -- ^ unconstrained step
@@ -188,7 +200,23 @@ withDeathPenalty cs step =
     \stop popstate -> do
       stepresult <- step stop popstate
       case stepresult of
-        StopGA pop -> return (StopGA (killInfeasible pop))
-        ContinueGA pop -> return (ContinueGA (killInfeasible pop))
-  where
-    killInfeasible = filter (\p -> (takeGenome p) `isFeasible` cs)
+        StopGA pop -> return (StopGA (filterFeasible cs pop))
+        ContinueGA pop -> return (ContinueGA (filterFeasible cs pop))
+
+
+-- | Kill all infeasible solutions once after the last step of the
+-- genetic algorithm. See also 'withDeathPenalty'.
+withFinalDeathPenalty :: (Monad m, Real b)
+                      => [Constraint a b]  -- ^ constriants
+                      -> StepGA m a        -- ^ unconstrained step
+                      -> StepGA m a        -- ^ constrained step
+withFinalDeathPenalty cs step =
+    \stop popstate -> do
+      result <- step stop popstate
+      case result of
+        (ContinueGA _) -> return result
+        (StopGA pop) -> return (StopGA (filterFeasible cs pop))
+
+
+filterFeasible :: (Real b) => [Constraint a b] -> Population a -> Population a
+filterFeasible cs = filter (isFeasible cs . takeGenome)
