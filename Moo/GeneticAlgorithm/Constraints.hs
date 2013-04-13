@@ -130,9 +130,25 @@ degreeOfViolation beta eta constraints genome =
 -- solutions with small constraint violations over other infeasible solutions,
 -- and is equivalent to normal tournament if all solutions are feasible.
 -- Runs @n@ tournaments in groups of size @size@.
+--
+-- 'constrainedTournament' is inspired by the ideas of the constrained
+-- tournament selection operator of (Deb, 2000), but differs in
+-- implementation, and allows for an arbitrary measure of the
+-- constraint violation ((Deb, 2000) used a sum of absolute values,
+-- use 'degreeOfViolation' @1.0 0.0@ for the same effect).
+--
+-- Note: 'constrainedTournament' runs in the beginning of every iteration,
+-- more infeasible solutions may appear after crossover and mutation.
+-- Consider taking only feasible solutions after the last iteration
+-- (see 'isFeasible' and 'withFinalDeathPenalty').
+--
+-- Reference: Deb, K. (2000). An efficient constraint handling method
+-- for genetic algorithms. Computer methods in applied mechanics and
+-- engineering, 186(2), 311-338.
 constrainedTournament :: (Real b, Real c)
     => [Constraint a b]  -- ^ constraints
-    -> ([Constraint a b] -> Genome a -> c)  -- ^ degree of violation function
+    -> ([Constraint a b] -> Genome a -> c)  -- ^ degree of violation function,
+                                            -- see 'numberOfViolations' and 'degreeOfViolation'
     -> ProblemType  -- ^ type of the optimization problem
     -> Int -- ^ @size@ of the tournament group
     -> Int -- ^ @n@, how many tournaments to run
