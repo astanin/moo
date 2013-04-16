@@ -9,6 +9,7 @@ module Moo.GeneticAlgorithm.Constraints
     -- ** Constrained selection
     , withDeathPenalty
     , withFinalDeathPenalty
+    , withConstraints
     , constrainedTournament
     , numberOfViolations
     , degreeOfViolation
@@ -18,6 +19,7 @@ module Moo.GeneticAlgorithm.Constraints
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
+import Moo.GeneticAlgorithm.Selection (withPopulationTransform, bestFirst)
 
 
 import Control.Arrow (first)
@@ -213,6 +215,40 @@ constrainedTournament constraints violation ptype size n xs =
     let winner = fst . head $ sortBy cmp contestants
     return winner
 
+-- | Modify objective function in such a way that 1) any feasible
+-- solution is preferred to any infeasible solution, 2) among two
+-- feasible solutions the one having better objective function value
+-- is preferred, 3) among two infeasible solution the one having
+-- smaller constraint violation is preferred.
+--
+-- Reference: Deb, K. (2000). An efficient constraint handling method
+-- for genetic algorithms. Computer methods in applied mechanics and
+-- engineering, 186(2), 311-338.
+withConstraints :: (Real b, Real c)
+    => [Constraint a b]                      -- ^ constraints
+    -> ([Constraint a b] -> Genome a -> c)   -- ^ non-negative degree of violation,
+                                             -- see 'numberOfViolations' and 'degreeOfViolation'
+    -> ProblemType
+    -> SelectionOp a
+    -> SelectionOp a
+withConstraints constraints violation ptype =
+    withPopulationTransform penalizeInfeasible
+  where
+    penalizeInfeasible phenotypes =
+        let worst = takeObjectiveValue . head . worstFirst ptype $ phenotypes
+            penalize p = let g = takeGenome p
+                             v = fromRational . toRational . violation constraints $ g
+                         in  if (v > 0)
+                             then (g, worst `worsen` v)
+                             else p
+        in  map penalize phenotypes
+
+    worstFirst Minimizing = bestFirst Maximizing
+    worstFirst Maximizing = bestFirst Minimizing
+
+    worsen x delta = if ptype == Minimizing
+                     then x + delta
+                     else x - delta
 
 constrainedCompare :: (Real c) => ProblemType -> (Objective, c) -> (Objective, c) -> Ordering
 constrainedCompare ptype (objval1, violation1) (objval2, violation2) =

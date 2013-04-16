@@ -51,6 +51,7 @@ Library
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.Niching
 
 Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
@@ -66,6 +67,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.Niching
                       , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Random
                       , Moo.GeneticAlgorithm.Utilities

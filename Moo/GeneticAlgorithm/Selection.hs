@@ -10,14 +10,18 @@ module Moo.GeneticAlgorithm.Selection
   , tournamentSelect
   -- ** Scaling
   , withPopulationTransform
+  , withFitnessSharing
   , withScale
   , rankScale
   -- ** Sorting
   , bestFirst
   ) where
 
+
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
+import Moo.GeneticAlgorithm.Niching (withFitnessSharing)
+
 
 import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
@@ -55,6 +59,7 @@ rankScale problem pop =
           | otherwise           = (genome,rank+1) : ranks (rank+1) objective rest
       opposite Minimizing = Maximizing
       opposite Maximizing = Minimizing
+
 
 -- |Objective-proportionate (roulette-wheel) selection: select @n@
 -- random items with each item's chance of being selected is
