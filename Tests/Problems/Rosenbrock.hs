@@ -18,7 +18,8 @@ import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
 
-pr = hPutStrLn stderr
+pr _ = return ()
+-- pr = hPutStrLn stderr
 
 
 rosenbrock :: [Double] -> Double
