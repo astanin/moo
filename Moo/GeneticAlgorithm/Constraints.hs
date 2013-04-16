@@ -10,7 +10,6 @@ module Moo.GeneticAlgorithm.Constraints
     , withDeathPenalty
     , withFinalDeathPenalty
     , withConstraints
-    , constrainedTournament
     , numberOfViolations
     , degreeOfViolation
     ) where
@@ -20,12 +19,6 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
 import Moo.GeneticAlgorithm.Selection (withPopulationTransform, bestFirst)
-
-
-import Control.Arrow (first)
-import Control.Monad (replicateM)
-import Data.List (sortBy)
-import Data.Function (on)
 
 
 type ConstraintFunction a b = Genome a -> b
@@ -176,45 +169,6 @@ degreeOfViolation beta eta constraints genome =
                             + (fromIntegral . fromEnum . not $ incright) * eta
 
 
--- | Constrained tournament selection prefers feasible solutions over infeasible,
--- solutions with small constraint violations over other infeasible solutions,
--- and is equivalent to normal tournament if all solutions are feasible.
--- Runs @n@ tournaments in groups of size @size@.
---
--- 'constrainedTournament' is inspired by the ideas of the constrained
--- tournament selection operator of (Deb, 2000), but differs in
--- implementation, and allows for an arbitrary measure of the
--- constraint violation ((Deb, 2000) used a sum of absolute values,
--- use 'degreeOfViolation' @1.0 0.0@ for the same effect).
---
--- Note: 'constrainedTournament' runs in the beginning of every iteration,
--- more infeasible solutions may appear after crossover and mutation.
--- Consider taking only feasible solutions after the last iteration
--- (see 'isFeasible' and 'withFinalDeathPenalty').
---
--- Reference: Deb, K. (2000). An efficient constraint handling method
--- for genetic algorithms. Computer methods in applied mechanics and
--- engineering, 186(2), 311-338.
-constrainedTournament :: (Real b, Real c)
-    => [Constraint a b]  -- ^ constraints
-    -> ([Constraint a b] -> Genome a -> c)  -- ^ degree of violation function,
-                                            -- see 'numberOfViolations' and 'degreeOfViolation'
-    -> ProblemType  -- ^ type of the optimization problem
-    -> Int -- ^ @size@ of the tournament group
-    -> Int -- ^ @n@, how many tournaments to run
-    -> SelectionOp a
-constrainedTournament constraints violation ptype size n xs =
-    replicateM n tournament1
-  where
-  xs_ds =
-      let ds = map (violation constraints . takeGenome) xs
-      in  zip xs ds
-  cmp = (constrainedCompare ptype) `on` (first takeObjectiveValue)
-  tournament1 = do
-    contestants <- randomSample size xs_ds
-    let winner = fst . head $ sortBy cmp contestants
-    return winner
-
 -- | Modify objective function in such a way that 1) any feasible
 -- solution is preferred to any infeasible solution, 2) among two
 -- feasible solutions the one having better objective function value
@@ -232,9 +186,16 @@ withConstraints :: (Real b, Real c)
     -> SelectionOp a
     -> SelectionOp a
 withConstraints constraints violation ptype =
-    withPopulationTransform penalizeInfeasible
-  where
-    penalizeInfeasible phenotypes =
+    withPopulationTransform (penalizeInfeasible constraints violation ptype)
+
+
+penalizeInfeasible :: (Real b, Real c)
+    => [Constraint a b]
+    -> ([Constraint a b] -> Genome a -> c)
+    -> ProblemType
+    -> Population a
+    -> Population a
+penalizeInfeasible constraints violation ptype phenotypes =
         let worst = takeObjectiveValue . head . worstFirst ptype $ phenotypes
             penalize p = let g = takeGenome p
                              v = fromRational . toRational . violation constraints $ g
@@ -242,25 +203,13 @@ withConstraints constraints violation ptype =
                              then (g, worst `worsen` v)
                              else p
         in  map penalize phenotypes
-
+   where
     worstFirst Minimizing = bestFirst Maximizing
     worstFirst Maximizing = bestFirst Minimizing
 
     worsen x delta = if ptype == Minimizing
                      then x + delta
                      else x - delta
-
-constrainedCompare :: (Real c) => ProblemType -> (Objective, c) -> (Objective, c) -> Ordering
-constrainedCompare ptype (objval1, violation1) (objval2, violation2) =
-    let infeasible1 = violation1 > 0
-        infeasible2 = violation2 > 0
-    in  case (infeasible1, infeasible2) of
-          (True, True) -> compare violation1 violation2  -- prefer smaller violation
-          (False, False) -> case ptype of
-                              Minimizing -> compare objval1 objval2
-                              Maximizing -> compare objval2 objval1
-          (True, False) -> GT  -- second (feasible) solution is preferred
-          (False, True) -> LT  -- first (feasible) solution is preferred
 
 
 -- | Kill all infeasible solutions after every step of the genetic algorithm.

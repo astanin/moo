@@ -29,17 +29,36 @@ testConstraints =
                     all (\([_,y]) -> (-1) <= y && y <= 1) genomes
         assertEqual "third constraint (<)" True $
                     all (\([x,y]) -> (x+y) < 5) genomes
-    , "constrained tournament" ~: do
-        let tournament = constrainedTournament [head .>=. 0, head .>=. (-1)]
-                         numberOfViolations Minimizing 2 100
+    , "constrained selection (minimizing)" ~: do
+        let n = 10
+        let tournament2 = tournamentSelect Minimizing 2 n
+        let constraints = [head .>=. 0, head .>=. (-1)]
+        let ctournament = withConstraints constraints numberOfViolations Minimizing $
+                          tournament2
         -- out of two solutions, one violates both constraints, another one only one
         let badvsugly = map (\x -> ([x], x)) [-1, -2]
         -- out of two solutions, one is feasible, the other is not
         let goodvsbad = map (\x -> ([x], x)) [0, -1]
-        let result = flip evalRandom (pureMT 1) $ tournament badvsugly
+        let result = flip evalRandom (pureMT 1) $ ctournament badvsugly
         assertEqual "lesser degree of violation is preferred"
-                    (replicate 100 (-1.0)) $ (map snd result)
-        let result = flip evalRandom (pureMT 1) $ tournament goodvsbad
+                    (replicate n (-1.0)) $ (map (head . takeGenome) result)
+        let result = flip evalRandom (pureMT 1) $ ctournament goodvsbad
         assertEqual "feasible solution is preferred"
-                    (replicate 100 (0.0)) $ (map snd result)
+                    (replicate n (0.0)) $ (map (head . takeGenome) result)
+    , "numberOfViolations" ~: do
+        let constraints = [head .>=. 0, head .>=. (-1)]
+        assertEqual "1 violation" 1 $
+                    numberOfViolations constraints [-1]
+        assertEqual "2 violations" [2, 2] $
+                    map (numberOfViolations constraints) [ [-2], [-3] ]
+        assertEqual "no violations" 0 $
+                    numberOfViolations constraints [0]
+    , "degreeOfViolation" ~: do
+        let constraints = [head .>=. 0, (negate . head) .<. (1)]
+        assertEqual "no violation" 0 $
+                    degreeOfViolation 2.0 0.5 constraints [0]
+        assertEqual "1 non-strict violation" 0.25 $
+                    degreeOfViolation 2.0 0.5 constraints [-0.5]
+        assertEqual "1 non-strict and 1 strict violations" 1.5 $
+                    degreeOfViolation 2.0 0.5 constraints [-1.0]
     ]
