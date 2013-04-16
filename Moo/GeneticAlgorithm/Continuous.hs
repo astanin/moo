@@ -18,11 +18,12 @@ module Moo.GeneticAlgorithm.Continuous
   -- * Selection
   , module Moo.GeneticAlgorithm.Selection
   -- * Crossover
-  , module Moo.GeneticAlgorithm.Crossover
+  -- ** Neighborhood-based operators
   , blendCrossover
   , unimodalCrossover
   , unimodalCrossoverRP
   , simulatedBinaryCrossover
+  , module Moo.GeneticAlgorithm.Crossover
   -- * Mutation
   , gaussianMutate
   -- * Control

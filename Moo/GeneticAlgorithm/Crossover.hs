@@ -6,10 +6,12 @@ Common crossover operators for genetic algorithms.
 
 module Moo.GeneticAlgorithm.Crossover
   (
+  -- ** Discrete operators
     onePointCrossover
   , twoPointCrossover
   , uniformCrossover
   , noCrossover
+  -- ** Application
   , doCrossovers
   , doNCrossovers
 ) where
