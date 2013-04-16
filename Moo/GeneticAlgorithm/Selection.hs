@@ -10,9 +10,9 @@ module Moo.GeneticAlgorithm.Selection
   , tournamentSelect
   -- ** Scaling
   , withPopulationTransform
-  , withFitnessSharing
   , withScale
   , rankScale
+  , fitnessSharing
   -- ** Sorting
   , bestFirst
   ) where
@@ -20,7 +20,7 @@ module Moo.GeneticAlgorithm.Selection
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Niching (withFitnessSharing)
+import Moo.GeneticAlgorithm.Niching (fitnessSharing)
 
 
 import Control.Monad (liftM, replicateM)
