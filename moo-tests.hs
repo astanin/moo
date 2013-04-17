@@ -1,13 +1,15 @@
 import System.Exit
 import Test.HUnit
 
-import Tests.Problems.Rosenbrock (testRosenbrock)
-import Tests.Internals.TestSelection (testSelection)
-import Tests.Internals.TestCrossover (testCrossover)
 import Tests.Internals.TestConstraints (testConstraints)
+import Tests.Internals.TestCrossover (testCrossover)
+import Tests.Internals.TestSelection (testSelection)
+import Tests.Problems.Rosenbrock (testRosenbrock)
+import Tests.Internals.TestControl (testControl)
 
 allTests = TestList
-  [ testSelection
+  [ testControl
+  , testSelection
   , testCrossover
   , testConstraints
   , testRosenbrock ]
