@@ -61,25 +61,38 @@ nextGeneration
     -> CrossoverOp a        -- ^ crossover operator
     -> MutationOp a         -- ^ mutation operator
     -> StepGA Rand a
-nextGeneration problem objective selectOp elite xoverOp mutationOp stop input = do
+nextGeneration problem objective selectOp elite xoverOp mutationOp =
+  let step = makeStoppable objective $ \pop -> do
+               genomes' <- liftM (map takeGenome) $ withElite problem elite selectOp pop
+               let top = take elite genomes'
+               let rest = drop elite genomes'
+               genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
+               genomes' <- doCrossovers genomes' xoverOp
+               genomes' <- mapM mutationOp genomes'
+               return $ evalObjective objective (top ++ genomes')
+ in   step
+
+
+-- | Wrap a population transformation with pre- and post-conditions
+-- to indicate the end of simulation.
+makeStoppable
+    :: (ObjectiveFunction objectivefn a, Monad m)
+    => objectivefn
+    -> (Population a -> m (Population a))  -- single step
+    -> StepGA m a
+makeStoppable objective onestep stop input = do
   let pop = either (evalObjective objective) id input
   if isGenomes input && evalCond stop pop
-    then return $ StopGA pop  -- stop before the first iteration
-    else do
-      genomes' <- liftM (map takeGenome) $ withElite problem elite selectOp pop
-      let top = take elite genomes'
-      let rest = drop elite genomes'
-      genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
-      genomes' <- doCrossovers genomes' xoverOp
-      genomes' <- mapM mutationOp genomes'
-      let newpop = evalObjective objective (top ++ genomes')
-      if evalCond stop newpop
-         then return $ StopGA newpop
-         else return $ ContinueGA newpop
-
+     then return $ StopGA pop   -- stop before the first iteration
+     else do
+       newpop <- onestep pop
+       return $ if evalCond stop newpop
+                then StopGA newpop
+                else ContinueGA newpop
   where
     isGenomes (Left _) = True
     isGenomes (Right _) = False
+
 
 -- | Select @n@ best genomes, then select more genomes from the
 -- /entire/ population (elite genomes inclusive). Elite genomes will
