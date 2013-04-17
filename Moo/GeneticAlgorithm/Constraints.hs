@@ -2,8 +2,12 @@ module Moo.GeneticAlgorithm.Constraints
     (
       ConstraintFunction
     , Constraint()
-    , (.<.), (.<=.), (.>.), (.>=.), (.==.), (.<=..<=.), (.<..<.)
     , isFeasible
+    -- *** Simple equalities and inequalities
+    , (.<.), (.<=.), (.>.), (.>=.), (.==.)
+    -- *** Double inequalities
+    , LeftHandSideInequality()
+    , (.<), (.<=), (<.), (<=.)
     -- ** Constrained initalization
     , getConstrainedGenomesRs
     -- ** Constrained selection
@@ -29,9 +33,18 @@ type ConstraintFunction a b = Genome a -> b
 -- degree of constraint violation when necessary.
 
 -- | Define constraints using '.<.', '.<=.', '.>.', '.>=.', and '.==.'
--- operators, with 'ConstraintFunction' on the left hand side.
--- For double inequality constraints use '.<=..<=.' and '.<..<.'.
-data (Num b) => Constraint a b
+-- operators, with a 'ConstraintFunction' on the left hand side.
+--
+-- For double inequality constraints use pairs of '.<', '<.' and
+-- '.<=', '<=.' respectively, with a 'ConstraintFunction' in the middle.
+--
+-- Examples:
+--
+-- @
+-- function .>=. lowerBound
+-- lowerBound .<= function <=. upperBound
+-- @
+data (Real b) => Constraint a b
     = LessThan (ConstraintFunction a b) b
     -- ^ strict inequality constraint,
     -- function value is less than the constraint value
@@ -46,26 +59,40 @@ data (Num b) => Constraint a b
     -- bound is inclusive.
 
 
-(.<.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.<.) :: (Real b) => ConstraintFunction a b -> b -> Constraint a b
 (.<.) = LessThan
 
-(.<=.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.<=.) :: (Real b) => ConstraintFunction a b -> b -> Constraint a b
 (.<=.) = LessThanOrEqual
 
-(.>.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.>.) :: (Real b) => ConstraintFunction a b -> b -> Constraint a b
 (.>.) f v = LessThan (negate . f) (negate v)
 
-(.>=.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.>=.) :: (Real b) => ConstraintFunction a b -> b -> Constraint a b
 (.>=.) f v = LessThanOrEqual (negate . f) (negate v)
 
-(.==.) :: (Num b) => ConstraintFunction a b -> b -> Constraint a b
+(.==.) :: (Real b) => ConstraintFunction a b -> b -> Constraint a b
 (.==.) = Equal
 
-(.<=..<=.) :: (Num b) => b -> b -> ((ConstraintFunction a b) -> Constraint a b)
-l .<=..<=. r = \cf -> InInterval cf (True, l) (True, r)
 
-(.<..<.) :: (Num b) => b -> b -> ((ConstraintFunction a b) -> Constraint a b)
-l .<..<. r = \cf -> InInterval cf (False, l) (False, r)
+-- Left hand side of the double inequality defined in the form:
+-- @lowerBound .<= function <=. upperBound@.
+data (Real b) => LeftHandSideInequality a b
+    = LeftHandSideInequality (ConstraintFunction a b) (Bool, b)
+    -- ^ boolean flag indicates if the bound is inclusive
+
+(.<=) :: (Real b) => b -> ConstraintFunction a b -> LeftHandSideInequality a b
+lval .<= f = LeftHandSideInequality f (True, lval)
+
+(.<) :: (Real b) => b -> ConstraintFunction a b -> LeftHandSideInequality a b
+lval .< f  = LeftHandSideInequality f (False, lval)
+
+(<.) :: (Real b) => LeftHandSideInequality a b -> b -> Constraint a b
+(LeftHandSideInequality f l) <. rval  = InInterval f l (False, rval)
+
+(<=.) :: (Real b) => LeftHandSideInequality a b -> b -> Constraint a b
+(LeftHandSideInequality f l) <=. rval = InInterval f l (True,  rval)
+
 
 
 -- | Returns @True@ if a @genome@ represents a feasible solution

@@ -27,12 +27,12 @@ testConstraints =
         assertEqual ".==." [False, False, True, False, False] $
                     map (isFeasible [head .==. 1]) gs
         assertEqual "non-strict double inequality" [False, True, True, True, False] $
-                    map (isFeasible [(0 .<=..<=. 2) head]) gs
+                    map (isFeasible [0 .<= head <=. 2]) gs
         assertEqual "strict double inequality" [False, False, True, False, False] $
-                    map (isFeasible [(0 .<..<. 2) head]) gs
+                    map (isFeasible [0 .< head <. 2]) gs
     , "constrained initialization" ~: do
         let constraints = [ (!!0) .>=. 0
-                          , ((-1) .<=..<=. 1) (!!1)
+                          , (-1) .<= (!!1) <=. 1
                           , (\([x,y]) -> x+y) .<. 5 ]
         let n = 200
         let genomes = flip evalRandom (pureMT 1) $
@@ -79,8 +79,8 @@ testConstraints =
                     degreeOfViolation 2.0 0.5 constraints [-1.0]
         assertEqual "non-strict double inequality"
                     [3.0,2.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,2.0,3.0] $
-                    map (degreeOfViolation 1 0.5 [(0 .<=..<=. 6) head]) $ map (:[]) [-3..9]
+                    map (degreeOfViolation 1 0.5 [0 .<= head <=. 6]) $ map (:[]) [-3..9]
         assertEqual "strict double inequality"
                     [3.5,2.5,1.5,0.5,0.0,0.0,0.0,0.0,0.0,0.5,1.5,2.5,3.5] $
-                    map (degreeOfViolation 1 0.5 [(0 .<..<. 6) head]) $ map (:[]) [-3..9]
+                    map (degreeOfViolation 1 0.5 [0 .< head <. 6]) $ map (:[]) [-3..9]
     ]
