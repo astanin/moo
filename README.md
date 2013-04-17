@@ -52,7 +52,7 @@ Features
     |                       |            custom non-adaptive ^                |
     |-----------------------+-------------------------------------------------|
     |Replacement            |            generational with elitism            |
-    |                       |            steady state *                       |
+    |                       |            steady state                         |
     |-----------------------+-------------------------------------------------|
     |Stop                   |            number of generations                |
     |condition              |            values of objective function         |
