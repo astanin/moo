@@ -8,7 +8,7 @@ module Moo.GeneticAlgorithm.Selection
   (
     rouletteSelect
   , tournamentSelect
-  -- ** Scaling
+  -- ** Scaling and niching
   , withPopulationTransform
   , withScale
   , rankScale

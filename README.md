@@ -21,15 +21,18 @@ Features
     |                       | Gray bit-string      |                          |
     |-----------------------+----------------------+--------------------------|
     |Initialization         |            random uniform                       |
+    |                       |            constrained random uniform           |
     |                       |            arbitrary custom                     |
     |-----------------------+-------------------------------------------------|
     |Objective              |            minimization and maximiation         |
     |                       |            optional scaling                     |
     |                       |            optional ranking                     |
+    |                       |            optional niching (fitness sharing)   |
     |-----------------------+-------------------------------------------------|
     |Selection              |            roulette                             |
     |                       |            tournament                           |
     |                       |            optional elitism                     |
+    |                       |            optionally constrained               |
     |                       |            custom non-adaptive ^                |
     |-----------------------+-------------------------------------------------|
     |Crossover              |            one-point                            |
@@ -61,9 +64,9 @@ Features
     |Logging                |            pure periodic (any monoid)           |
     |                       |            periodic with `IO`                   |
     |-----------------------+-------------------------------------------------|
-    |Constraints            |            constrained initialization *         |
-    |handling               |            contrained tournament                |
-    |                       |            death penalty *                      |
+    |Constrainted           |            constrained initialization           |
+    |optimization           |            constrained selection                |
+    |                       |            death penalty                        |
     |-----------------------+-------------------------------------------------|
     |Multiobjective         |            NSGA-II                              |
     |optimization           |            constrained NSGA-II *                |
@@ -80,8 +83,6 @@ represented as a list of values `:: [a]`.
   * tree encodings (`a` being a subtree type)
   * hybrid encodings (`a` being a sum type)
 
-The current version of Moo doesn't provide operators to support such
-encodings out of the box.
 
 
 An example

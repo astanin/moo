@@ -8,14 +8,17 @@ description:        Moo library provides building blocks to build custom
                     find solutions to optimization and search problems.
                     .
                     Variants supported out of the box: binary (using
-                    bit-strings) and continuous (real-valued).
+                    bit-strings) and continuous (real-coded).
                     .
                     Binary GAs: binary and Gray encoding; point mutation;
                     one-point, two-point, and uniform crossover.
                     Continuous GAs: Gaussian mutation; BLX-α, UNDX, and
                     SBX crossover.
                     Selection operators: roulette, and tournament;
-                    with optional elitism and scaling.
+                    with optional elitism, niching and scaling.
+                    Constrained optimization: random constrained
+                    initialization, death penalty, constrained
+                    selection without a penalty function.
 
 license:            BSD3
 License-file:       LICENSE

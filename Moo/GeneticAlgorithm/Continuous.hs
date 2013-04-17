@@ -2,8 +2,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
-Continuous (real-valued) genetic algorithms. Candidate solutions are
-represented as lists of real-valued variables.
+Continuous (real-coded) genetic algorithms. Candidate solutions are
+represented as lists of real variables.
 
 -}
 
