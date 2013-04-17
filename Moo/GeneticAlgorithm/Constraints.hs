@@ -159,8 +159,8 @@ degreeOfViolation beta eta constraints genome =
                      then l <= v'
                      else l < v'
             rightok = if incright
-                      then r <= v'
-                      else r < v'
+                      then r >= v'
+                      else r > v'
         in  case (leftok, rightok) of
             (True, True) -> 0.0
             (False, _)   -> (abs $ l - v') ** beta

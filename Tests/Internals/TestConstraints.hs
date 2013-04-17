@@ -77,4 +77,10 @@ testConstraints =
                     degreeOfViolation 2.0 0.5 constraints [-0.5]
         assertEqual "1 non-strict and 1 strict violations" 1.5 $
                     degreeOfViolation 2.0 0.5 constraints [-1.0]
+        assertEqual "non-strict double inequality"
+                    [3.0,2.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,2.0,3.0] $
+                    map (degreeOfViolation 1 0.5 [(0 .<=..<=. 6) head]) $ map (:[]) [-3..9]
+        assertEqual "strict double inequality"
+                    [3.5,2.5,1.5,0.5,0.0,0.0,0.0,0.0,0.0,0.5,1.5,2.5,3.5] $
+                    map (degreeOfViolation 1 0.5 [(0 .<..<. 6) head]) $ map (:[]) [-3..9]
     ]
