@@ -1,8 +1,10 @@
-{- constrained problem
+{- Constrained problem
 
    min (x^2 + y^2)
 
-   with x + y >= 1 -}
+   with x + y >= 1.
+
+-}
 
 import System.Environment (getArgs)
 
@@ -15,7 +17,7 @@ f :: [Double] -> Double
 f [x, y] = x*x + y*y
 
 
-constraints = [ greaterThanOrEqual (\ [x,y] -> x+y ) 1 ]
+constraints = [ sum .>=. 1 ]
 
 
 popsize = 100
