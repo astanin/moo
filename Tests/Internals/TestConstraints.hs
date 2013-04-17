@@ -14,7 +14,23 @@ import Moo.GeneticAlgorithm.Constraints
 
 testConstraints =
     TestList
-    [ "constrained initialization" ~: do
+    [ "constraint satisfaction" ~: do
+        let gs =  [[-1],[0],[1],[2],[3::Int]]
+        assertEqual ".<." [True, True, False, False, False] $
+                    map (isFeasible [head .<. 1]) gs
+        assertEqual ".<=." [True, True, True, False, False] $
+                    map (isFeasible [head .<=. 1]) gs
+        assertEqual ".>." [False, False, False, True, True] $
+                    map (isFeasible [head .>. 1]) gs
+        assertEqual ".>=." [False, False, True, True, True] $
+                    map (isFeasible [head .>=. 1]) gs
+        assertEqual ".==." [False, False, True, False, False] $
+                    map (isFeasible [head .==. 1]) gs
+        assertEqual "non-strict double inequality" [False, True, True, True, False] $
+                    map (isFeasible [(0 .<=..<=. 2) head]) gs
+        assertEqual "strict double inequality" [False, False, True, False, False] $
+                    map (isFeasible [(0 .<..<. 2) head]) gs
+    , "constrained initialization" ~: do
         let constraints = [ (!!0) .>=. 0
                           , ((-1) .<=..<=. 1) (!!1)
                           , (\([x,y]) -> x+y) .<. 5 ]
