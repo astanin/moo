@@ -2,6 +2,7 @@ import System.Exit
 import Test.HUnit
 
 import Tests.Internals.TestFundamentals (testFundamentals)
+import Tests.Internals.TestControl (testControl)
 import Tests.Internals.TestSelection (testSelection)
 import Tests.Internals.TestCrossover (testCrossover)
 import Tests.Internals.TestConstraints (testConstraints)
@@ -10,6 +11,7 @@ import Tests.Problems.Rosenbrock (testRosenbrock)
 
 allTests = TestList
   [ testFundamentals
+  , testControl
   , testSelection
   , testCrossover
   , testConstraints

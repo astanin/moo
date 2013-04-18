@@ -9,13 +9,17 @@ description:        Moo library provides building blocks to build custom
                     .
                     Variants supported out of the box: binary (using
                     bit-strings) and continuous (real-coded).
+                    Potentially supported variants: permutation,
+                    tree, hybrid encodings (require customizations).
                     .
                     Binary GAs: binary and Gray encoding; point mutation;
                     one-point, two-point, and uniform crossover.
                     Continuous GAs: Gaussian mutation; BLX-α, UNDX, and
                     SBX crossover.
                     Selection operators: roulette, and tournament;
-                    with optional elitism, niching and scaling.
+                    with optional niching and scaling.
+                    Replacement strategies: generational with elitism
+                    and steady state.
                     Constrained optimization: random constrained
                     initialization, death penalty, constrained
                     selection without a penalty function.
@@ -66,6 +70,7 @@ Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
   Main-Is:              moo-tests.hs
   Other-Modules:        Tests.Common
+                      , Tests.Internals.TestControl
                       , Tests.Internals.TestCrossover
                       , Tests.Internals.TestFundamentals
                       , Tests.Internals.TestMultiobjective

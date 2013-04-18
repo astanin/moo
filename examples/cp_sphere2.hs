@@ -6,11 +6,11 @@
 
 -}
 
-import System.Environment (getArgs)
-
-
 import Moo.GeneticAlgorithm.Continuous
 import Moo.GeneticAlgorithm.Constraints
+
+
+import ExampleMain
 
 
 f :: [Double] -> Double
@@ -33,10 +33,14 @@ step = withDeathPenalty constraints $
        nextGeneration Minimizing f select 2 crossover mutation
 
 
+{-
+-- exampleMain takes care of command line options and pretty printing.
+-- If you don't need that, a bare bones main function looks like this:
+
 main = do
-  gens <- return . read . head . (++ ["25"])  =<< getArgs
-  result <- runGA initialize $ loop (Generations gens) step
-  putStrLn $ "# top 5% after " ++ show gens ++ " generations"
-  mapM_ (\[x,y] -> putStrLn $
-         show x ++ " " ++ show y ++ " ") $
-       map takeGenome . take (popsize `div` 20) . bestFirst Minimizing $ result
+  results <- runGA initialize (loop (Generations 25) step)
+  print . head . bestFirst Minimizing $ results
+
+-}
+main = exampleMain (exampleDefaults { numGenerations = 25 })
+       Minimizing initialize step

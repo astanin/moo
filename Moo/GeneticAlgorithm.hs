@@ -59,8 +59,9 @@ How to write a genetic algorithm
      "Moo.GeneticAlgorithm.Binary" and "Moo.GeneticAlgorithm.Continuous"
      modules respectively.
 
-  4. Use 'nextGeneration' to create a single step of the algorithm,
-     control the iterative process with 'loop', 'loopWithLog', or 'loopIO'.
+  4. Use 'nextGeneration' or 'nextSteadyState' to create a single step
+     of the algorithm, control the iterative process with 'loop',
+     'loopWithLog', or 'loopIO'.
 
   5. Write a function to generate an initial population; for random
      uniform initialization use 'getRandomGenomes',

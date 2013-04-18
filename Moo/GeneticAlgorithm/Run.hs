@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Run (
     runGA
   , runIO
   , nextGeneration
+  , nextSteadyState
   -- * Iteration control
   , loop, loopWithLog, loopIO
   , Cond(..), LogHook(..), IOHook(..)
@@ -19,7 +20,7 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection (bestFirst)
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.StopCondition
-import Moo.GeneticAlgorithm.Utilities (doCrossovers)
+import Moo.GeneticAlgorithm.Utilities (doCrossovers, doNCrossovers)
 
 import Data.Monoid (Monoid, mempty, mappend)
 import Data.Time.Clock.POSIX (getPOSIXTime)
@@ -61,25 +62,62 @@ nextGeneration
     -> CrossoverOp a        -- ^ crossover operator
     -> MutationOp a         -- ^ mutation operator
     -> StepGA Rand a
-nextGeneration problem objective selectOp elite xoverOp mutationOp stop input = do
+nextGeneration problem objective selectOp elite xoverOp mutationOp =
+  makeStoppable objective $ \pop -> do
+    genomes' <- liftM (map takeGenome) $ withElite problem elite selectOp pop
+    let top = take elite genomes'
+    let rest = drop elite genomes'
+    genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
+    genomes' <- doCrossovers genomes' xoverOp
+    genomes' <- mapM mutationOp genomes'
+    return $ evalObjective objective (top ++ genomes')
+
+
+-- | Construct a single step of the incremental (steady-steate) genetic algorithm.
+-- Exactly @n@ worst solutions are replaced with newly born children.
+--
+-- See "Moo.GeneticAlgorithm.Binary" and "Moo.GeneticAlgorithm.Continuous"
+-- for the building blocks of the algorithm.
+--
+nextSteadyState
+    :: (ObjectiveFunction objectivefn a)
+    => Int                  -- ^ @n@, number of worst solutions to replace
+    -> ProblemType          -- ^ a type of the optimization @problem@
+    -> objectivefn          -- ^ objective function
+    -> SelectionOp a        -- ^ selection operator
+    -> CrossoverOp a        -- ^ crossover operator
+    -> MutationOp a         -- ^ mutation operator
+    -> StepGA Rand a
+nextSteadyState n problem objective selectOp crossoverOp mutationOp =
+    makeStoppable objective $ \pop -> do
+      let popsize = length pop
+      parents <- liftM (map takeGenome) (selectOp pop)
+      children <- mapM mutationOp =<< doNCrossovers n parents crossoverOp
+      let sortedPop = bestFirst problem pop
+      let cpop = evalObjective objective children
+      return . take popsize $ cpop ++ sortedPop
+
+
+-- | Wrap a population transformation with pre- and post-conditions
+-- to indicate the end of simulation.
+makeStoppable
+    :: (ObjectiveFunction objectivefn a, Monad m)
+    => objectivefn
+    -> (Population a -> m (Population a))  -- single step
+    -> StepGA m a
+makeStoppable objective onestep stop input = do
   let pop = either (evalObjective objective) id input
   if isGenomes input && evalCond stop pop
-    then return $ StopGA pop  -- stop before the first iteration
-    else do
-      genomes' <- liftM (map takeGenome) $ withElite problem elite selectOp pop
-      let top = take elite genomes'
-      let rest = drop elite genomes'
-      genomes' <- shuffle rest         -- just in case if @selectOp@ preserves order
-      genomes' <- doCrossovers genomes' xoverOp
-      genomes' <- mapM mutationOp genomes'
-      let newpop = evalObjective objective (top ++ genomes')
-      if evalCond stop newpop
-         then return $ StopGA newpop
-         else return $ ContinueGA newpop
-
+     then return $ StopGA pop   -- stop before the first iteration
+     else do
+       newpop <- onestep pop
+       return $ if evalCond stop newpop
+                then StopGA newpop
+                else ContinueGA newpop
   where
     isGenomes (Left _) = True
     isGenomes (Right _) = False
+
 
 -- | Select @n@ best genomes, then select more genomes from the
 -- /entire/ population (elite genomes inclusive). Elite genomes will
