@@ -16,14 +16,9 @@ xvar [x,_] = x
 yvar [_,y] = y
 
 
-constraints = [ (-100.0) .<= xvar <=. 100.0
-              , (-100.0) .<= yvar <=. 100.0 ]
-
-
 popsize = 100
-initialize = getRandomGenomesRs popsize (replicate 2 (-512,512))
-select = withConstraints constraints (degreeOfViolation 1 0) Minimizing $
-         withPopulationTransform (fitnessSharing dist 1.0 1 Minimizing) $
+initialize = getRandomGenomesRs popsize (replicate 2 (-100,100))
+select = withPopulationTransform (fitnessSharing dist 1.0 1 Minimizing) $
          tournamentSelect Minimizing 2 popsize
 crossover = unimodalCrossoverRP
 mutate = gaussianMutate 0.05 0.1
@@ -36,5 +31,14 @@ dist = distGenotypes `on` takeGenome
 
 
 
+{-
+-- exampleMain takes care of command line options and pretty printing.
+-- If you don't need that, a bare bones main function looks like this:
+
+main = do
+  results <- runGA initialize (loop (Generations 1000) step)
+  print . head . bestFirst Minimizing $ results
+
+-}
 main = exampleMain (exampleDefaults { numGenerations = 1000 })
        Minimizing initialize step

@@ -20,13 +20,10 @@ import Moo.GeneticAlgorithm.Continuous
 import Moo.GeneticAlgorithm.Constraints
 
 
--- it takes care of CLI
 import ExampleMain
 
 
-import System.Environment (getArgs)
 import Data.Function (on)
-import Text.Printf (printf)
 
 
 f :: [Double] -> Double
@@ -48,7 +45,8 @@ initialize = getRandomGenomesRs popsize [(0,6),(0,6)]
 select = withPopulationTransform (fitnessSharing dist 0.025 1 Minimizing) $
          withConstraints constraints (degreeOfViolation 1.0 0.0) Minimizing $
          tournamentSelect Minimizing 2 popsize
-step = nextGeneration Minimizing f select 0
+step = withFinalDeathPenalty constraints $
+       nextGeneration Minimizing f select 0
        (simulatedBinaryCrossover 0.5)
        (gaussianMutate 0.05 0.025)
 
@@ -57,6 +55,14 @@ dist = distGenotypes `on` takeGenome
     where
       distGenotypes [x1,y1] [x2,y2] = sqrt ((x1-x2)**2 + (y1-y2)**2)
 
+{-
+-- exampleMain takes care of command line options and pretty printing.
+-- If you don't need that, a bare bones main function looks like this:
 
+main = do
+  results <- runGA initialize (loop (Generations 100) step)
+  print . head . bestFirst Minimizing $ results
+
+-}
 main = exampleMain (exampleDefaults { numGenerations = 100 } )
        Minimizing initialize step
