@@ -38,6 +38,7 @@ testMultiobjective =
                     True (domination problems best good23)
         assertEqual "worst doesn't dominate best"
                     False (domination problems worst best)
+    -- TODO: test constrainedDomination
     , "non-dominated sort" ~: do
         let dominatesFn = domination [Minimizing, Minimizing]
         let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
