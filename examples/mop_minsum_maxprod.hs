@@ -1,10 +1,16 @@
-module Main where
+{- A simple multiobjective problem:
+
+  minimize f_1 = x + y
+  maximize f_2 = x * y
+
+  s.t. x >= 0, y >=0. -}
+
 
 import Moo.GeneticAlgorithm.Continuous
+import Moo.GeneticAlgorithm.Constraints
 import Moo.GeneticAlgorithm.Multiobjective
 
 
-import System.Environment (getArgs)
 import Text.Printf (printf)
 
 
@@ -13,21 +19,27 @@ mop = [ (Minimizing, sum :: [Double] -> Double)
       , (Maximizing, product)]
 
 
+constraints = [ xvar .>=. 0
+              , yvar .>=. 0 ]
+xvar [x,_] = x
+yvar [_,y] = y
+
+
 genomes :: [[Double]]
 genomes = [[3,3], [9,1], [1,4], [2,2], [1,9], [4,1], [1,1], [4,2]]
 
 
+popsize :: Int
+popsize = 50
 step :: StepGA Rand Double
-step = stepNSGA2default mop noCrossover (gaussianMutate 0.5 0.5)
+step = withDeathPenalty constraints $
+       stepNSGA2default mop noCrossover (gaussianMutate 0.1 0.5)
 
 
 main = do
-  args <- getArgs
-  let args' = zip (iterate (+ 1) 0) args
-  let n = maybe (length genomes) read $ lookup (0::Int) args'
-  putStrLn $ "# population size: " ++ show n
+  putStrLn $ "# population size: " ++ show popsize
   result <- runGA
-            (return . take n . cycle $ genomes) $
+            (return . take popsize . cycle $ genomes) $
             (loop (Generations 100) step)
   putStrLn $ "# best:"
   printPareto result
