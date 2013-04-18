@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Rank2Types, ConstraintKinds #-}
 {- |
 
 NSGA-II. A Fast Elitist Non-Dominated Sorting Genetic
@@ -26,6 +26,7 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 import Moo.GeneticAlgorithm.StopCondition (evalCond)
 import Moo.GeneticAlgorithm.Selection (tournamentSelect)
+import Moo.GeneticAlgorithm.Constraints
 
 
 import Control.Monad (forM_, (<=<), when, liftM)
@@ -37,21 +38,50 @@ import Data.List (sortBy)
 import Data.STRef
 
 
+-- | Returns @True@ if the first solution dominates the second one in
+-- some sense.
+type DominationCmp a = MultiPhenotype a -> MultiPhenotype a -> Bool
+
+
 -- | A solution @p@ dominates another solution @q@ if at least one 'Objective'
 -- values of @p@ is better than the respective value of @q@, and the other
 -- are not worse.
-dominates :: [ProblemType] -- ^ problem types per every objective
-          -> [Objective]   -- ^ 'Objective' values of the solution @p@
-          -> [Objective]   -- ^ 'Objective' values of the solution @q@
-          -> Bool
-dominates ptypes p q =
-    let pqs = zip3 ptypes p q
-        qps = zip3 ptypes q p
+domination :: [ProblemType] -- ^ problem types per every objective
+           -> DominationCmp a
+domination ptypes p q =
+    let pvs = takeObjectiveValues p
+        qvs = takeObjectiveValues q
+        pqs = zip3 ptypes pvs qvs
+        qps = zip3 ptypes qvs pvs
     in  (any better1 pqs) && (all (not . better1) qps)
   where
     better1 :: (ProblemType, Objective, Objective) -> Bool
     better1 (Minimizing, pv, qv) = pv < qv
     better1 (Maximizing, pv, qv) = pv > qv
+
+
+-- | A solution p is said to constrain-dominate a solution q, if any of the
+-- following is true: 1) Solution p is feasible and q is not. 2) Solutions
+-- p and q are both infeasible but solution p has a smaller overall constraint
+-- violation. 3) Solutions p and q are feasible, and solution p dominates solution q.
+--
+-- Reference: (Deb, 2002).
+constrainedDomination :: (Real b, Real c)
+                      => [Constraint a b]  -- ^ constraints
+                      -> ([Constraint a b] -> Genome a -> c)  -- ^ non-negative degree of violation
+                      -> [ProblemType]     -- ^ problem types per every objective
+                      -> DominationCmp a
+constrainedDomination constraints violation ptypes p q =
+    let pok = isFeasible constraints p
+        qok = isFeasible constraints q
+    in  case (pok, qok) of
+          (True, True) -> domination ptypes p q
+          (False, True) -> False
+          (True, False) -> True
+          (False, False) ->
+              let pviolation = violation constraints (takeGenome p)
+                  qviolation = violation constraints (takeGenome q)
+              in  pviolation < qviolation
 
 
 -- | Solution and its non-dominated rank and local crowding distance.
@@ -65,11 +95,12 @@ data RankedSolution a = RankedSolution {
 -- | Fast non-dominated sort from (Deb et al. 2002).
 -- It is should be O(m N^2), with storage requirements of O(N^2).
 nondominatedSort :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
-nondominatedSort = nondominatedSortFast
+nondominatedSort ptypes = nondominatedSortFast (domination ptypes)
+
 
 -- | This is a direct translation of the pseudocode from (Deb et al. 2002).
-nondominatedSortFast :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
-nondominatedSortFast ptypes gs =
+nondominatedSortFast :: DominationCmp a -> [MultiPhenotype a] -> [[MultiPhenotype a]]
+nondominatedSortFast dominates gs =
     let n = length gs   -- number of genomes
         garray = listArray (0, n-1) gs
         fronts = runSTArray $ do
@@ -90,12 +121,10 @@ nondominatedSortFast ptypes gs =
                      fronts <- newArray ((0,0), (1,n-1)) 0 :: ST s (STArray s (Int,Int) Int)
                      forM_ (zip gs [0..]) $ \(p, pi) -> do  -- for each p in P
                        forM_ (zip gs [0..]) $ \(q, qi) -> do  -- for each q in P
-                         let pvs = takeObjectiveValues p
-                         let qvs = takeObjectiveValues q
-                         when ( dominates ptypes pvs qvs ) $
+                         when ( p `dominates` q ) $
                               -- if p dominates q, include q in S_p
                               includeInSp sp pi qi
-                         when ( dominates ptypes qvs pvs) $
+                         when ( q `dominates` p) $
                               -- if q dominates p, increment n_p
                               incrementNp sp pi
                        np <- readArray sp (pi, 0)
@@ -352,6 +381,18 @@ stepNSGA2default problems crossover mutate stop popstate =
     let n = either length length popstate
         select = tournamentSelect Minimizing 2 n
     in  stepNSGA2 problems select crossover mutate stop popstate
+
+
+stepConstrainedNSGA2
+    :: forall fn a b . (ObjectiveFunction fn a, Real b)
+    => [Constraint a b]            -- ^ constraints
+    -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    -> SelectionOp a
+    -> CrossoverOp a
+    -> MutationOp a
+    -> StepGA Rand a
+stepConstrainedNSGA2 constraints problems select crossover mutate stop input = do
+  undefined
 
 
 stepNSGA2'firstGeneration

@@ -16,24 +16,28 @@ import Moo.GeneticAlgorithm.Multiobjective.NSGA2
 import System.Random.Mersenne.Pure64 (pureMT)
 
 
+dummyGenome :: [Objective] -> MultiPhenotype ()
+dummyGenome ovs = ([], ovs)
+
+
 testMultiobjective =
     TestList
     [ "domination predicate" ~: do
         let problems = [Minimizing, Maximizing, Minimizing]
-        let worst = [100, 0, 100]
-        let good1 = [0, 50, 50]
-        let good23 = [50, 100, 0]
-        let best = [0, 100, 0]
+        let worst = dummyGenome [100, 0, 100]
+        let good1 = dummyGenome [0, 50, 50]
+        let good23 = dummyGenome [50, 100, 0]
+        let best = dummyGenome [0, 100, 0]
         assertEqual "good dominates worst"
-                    True (dominates problems good1 worst)
+                    True (domination problems good1 worst)
         assertEqual "good23 doesn't dominate good1"
-                    False (dominates problems good23 good1)
+                    False (domination problems good23 good1)
         assertEqual "good1 doesn't dominate good23"
-                    False (dominates problems good1 good23)
+                    False (domination problems good1 good23)
         assertEqual "best dominates good23"
-                    True (dominates problems best good23)
+                    True (domination problems best good23)
         assertEqual "worst doesn't dominate best"
-                    False (dominates problems worst best)
+                    False (domination problems worst best)
     , "non-dominated sort" ~: do
         let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
                       , ([3], [1,1.5]), ([3,3], [1.5, 0.5]), ([4], [0,0::Double])]

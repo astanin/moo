@@ -114,11 +114,11 @@ satisfiesConstraint g (InInterval f (inclusive1,v1) (inclusive2,v2)) =
 
 -- | Returns @True@ if a @genome@ represents a feasible solution,
 -- i.e. satisfies all @constraints@.
-isFeasible :: (Real b)
+isFeasible :: (GenomeState gt a, Real b)
            => [Constraint a b]  -- ^ constraints
-           -> Genome a          -- ^ genome
+           -> gt                -- ^ genome
            -> Bool
-isFeasible constraints genome = all (genome `satisfiesConstraint`) constraints
+isFeasible constraints genome = all ((takeGenome genome) `satisfiesConstraint`) constraints
 
 
 -- | Generate @n@ feasible random genomes with individual genome elements
