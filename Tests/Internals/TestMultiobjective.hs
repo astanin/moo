@@ -39,11 +39,12 @@ testMultiobjective =
         assertEqual "worst doesn't dominate best"
                     False (domination problems worst best)
     , "non-dominated sort" ~: do
+        let dominatesFn = domination [Minimizing, Minimizing]
         let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
                       , ([3], [1,1.5]), ([3,3], [1.5, 0.5]), ([4], [0,0::Double])]
         assertEqual "non-dominated fronts"
                     [[[4]],[[3],[3,3]],[[1]],[[2],[2,2]]]
-                    (map (map fst) $ nondominatedSort [Minimizing,Minimizing] genomes)
+                    (map (map fst) $ nondominatedSort dominatesFn genomes)
     , "calculate crowding distance" ~: do
         let inf = 1.0/0.0 :: Double
         assertEqual "two points" [inf, inf] $ crowdingDistances [[1],[2]]
@@ -51,8 +52,9 @@ testMultiobjective =
         assertEqual "4 points 2D" [inf, 2.0, inf, 0.75, 2.0] $
                     crowdingDistances [[3,1], [1.75,1.75], [1,3], [2,2], [2.125,2.125]]
     , "rank with crowding" ~: do
+        let dominatesFn = domination [Minimizing, Minimizing]
         let gs = map (\x -> ([], x)) [[2,1],[1,2],[3,1],[1.9,1.9],[1,3]]
-        let rs = concat $ rankAllSolutions [Minimizing,Minimizing] gs
+        let rs = concat $ rankAllSolutions dominatesFn gs
         let inf = 1.0/0.0 :: Double
         assertEqual "non-dom ranks" [1,1,1,2,2]
                     (map rs'nondominationRank rs)
@@ -67,6 +69,7 @@ testMultiobjective =
         assertEqual "two objective functions" correct $
                     evalAllObjectives objectives genomes
     , "NSGA-II ranking with crowding" ~: do
+        let dominatesFn = domination [Minimizing, Minimizing]
         let mp = [ (Minimizing, (!!0))
                  , (Minimizing, (!!1))
                  ] :: [(ProblemType, [Double] -> Double)]
@@ -84,9 +87,10 @@ testMultiobjective =
                         -- [5,3] is more crowded and is truncated
                         -- [6,6] is in the third front and is truncated
                         ]
-        let result7 = nsga2Ranking mp 7 gs
+        let result7 = nsga2Ranking dominatesFn mp 7 gs
         assertEqual "7 solutions" expected7 result7
     , "NSGA-II ranking (output length)" ~: do
+        let dominatesFn = domination [Minimizing, Minimizing]
         let mp = [ (Minimizing, (!!0))
                  , (Minimizing, (!!1))
                  ] :: [(ProblemType, [Double] -> Double)]
@@ -95,8 +99,10 @@ testMultiobjective =
                  , [6,2], [5,3], [4,4], [2,6]  -- second front
                  ] :: [[Double]]
         forM_ [0..(length gs)] $ \n -> do
-          assertEqual (show n ++ " solutions") n $ length (nsga2Ranking mp n gs)
-        assertEqual "max # of solutions" (length gs) $ length (nsga2Ranking mp maxBound gs)
+          assertEqual (show n ++ " solutions") n $
+                      length (nsga2Ranking dominatesFn mp n gs)
+        assertEqual "max # of solutions" (length gs) $
+                    length (nsga2Ranking dominatesFn mp maxBound gs)
     , "two NSGA-II steps" ~: do
         let mp = [ (Minimizing, (!!0))
                  , (Minimizing, (!!1))

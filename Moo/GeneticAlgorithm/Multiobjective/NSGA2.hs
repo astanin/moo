@@ -94,8 +94,8 @@ data RankedSolution a = RankedSolution {
 
 -- | Fast non-dominated sort from (Deb et al. 2002).
 -- It is should be O(m N^2), with storage requirements of O(N^2).
-nondominatedSort :: [ProblemType] -> [MultiPhenotype a] -> [[MultiPhenotype a]]
-nondominatedSort ptypes = nondominatedSortFast (domination ptypes)
+nondominatedSort :: DominationCmp a -> [MultiPhenotype a] -> [[MultiPhenotype a]]
+nondominatedSort dominates = nondominatedSortFast dominates
 
 
 -- | This is a direct translation of the pseudocode from (Deb et al. 2002).
@@ -259,10 +259,10 @@ crowdedCompare (RankedSolution _ ranki disti) (RankedSolution _ rankj distj) =
 
 -- | Assign non-domination rank and crowding distances to all solutions.
 -- Return a list of non-domination fronts.
-rankAllSolutions :: [ProblemType] -> [MultiPhenotype a] -> [[RankedSolution a]]
-rankAllSolutions ptypes genomes =
+rankAllSolutions :: DominationCmp a -> [MultiPhenotype a] -> [[RankedSolution a]]
+rankAllSolutions dominates genomes =
     let -- non-dominated fronts
-        fronts = nondominatedSort ptypes genomes
+        fronts = nondominatedSort dominates genomes
         -- for every non-dominated front
         frontsDists = map (crowdingDistances . map snd) fronts
         ranks = iterate (+1) 1
@@ -280,13 +280,13 @@ rankAllSolutions ptypes genomes =
 -- Note: 'nondominatedRanking' reorders the genomes.
 nondominatedRanking
     :: forall fn a . ObjectiveFunction fn a
-    => MultiObjectiveProblem fn     -- ^ list of @problems@
+    => DominationCmp a
+    -> MultiObjectiveProblem fn     -- ^ list of @problems@
     -> [Genome a]                   -- ^ a population of raw @genomes@
     -> [(Genome a, Objective)]
-nondominatedRanking problems genomes =
-    let ptypes = map fst problems
-        egs = evalAllObjectives problems genomes
-        fronts = nondominatedSort ptypes egs
+nondominatedRanking dominates problems genomes =
+    let egs = evalAllObjectives problems genomes
+        fronts = nondominatedSort dominates egs
         ranks = concatMap assignRanks (zip fronts (iterate (+1) 1))
     in  ranks
   where
@@ -301,14 +301,14 @@ nondominatedRanking problems genomes =
 -- operator)
 nsga2Ranking
     :: forall fn a . ObjectiveFunction fn a
-    => MultiObjectiveProblem fn     -- ^ a list of @problems@
+    => DominationCmp a
+    -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
     -> Int                          -- ^ @n@, number of top-ranked genomes to select
     -> [Genome a]                   -- ^ a population of raw @genomes@
     -> [(MultiPhenotype a, Double)] -- ^ selected genomes with their non-domination ranks
-nsga2Ranking problems n genomes =
-    let ptypes = map fst problems
-        evaledGenomes = evalAllObjectives problems genomes
-        fronts = rankAllSolutions ptypes evaledGenomes
+nsga2Ranking dominates problems n genomes =
+    let evaledGenomes = evalAllObjectives problems genomes
+        fronts = rankAllSolutions dominates evaledGenomes
         frontSizes = map length fronts
         nFullFronts = length . takeWhile (< n) $ scanl1 (+) frontSizes
         partialSize = n - (sum (take nFullFronts frontSizes))
@@ -362,11 +362,12 @@ stepNSGA2
     -> MutationOp a
     -> StepGA Rand a
 stepNSGA2 problems select crossover mutate stop input = do
+  let dominates = domination (map fst problems)
   case input of
     (Left rawgenomes) ->
-        stepNSGA2'firstGeneration problems select crossover mutate stop rawgenomes
+        stepNSGA2'firstGeneration dominates problems select crossover mutate stop rawgenomes
     (Right rankedgenomes) ->
-        stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes
+        stepNSGA2'nextGeneration dominates problems select crossover mutate stop rankedgenomes
 
 
 -- | A single step of NSGA-II algorithm with binary tournament selection.
@@ -384,28 +385,30 @@ stepNSGA2default problems crossover mutate stop popstate =
 
 
 stepConstrainedNSGA2
-    :: forall fn a b . (ObjectiveFunction fn a, Real b)
-    => [Constraint a b]            -- ^ constraints
-    -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    :: forall fn a b c . (ObjectiveFunction fn a, Real b, Real c)
+    => [Constraint a b]                     -- ^ constraints
+    -> ([Constraint a b] -> Genome a -> c)  -- ^ non-negative degree of violation
+    -> MultiObjectiveProblem fn             -- ^ a list of @objective@ functions
     -> SelectionOp a
     -> CrossoverOp a
     -> MutationOp a
     -> StepGA Rand a
-stepConstrainedNSGA2 constraints problems select crossover mutate stop input = do
+stepConstrainedNSGA2 constraints violation problems select crossover mutate stop input = do
   undefined
 
 
 stepNSGA2'firstGeneration
     :: forall fn a . ObjectiveFunction fn a
-    => MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
+    => DominationCmp a
+    -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
     -> SelectionOp a
     -> CrossoverOp a
     -> MutationOp a
     -> Cond a
     -> [Genome a]
     -> Rand (StepResult [Phenotype a])
-stepNSGA2'firstGeneration problems select crossover mutate stop genomes = do
-  let objective = nondominatedRanking problems
+stepNSGA2'firstGeneration dominates problems select crossover mutate stop genomes = do
+  let objective = nondominatedRanking dominates problems
   let phenotypes = evalObjective objective genomes
   if (evalCond stop phenotypes)
       then return $ StopGA phenotypes  -- stop before the first iteration
@@ -414,7 +417,7 @@ stepNSGA2'firstGeneration problems select crossover mutate stop genomes = do
         selected <- liftM (map takeGenome) $ (shuffle <=< select) phenotypes
         newgenomes <- (mapM mutate) <=< (flip doCrossovers crossover) $ selected
         let pool = newgenomes ++ genomes
-        stepNSGA2'poolSelection problems popsize stop pool
+        stepNSGA2'poolSelection dominates problems popsize stop pool
 
 
 -- | Use normal selection, crossover, mutation to produce new
@@ -422,19 +425,20 @@ stepNSGA2'firstGeneration problems select crossover mutate stop genomes = do
 -- best according to the least non-domination rank and crowding.
 stepNSGA2'nextGeneration
      :: forall fn a . ObjectiveFunction fn a
-     => MultiObjectiveProblem fn   -- ^ a list of objective functions
+     => DominationCmp a
+     -> MultiObjectiveProblem fn   -- ^ a list of objective functions
      -> SelectionOp a
      -> CrossoverOp a
      -> MutationOp a
      -> Cond a
      -> [Phenotype a]
      -> Rand (StepResult [Phenotype a])
-stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes = do
+stepNSGA2'nextGeneration dominates problems select crossover mutate stop rankedgenomes = do
   let popsize = length rankedgenomes
   selected <- liftM (map takeGenome) $ select rankedgenomes
   newgenomes <- (mapM mutate) <=< flip doCrossovers crossover <=< shuffle $ selected
   let pool = (map takeGenome rankedgenomes) ++ newgenomes
-  stepNSGA2'poolSelection problems popsize stop pool
+  stepNSGA2'poolSelection dominates problems popsize stop pool
 
 
 -- | Take a pool of phenotypes of size 2N, ordered by the crowded
@@ -442,14 +446,15 @@ stepNSGA2'nextGeneration problems select crossover mutate stop rankedgenomes = d
 -- is satisfied.
 stepNSGA2'poolSelection
     :: forall fn a . ObjectiveFunction fn a
-    => MultiObjectiveProblem fn   -- ^ a list of @objective@ functions
+    => DominationCmp a
+    -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
     -> Int                  -- ^ @n@, the number of solutions to select
     -> Cond a               -- ^ @stop@ condition
     -> [Genome a]           -- ^ a common pool of parents and their children
     -> Rand (StepResult [Phenotype a])
-stepNSGA2'poolSelection problems n stop pool = do
+stepNSGA2'poolSelection dominates problems n stop pool = do
     -- nsga2Ranking returns genomes properly sorted already
-    let rankedgenomes = let grs = nsga2Ranking problems n pool
+    let rankedgenomes = let grs = nsga2Ranking dominates problems n pool
                         in  map (\(mp,r) -> (takeGenome mp, r)) grs
     let selected = take n rankedgenomes  -- :: [Phenotype a]
     return $ if evalCond stop selected
