@@ -27,6 +27,7 @@ import Moo.GeneticAlgorithm.Utilities (doCrossovers)
 import Moo.GeneticAlgorithm.StopCondition (evalCond)
 import Moo.GeneticAlgorithm.Selection (tournamentSelect)
 import Moo.GeneticAlgorithm.Constraints
+import Moo.GeneticAlgorithm.Run (makeStoppable)
 
 
 import Control.Monad (forM_, (<=<), when, liftM)
@@ -365,9 +366,9 @@ stepNSGA2 problems select crossover mutate stop input = do
   let dominates = domination (map fst problems)
   case input of
     (Left rawgenomes) ->
-        stepNSGA2'firstGeneration dominates problems select crossover mutate stop rawgenomes
+        stepNSGA2'firstGeneration dominates problems select crossover mutate stop input
     (Right rankedgenomes) ->
-        stepNSGA2'nextGeneration dominates problems select crossover mutate stop rankedgenomes
+        stepNSGA2'nextGeneration dominates problems select crossover mutate stop input
 
 
 -- | A single step of NSGA-II algorithm with binary tournament selection.
@@ -404,20 +405,16 @@ stepNSGA2'firstGeneration
     -> SelectionOp a
     -> CrossoverOp a
     -> MutationOp a
-    -> Cond a
-    -> [Genome a]
-    -> Rand (StepResult [Phenotype a])
-stepNSGA2'firstGeneration dominates problems select crossover mutate stop genomes = do
+    -> StepGA Rand a
+stepNSGA2'firstGeneration dominates problems select crossover mutate = do
   let objective = nondominatedRanking dominates problems
-  let phenotypes = evalObjective objective genomes
-  if (evalCond stop phenotypes)
-      then return $ StopGA phenotypes  -- stop before the first iteration
-      else do
-        let popsize = length phenotypes
-        selected <- liftM (map takeGenome) $ (shuffle <=< select) phenotypes
-        newgenomes <- (mapM mutate) <=< (flip doCrossovers crossover) $ selected
-        let pool = newgenomes ++ genomes
-        stepNSGA2'poolSelection dominates problems popsize stop pool
+  makeStoppable objective $ \phenotypes -> do
+    let popsize = length phenotypes
+    let genomes = map takeGenome phenotypes
+    selected <- liftM (map takeGenome) $ (shuffle <=< select) phenotypes
+    newgenomes <- (mapM mutate) <=< (flip doCrossovers crossover) $ selected
+    let pool = newgenomes ++ genomes
+    return $ stepNSGA2'poolSelection dominates problems popsize pool
 
 
 -- | Use normal selection, crossover, mutation to produce new
@@ -430,33 +427,32 @@ stepNSGA2'nextGeneration
      -> SelectionOp a
      -> CrossoverOp a
      -> MutationOp a
-     -> Cond a
-     -> [Phenotype a]
-     -> Rand (StepResult [Phenotype a])
-stepNSGA2'nextGeneration dominates problems select crossover mutate stop rankedgenomes = do
-  let popsize = length rankedgenomes
-  selected <- liftM (map takeGenome) $ select rankedgenomes
-  newgenomes <- (mapM mutate) <=< flip doCrossovers crossover <=< shuffle $ selected
-  let pool = (map takeGenome rankedgenomes) ++ newgenomes
-  stepNSGA2'poolSelection dominates problems popsize stop pool
+     -> StepGA Rand a
+stepNSGA2'nextGeneration dominates problems select crossover mutate = do
+  -- nextGeneration is never called with raw genomes,
+  -- => dummyObjective is never evaluated;
+  -- nondominatedRanking is required to type-check
+  let dummyObjective = nondominatedRanking dominates problems
+  makeStoppable dummyObjective $ \rankedgenomes -> do
+    let popsize = length rankedgenomes
+    selected <- liftM (map takeGenome) $ select rankedgenomes
+    newgenomes <- (mapM mutate) <=< flip doCrossovers crossover <=< shuffle $ selected
+    let pool = (map takeGenome rankedgenomes) ++ newgenomes
+    return $ stepNSGA2'poolSelection dominates problems popsize pool
 
 
 -- | Take a pool of phenotypes of size 2N, ordered by the crowded
--- comparison operator, and select N best. Check if the stop condition
--- is satisfied.
+-- comparison operator, and select N best.
 stepNSGA2'poolSelection
     :: forall fn a . ObjectiveFunction fn a
     => DominationCmp a
     -> MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
-    -> Int                  -- ^ @n@, the number of solutions to select
-    -> Cond a               -- ^ @stop@ condition
-    -> [Genome a]           -- ^ a common pool of parents and their children
-    -> Rand (StepResult [Phenotype a])
-stepNSGA2'poolSelection dominates problems n stop pool = do
+    -> Int                         -- ^ @n@, the number of solutions to select
+    -> [Genome a]                  -- ^ @pool@ of genomes to select from
+    -> [Phenotype a]               -- ^ @n@ best phenotypes
+stepNSGA2'poolSelection dominates problems n pool =
     -- nsga2Ranking returns genomes properly sorted already
     let rankedgenomes = let grs = nsga2Ranking dominates problems n pool
                         in  map (\(mp,r) -> (takeGenome mp, r)) grs
-    let selected = take n rankedgenomes  -- :: [Phenotype a]
-    return $ if evalCond stop selected
-             then StopGA selected
-             else ContinueGA selected
+        selected = take n rankedgenomes  -- :: [Phenotype a]
+    in  selected

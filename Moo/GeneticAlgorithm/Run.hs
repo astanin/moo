@@ -11,6 +11,7 @@ module Moo.GeneticAlgorithm.Run (
   , runIO
   , nextGeneration
   , nextSteadyState
+  , makeStoppable
   -- * Iteration control
   , loop, loopWithLog, loopIO
   , Cond(..), LogHook(..), IOHook(..)
@@ -100,6 +101,9 @@ nextSteadyState n problem objective selectOp crossoverOp mutationOp =
 
 -- | Wrap a population transformation with pre- and post-conditions
 -- to indicate the end of simulation.
+--
+-- Use this function to define custom replacement strategies
+-- in addition to 'nextGeneration' and 'nextSteadyState'.
 makeStoppable
     :: (ObjectiveFunction objectivefn a, Monad m)
     => objectivefn
