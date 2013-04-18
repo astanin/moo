@@ -19,6 +19,7 @@ description:        Moo library provides building blocks to build custom
                     Constrained optimization: random constrained
                     initialization, death penalty, constrained
                     selection without a penalty function.
+                    Multi-objective optimization: NSGA-II.
 
 license:            BSD3
 License-file:       LICENSE
