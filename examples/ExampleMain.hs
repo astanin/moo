@@ -10,6 +10,8 @@ module ExampleMain
 
 import Moo.GeneticAlgorithm.Binary
 import Moo.GeneticAlgorithm.Continuous
+import Moo.GeneticAlgorithm.Statistics
+
 
 import Control.Monad (liftM, when)
 import Data.List (intercalate)
@@ -20,8 +22,9 @@ import Text.Printf
 
 
 data Flag = RunGenerations Int
-          | PrintBest | NoPrintBest
-          | DumpLast | NoDumpLast
+          | PrintBest Bool
+          | PrintStats Bool
+          | DumpAll Bool
           | ShowHelp
             deriving (Show, Eq)
 
@@ -29,14 +32,16 @@ data Flag = RunGenerations Int
 data ExampleDefaults = ExampleDefaults
     { numGenerations :: Int
     , printBest :: Bool
-    , dumpLast :: Bool
+    , printStats :: Bool
+    , dumpAll :: Bool
     } deriving (Show, Eq)
 
 
 exampleDefaults = ExampleDefaults {
                     numGenerations = 100
                   , printBest = True
-                  , dumpLast = False
+                  , printStats = False
+                  , dumpAll = False
                   }
 
 
@@ -46,17 +51,23 @@ exampleOptions c =
                  (ReqArg (RunGenerations . read) "N")
                  ("number of generations (default: " ++ show (numGenerations c) ++ ")")
     , Option "b" ["best"]
-                 (NoArg PrintBest)
+                 (NoArg $ PrintBest True)
                  ("print the best solution" ++ (isDefault (printBest c)))
     , Option ""  ["no-best"]
-                 (NoArg NoPrintBest)
+                 (NoArg $ PrintBest False)
                  ("don't print the best solution" ++ (isDefault (not . printBest $ c)))
-    , Option "d" ["dump", "dump-last"]
-                 (NoArg DumpLast)
-                 ("dump the last population and its objective values" ++ isDefault (dumpLast c))
-    , Option ""  ["no-dump", "no-dump-last"]
-                 (NoArg NoDumpLast)
-                 ("don't dump the last population" ++ isDefault (not . dumpLast $ c))
+    , Option "d" ["dump"]
+                 (NoArg $ DumpAll True)
+                 ("dump the entire population and its objective values" ++ isDefault (dumpAll c))
+    , Option ""  ["no-dump"]
+                 (NoArg $ DumpAll False)
+                 ("don't dump the entire population" ++ isDefault (not . dumpAll $ c))
+    , Option "s" ["stats"]
+                 (NoArg $ PrintStats True)
+                 ("print population statistics" ++ isDefault (printStats c))
+    , Option ""  ["no-stats"]
+                 (NoArg $ PrintStats False)
+                 ("don't print population statistics" ++ isDefault (not . printStats $ c))
     , Option "h" ["help"]
                  (NoArg ShowHelp)
                  "show help"
@@ -69,10 +80,9 @@ exampleOptions c =
 
 updateDefaults :: ExampleDefaults -> [Flag] -> ExampleDefaults
 updateDefaults d (RunGenerations n:opts) = updateDefaults (d { numGenerations = n }) opts
-updateDefaults d (PrintBest:opts) = updateDefaults (d { printBest = True }) opts
-updateDefaults d (NoPrintBest:opts) = updateDefaults (d { printBest = False }) opts
-updateDefaults d (DumpLast:opts) = updateDefaults (d { dumpLast = True }) opts
-updateDefaults d (NoDumpLast:opts) = updateDefaults (d { dumpLast = False }) opts
+updateDefaults d (PrintBest b:opts) = updateDefaults (d { printBest = b }) opts
+updateDefaults d (DumpAll b:opts) = updateDefaults (d { dumpAll = b }) opts
+updateDefaults d (PrintStats b:opts) = updateDefaults (d { printStats = b }) opts
 updateDefaults d [] = d
 
 
@@ -101,7 +111,13 @@ exampleMain defaults problemtype initialize step = do
        then putStrLn "# no solutions"
        else putStrLn $ "# best found: " ++ fmtPt (head sorted)
 
-  when (dumpLast conf) $ do
+  when (printStats conf) $ do
+    let ovs = map takeObjectiveValue sorted
+    let best = head ovs
+    let omedian = median ovs
+    putStrLn $ fmtXs " " [best, omedian]
+
+  when (dumpAll conf) $ do
     -- print the best solution last;
     -- (for scatter-plotting it above the others)
     flip mapM_ (reverse sorted) $ \p -> putStrLn $ fmtPtOneline p
@@ -114,7 +130,7 @@ exampleMain defaults problemtype initialize step = do
     fmtPtOneline :: (Show a, Real a, PrintfArg a) => Phenotype a -> String
     fmtPtOneline p = let xs = map (fromRational.toRational) . takeGenome $ p
                          v = takeObjectiveValue p
-                     in  fmtXs "\t" $ xs ++ [v]
+                     in  fmtXs " " $ xs ++ [v]
 
     fmtXs :: (Show a, Real a, PrintfArg a) => String -> [a] -> String
     fmtXs sep xs =  intercalate sep $ map (printf "%.3g") xs
