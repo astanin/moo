@@ -10,7 +10,7 @@ Constrained optimum: (2.246826, 2.381865)
 
 Running and visualizing in bash/zsh:
 
-N=100 ; ghc --make cp_himmelblau && ./cp_himmelblau $N > output.txt && ( gnuplot -persist <<< "set view map; unset key ; set isosamples 100 ; set logscale cb ; splot [0:6][0:6] (x**2 + y - 11)**2 + (x + y*y - 7)**2 w pm3d, 'output.txt' u 1:2:(0) w p lc 2 pt 4; set xlabel 'x' ; set ylabel 'y' ; set title 'generation $N' ; replot " ; head -1 output.txt)
+N=100 ; ghc --make cp_himmelblau && ./cp_himmelblau -b -d -g $N > output.txt && ( gnuplot -persist <<< "set view map; unset key ; set isosamples 100 ; set logscale cb ; splot [0:6][0:6] (x**2 + y - 11)**2 + (x + y*y - 7)**2 w pm3d, 'output.txt' u 1:2:(0) w p lc 2 pt 4; set xlabel 'x' ; set ylabel 'y' ; set title 'generation $N' ; replot " ; head -1 output.txt)
 
 
 -}
@@ -18,6 +18,10 @@ N=100 ; ghc --make cp_himmelblau && ./cp_himmelblau $N > output.txt && ( gnuplot
 
 import Moo.GeneticAlgorithm.Continuous
 import Moo.GeneticAlgorithm.Constraints
+
+
+-- it takes care of CLI
+import ExampleMain
 
 
 import System.Environment (getArgs)
@@ -54,17 +58,5 @@ dist = distGenotypes `on` takeGenome
       distGenotypes [x1,y1] [x2,y2] = sqrt ((x1-x2)**2 + (y1-y2)**2)
 
 
-main = do
-  -- usage: cp_himmelblau [number-of-generations (default: 100)]
-  gens <- return . read . head . (++ ["100"]) =<< getArgs
-  result <- runGA initialize (loop (Generations gens) step)
-  let best = bestFirst Minimizing . filter (isFeasible constraints . takeGenome) $ result
-  if null best
-     then putStrLn "# no feasible solutions"
-     else putStrLn $ "# best found: [" ++ fmt (head best) ++ "] vs optimal: [2.25 2.38]"
-  flip mapM_ result $ \p -> do
-         putStrLn $ fmt p
-
-  where
-    fmt p = let [x, y] = takeGenome p
-            in  printf "%.3f %.3f" x y
+main = exampleMain (exampleDefaults { numGenerations = 100 } )
+       Minimizing initialize step
