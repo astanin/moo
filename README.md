@@ -1,49 +1,88 @@
 Moo
 ===
 
-Genetic algorithm library for Haskell.
+     ------------------------------------------------
+    < Moo. Breeding Genetic Algorithms with Haskell. >
+     ------------------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||
+
 
 
 Features
 --------
 
-  * Binary genetic algorithms:
+    |                       | Binary GA            | Continuous GA            |
+    |-----------------------+----------------------+--------------------------|
+    |Encoding               | binary bit-string    | sequence of real values  |
+    |                       | Gray bit-string      |                          |
+    |-----------------------+----------------------+--------------------------|
+    |Initialization         |            random uniform                       |
+    |                       |            constrained random uniform           |
+    |                       |            arbitrary custom                     |
+    |-----------------------+-------------------------------------------------|
+    |Objective              |            minimization and maximiation         |
+    |                       |            optional scaling                     |
+    |                       |            optional ranking                     |
+    |                       |            optional niching (fitness sharing)   |
+    |-----------------------+-------------------------------------------------|
+    |Selection              |            roulette                             |
+    |                       |            tournament                           |
+    |                       |            optional elitism                     |
+    |                       |            optionally constrained               |
+    |                       |            custom non-adaptive ^                |
+    |-----------------------+-------------------------------------------------|
+    |Crossover              |            one-point                            |
+    |                       |            two-point                            |
+    |                       |            uniform                              |
+    |                       |            custom non-adaptive ^                |
+    |                       +----------------------+--------------------------|
+    |                       |                      | BLX-α (blend)            |
+    |                       |                      | SBX (simulated binary)   |
+    |                       |                      | UNDX (unimodal normal    |
+    |                       |                      | distributed)             |
+    |-----------------------+----------------------+--------------------------|
+    |Mutation               | point                | Gaussian                 |
+    |                       | asymmetric           |                          |
+    |                       | constant frequency   |                          |
+    |                       +----------------------+--------------------------|
+    |                       |            custom non-adaptive ^                |
+    |-----------------------+-------------------------------------------------|
+    |Replacement            |            generational with elitism            |
+    |                       |            steady state *                       |
+    |-----------------------+-------------------------------------------------|
+    |Stop                   |            number of generations                |
+    |condition              |            values of objective function         |
+    |                       |            stall of objective function          |
+    |                       |            custom or interactive (`loopIO`)     |
+    |                       |            time limit (`loopIO`)                |
+    |                       |            compound conditions (`And`, `Or`)    |
+    |-----------------------+-------------------------------------------------|
+    |Logging                |            pure periodic (any monoid)           |
+    |                       |            periodic with `IO`                   |
+    |-----------------------+-------------------------------------------------|
+    |Constrainted           |            constrained initialization           |
+    |optimization           |            constrained selection                |
+    |                       |            death penalty                        |
+    |-----------------------+-------------------------------------------------|
+    |Multiobjective         |            NSGA-II                              |
+    |optimization           |            constrained NSGA-II *                |
 
-    - binary and Gray encoding
-    - one-point, two-point, and uniform crossover
-    - point, asymmetric and constant-frequency mutation
 
-  * Continous (real-valued) genetic algorithms:
+`*` work in progress
 
-    - BLX-α (blend), UNDX (unimodal normal distributed), SBX (simulated binary) crossover
-    - one-point, two-point, and uniform crossover
-    - Gaussian mutation
+`^` non-adaptive: any function which doesn't depend on generation number
 
-  * Selection:
+There are other possible encodings beyond binary and continuous
+represented as a list of values `:: [a]`.
 
-    - minimization and maximization problems
-    - roulette
-    - tournament
-    - optional ranking and scaling
-    - optional elitism
+  * permutation encodings (`a` being an integer, or other `Enum` type)
+  * tree encodings (`a` being a subtree type)
+  * hybrid encodings (`a` being a sum type)
 
-  * Iteration control
-
-    - stop conditions:
-
-      + number of generations
-      + values of objective function
-      + stall of objective function
-      + custom and interactive (`loopIO`)
-      + time limit (`loopIO`)
-      + compound conditions (`And`, `Or`)
-
-    - optional logging (either pure, or in `IO`)
-
-  * Initialization
-
-    - random uniform
-    - arbitrary custom
 
 
 An example

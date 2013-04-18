@@ -8,14 +8,17 @@ description:        Moo library provides building blocks to build custom
                     find solutions to optimization and search problems.
                     .
                     Variants supported out of the box: binary (using
-                    bit-strings) and continuous (real-valued).
+                    bit-strings) and continuous (real-coded).
                     .
                     Binary GAs: binary and Gray encoding; point mutation;
                     one-point, two-point, and uniform crossover.
                     Continuous GAs: Gaussian mutation; BLX-α, UNDX, and
                     SBX crossover.
                     Selection operators: roulette, and tournament;
-                    with optional elitism and scaling.
+                    with optional elitism, niching and scaling.
+                    Constrained optimization: random constrained
+                    initialization, death penalty, constrained
+                    selection without a penalty function.
 
 license:            BSD3
 License-file:       LICENSE
@@ -41,6 +44,7 @@ Library
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Binary
+                      , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Random
@@ -54,19 +58,27 @@ Library
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Utilities
+                      , Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.Niching
 
 Test-Suite moo-tests
   Type:                 exitcode-stdio-1.0
   Main-Is:              moo-tests.hs
   Other-Modules:        Tests.Common
+                      , Tests.Internals.TestCrossover
                       , Tests.Internals.TestFundamentals
                       , Tests.Internals.TestMultiobjective
                       , Tests.Internals.TestSelection
                       , Tests.Problems.Rosenbrock
                       , Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Binary
+                      , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Crossover
+                      , Moo.GeneticAlgorithm.Niching
+                      , Moo.GeneticAlgorithm.Run
+                      , Moo.GeneticAlgorithm.Random
+                      , Moo.GeneticAlgorithm.Utilities
                       , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2

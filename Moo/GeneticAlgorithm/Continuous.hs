@@ -2,8 +2,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
-Continuous (real-valued) genetic algorithms. Candidate solutions are
-represented as lists of real-valued variables.
+Continuous (real-coded) genetic algorithms. Candidate solutions are
+represented as lists of real variables.
 
 -}
 
@@ -14,14 +14,16 @@ module Moo.GeneticAlgorithm.Continuous
     module Moo.GeneticAlgorithm.Types
   -- * Initialization
   , getRandomGenomes
+  , getRandomGenomesRs
   -- * Selection
   , module Moo.GeneticAlgorithm.Selection
   -- * Crossover
-  , module Moo.GeneticAlgorithm.Crossover
+  -- ** Neighborhood-based operators
   , blendCrossover
   , unimodalCrossover
   , unimodalCrossoverRP
   , simulatedBinaryCrossover
+  , module Moo.GeneticAlgorithm.Crossover
   -- * Mutation
   , gaussianMutate
   -- * Control
@@ -39,7 +41,7 @@ import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
+import Moo.GeneticAlgorithm.Utilities (getRandomGenomes, getRandomGenomesRs)
 
 -- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
 -- each component let @x@ and @y@ be its values in the first and the
@@ -51,7 +53,7 @@ import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 blendCrossover :: Double -- ^ @alpha@, range expansion parameter
                -> CrossoverOp Double
 blendCrossover _ [] = return ([], [])
-blendCrossover _ [_] = error "odd number of parents"
+blendCrossover _ [celibate] = return ([],[celibate])
 blendCrossover alpha (xs:ys:rest) = do
   (xs',ys') <- unzip `liftM` mapM (blx alpha) (zip xs ys)
   return ([xs',ys'], rest)
@@ -144,7 +146,7 @@ unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
                 else rem : exs  -- add to the list of orthogonalized vectors
 unimodalCrossover _ _ [] = return ([], [])
 unimodalCrossover _ _ (x1:x2:[]) = return ([x1,x2], [])  -- FIXME the last two
-unimodalCrossover _ _ _  = error "bad number of parents"
+unimodalCrossover _ _ [celibate]  = return ([], [celibate])
 
 -- | Run 'unimodalCrossover' with default recommended parameters.
 unimodalCrossoverRP :: CrossoverOp Double
@@ -200,8 +202,7 @@ simulatedBinaryCrossover n (x1:x2:rest) = do
   let c1 = xmean `plus`  deltax
   let c2 = xmean `minus` deltax
   return ([c1,c2], rest)
-simulatedBinaryCrossover _ [] = return ([], [])
-simulatedBinaryCrossover _ _  = error "bad number of parents"
+simulatedBinaryCrossover _ celibates = return ([], celibates)
 
 
 -- |For every variable in the genome with probability @p@ replace its

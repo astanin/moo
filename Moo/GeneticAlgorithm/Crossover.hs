@@ -6,16 +6,19 @@ Common crossover operators for genetic algorithms.
 
 module Moo.GeneticAlgorithm.Crossover
   (
+  -- ** Discrete operators
     onePointCrossover
   , twoPointCrossover
   , uniformCrossover
   , noCrossover
+  -- ** Application
   , doCrossovers
+  , doNCrossovers
 ) where
 
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Types
-import Moo.GeneticAlgorithm.Utilities (doCrossovers)
+import Moo.GeneticAlgorithm.Utilities
 
 import Control.Monad (liftM)
 
@@ -36,7 +39,7 @@ nPointCrossover n (xs,ys)
 -- Apply with probability @p@.
 onePointCrossover :: Double -> CrossoverOp a
 onePointCrossover _ []  = return ([],[])
-onePointCrossover _ [_] = error "odd number of parents"
+onePointCrossover _ [celibate] = return ([],[celibate])
 onePointCrossover p (g1:g2:rest) = do
   (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 1
   return ([h1,h2], rest)
@@ -45,7 +48,7 @@ onePointCrossover p (g1:g2:rest) = do
 -- Apply with probability @p@.
 twoPointCrossover :: Double -> CrossoverOp a
 twoPointCrossover _ []  = return ([], [])
-twoPointCrossover _ [_] = error "odd number of parents"
+twoPointCrossover _ [celibate] = return ([],[celibate])
 twoPointCrossover p (g1:g2:rest) = do
   (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 2
   return ([h1,h2], rest)
@@ -53,7 +56,7 @@ twoPointCrossover p (g1:g2:rest) = do
 -- |Swap individual bits of two genomes with probability @p@.
 uniformCrossover :: Double -> CrossoverOp a
 uniformCrossover _ []  = return ([], [])
-uniformCrossover _ [_] = error "odd number of parents"
+uniformCrossover _ [celibate] = return ([],[celibate])
 uniformCrossover p (g1:g2:rest) = do
   (h1, h2) <- unzip `liftM` mapM swap (zip g1 g2)
   return ([h1,h2], rest)

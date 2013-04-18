@@ -3,14 +3,19 @@ import Test.HUnit
 
 import Tests.Internals.TestFundamentals (testFundamentals)
 import Tests.Internals.TestSelection (testSelection)
+import Tests.Internals.TestCrossover (testCrossover)
+import Tests.Internals.TestConstraints (testConstraints)
 import Tests.Internals.TestMultiobjective (testMultiobjective)
 import Tests.Problems.Rosenbrock (testRosenbrock)
 
 allTests = TestList
   [ testFundamentals
   , testSelection
+  , testCrossover
+  , testConstraints
+  , testRosenbrock
   , testMultiobjective
-  , testRosenbrock ]
+  ]
 
 main = do
   result <- runTestTT allTests

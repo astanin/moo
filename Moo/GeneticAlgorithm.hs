@@ -63,12 +63,16 @@ How to write a genetic algorithm
      control the iterative process with 'loop', 'loopWithLog', or 'loopIO'.
 
   5. Write a function to generate an initial population; for random
-     uniform initialization use 'getRandomGenomes' or 'getRandomBinaryGenomes'.
+     uniform initialization use 'getRandomGenomes',
+     'getRandomGenomesRs' or 'getRandomBinaryGenomes'.
 
 Library functions which need access to random number generator work in
 'Rand' monad.  You may use a high-level wrapper 'runGA' (or
 'runIO' if you used 'loopIO'), which takes care of creating a new random
 number generator and running the entire algorithm.
+
+To solve constrained optimization problems, modify initialization and
+selection operators (see "Moo.GeneticAlgorithm.Constraints").
 
 
 @
@@ -83,7 +87,7 @@ How to choose encoding
    To build a binary genetic algorithm, import "Moo.GeneticAlgorithm.Binary".
 
  * For problems with continuous search space, it is possible to use a
-   vector of real-valued variables as a genome.
+   vector of real variables as a genome.
    Such a genome is represented as a list of @Double@ or @Float@ values.
    Special crossover and mutation operators should be used.
    To build a continuous genetic algorithm, import
