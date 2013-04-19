@@ -11,13 +11,14 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Continuous
 import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Multiobjective.NSGA2
+import Moo.GeneticAlgorithm.Constraints
 
 
 import System.Random.Mersenne.Pure64 (pureMT)
 
 
-dummyGenome :: [Objective] -> MultiPhenotype ()
-dummyGenome ovs = ([], ovs)
+dummyGenome :: [Objective] -> MultiPhenotype Double
+dummyGenome ovs = (ovs, ovs)
 
 
 testMultiobjective =
@@ -38,7 +39,24 @@ testMultiobjective =
                     True (domination problems best good23)
         assertEqual "worst doesn't dominate best"
                     False (domination problems worst best)
-    -- TODO: test constrainedDomination
+    , "constraint-domination predicate" ~: do
+        let problems = [Minimizing]
+        let constraints = [head .>=. 2, head .>=. 4]
+        let feasible = dummyGenome [4]
+        let worse = dummyGenome [5]  -- also feasible
+        let infeasible = dummyGenome [3]
+        let infeasible2 = dummyGenome [1]
+        let dominates = constrainedDomination constraints numberOfViolations problems
+        assertEqual "feasible dominates infeasible" [True, True, False] $
+                    [ feasible `dominates` infeasible
+                    , feasible `dominates` infeasible2
+                    , infeasible `dominates` feasible ]
+        assertEqual "less-infeasible dominates more-infeasible" [True,False] $
+                    [ infeasible `dominates` infeasible2
+                    , infeasible2 `dominates` infeasible ]
+        assertEqual "better dominates worse" [True, False] $
+                    [ feasible `dominates` worse
+                    , worse `dominates` feasible ]
     , "non-dominated sort" ~: do
         let dominatesFn = domination [Minimizing, Minimizing]
         let genomes = [ ([1], [2, 2]), ([2], [3, 2]), ([2,2], [2,3])
