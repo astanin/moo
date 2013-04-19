@@ -1,6 +1,5 @@
--- | Take care of command line options and printing.
--- This is a little verbose and boring part common to many examples.
---
+-- | The boring part common to many examples: command line options
+-- and pretty-printing the results.
 module ExampleMain
     ( exampleMain
     , ExampleDefaults(..)
@@ -10,6 +9,7 @@ module ExampleMain
 
 import Moo.GeneticAlgorithm.Binary
 import Moo.GeneticAlgorithm.Continuous
+import Moo.GeneticAlgorithm.Multiobjective
 import Moo.GeneticAlgorithm.Statistics
 
 
@@ -81,9 +81,55 @@ exampleOptions c =
 updateDefaults :: ExampleDefaults -> [Flag] -> ExampleDefaults
 updateDefaults d (RunGenerations n:opts) = updateDefaults (d { numGenerations = n }) opts
 updateDefaults d (PrintBest b:opts) = updateDefaults (d { printBest = b }) opts
-updateDefaults d (DumpAll b:opts) = updateDefaults (d { dumpAll = b }) opts
-updateDefaults d (PrintStats b:opts) = updateDefaults (d { printStats = b }) opts
+-- --stats overrid --dump, and vice versa
+updateDefaults d (DumpAll b:opts) =
+    let ps = printStats d
+    in  flip updateDefaults opts (d { dumpAll = b, printStats = ps && (not b)})
+updateDefaults d (PrintStats b:opts) =
+    let da = dumpAll d
+    in  flip updateDefaults opts (d { printStats = b, dumpAll = da && (not b)})
 updateDefaults d [] = d
+
+
+
+printHeader conf = do
+  when (printStats conf) $ putStrLn "# best, median"
+  when (dumpAll conf) $ putStrLn "# x1, x2, ..., objective1, objective2, ..."
+
+
+printSnapshot conf sorted = do
+  when (printBest conf) $
+    if null sorted
+       then putStrLn "# no solutions"
+       else putStrLn $ "# best found: " ++ fmtPt (head sorted)
+
+  when (printStats conf) $ do
+    printHeader conf
+    let ovs = map takeObjectiveValue sorted
+    let obest = head ovs
+    let omedian = median ovs
+    putStrLn $ fmtXs " " [obest, omedian]
+
+  when (dumpAll conf) $ do
+    printHeader conf
+    -- print the best solution last;
+    -- (for scatter-plotting it above the others)
+    flip mapM_ (reverse sorted) $ \p -> putStrLn $ fmtPtOneline p
+    putStrLn ""
+
+  where
+
+    fmtPt :: (Show a, Real a, PrintfArg a) => Phenotype a -> String
+    fmtPt (xs, v) = (printf "%.3g @ [" v) ++ fmtXs ", " xs ++ "]"
+
+    fmtPtOneline :: (Show a, Real a, PrintfArg a) => Phenotype a -> String
+    fmtPtOneline p = let xs = map (fromRational.toRational) . takeGenome $ p
+                         vs = [takeObjectiveValue p]
+                     in  fmtXs " " $ xs ++ vs
+
+    fmtXs :: (Show a, Real a, PrintfArg a) => String -> [a] -> String
+    fmtXs sep xs =  intercalate sep $ map (printf "%.3g") xs
+
 
 
 -- | Run a genetic algorithm defined by @problemtype@, and @step@.
@@ -105,32 +151,4 @@ exampleMain defaults problemtype initialize step = do
   let gens = numGenerations conf
   result <- runGA initialize (loop (Generations gens) step)
   let sorted = bestFirst problemtype $ result
-
-  when (printBest conf) $
-    if null sorted
-       then putStrLn "# no solutions"
-       else putStrLn $ "# best found: " ++ fmtPt (head sorted)
-
-  when (printStats conf) $ do
-    let ovs = map takeObjectiveValue sorted
-    let best = head ovs
-    let omedian = median ovs
-    putStrLn $ fmtXs " " [best, omedian]
-
-  when (dumpAll conf) $ do
-    -- print the best solution last;
-    -- (for scatter-plotting it above the others)
-    flip mapM_ (reverse sorted) $ \p -> putStrLn $ fmtPtOneline p
-
-  where
-
-    fmtPt :: (Show a, Real a, PrintfArg a) => Phenotype a -> String
-    fmtPt (xs, v) = (printf "%.3g @ [" v) ++ fmtXs ", " xs ++ "]"
-
-    fmtPtOneline :: (Show a, Real a, PrintfArg a) => Phenotype a -> String
-    fmtPtOneline p = let xs = map (fromRational.toRational) . takeGenome $ p
-                         v = takeObjectiveValue p
-                     in  fmtXs " " $ xs ++ [v]
-
-    fmtXs :: (Show a, Real a, PrintfArg a) => String -> [a] -> String
-    fmtXs sep xs =  intercalate sep $ map (printf "%.3g") xs
+  printSnapshot conf sorted
