@@ -14,6 +14,5 @@ module Moo.GeneticAlgorithm.Multiobjective
     , stepConstrainedNSGA2bt
     ) where
 
-import Moo.GeneticAlgorithm.Constraints
 import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Multiobjective.NSGA2
