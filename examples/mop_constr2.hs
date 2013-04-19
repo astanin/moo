@@ -30,13 +30,12 @@ constraints = [ 0.1 .<= x1 <=. 1.0
 
 
 initialize = getConstrainedGenomesRs constraints popsize [(0.1,1.0),(0.0,5.0)]
-tournament = withConstraints constraints numberOfViolations Minimizing $
-             tournamentSelect Minimizing 2 popsize
+tournament = tournamentSelect Minimizing 2 popsize
 
 
 step :: StepGA Rand Double
-step = withFinalDeathPenalty constraints $
-       stepNSGA2 mop tournament (blendCrossover 0.1) noMutation -- (gaussianMutate 0.5 0.5)
+step = stepConstrainedNSGA2 constraints (degreeOfViolation 1 0)
+       mop tournament (blendCrossover 0.1) noMutation -- (gaussianMutate 0.5 0.5)
 
 
 main = do
