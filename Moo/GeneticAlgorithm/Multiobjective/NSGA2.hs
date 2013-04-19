@@ -25,7 +25,6 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Multiobjective.Types
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (doCrossovers)
-import Moo.GeneticAlgorithm.StopCondition (evalCond)
 import Moo.GeneticAlgorithm.Selection (tournamentSelect)
 import Moo.GeneticAlgorithm.Constraints
 import Moo.GeneticAlgorithm.Run (makeStoppable)
@@ -366,9 +365,9 @@ stepNSGA2
 stepNSGA2 problems select crossover mutate stop input = do
   let dominates = domination (map fst problems)
   case input of
-    (Left rawgenomes) ->
+    (Left _) ->  -- raw genomes => it's the first generation
         stepNSGA2'firstGeneration dominates problems select crossover mutate stop input
-    (Right rankedgenomes) ->
+    (Right _) ->  -- ranked genomes => it's the second or later generation
         stepNSGA2'nextGeneration dominates problems select crossover mutate stop input
 
 
@@ -389,10 +388,10 @@ stepNSGA2bt problems crossover mutate stop popstate =
 -- | A single step of the constrained NSGA-II algorithm, which uses a
 -- constraint-domination rule:
 --
--- "A solution @i@ is said to constrain-dominate a solution @j@, if any of the
+-- “A solution @i@ is said to constrain-dominate a solution @j@, if any of the
 -- following is true: 1) Solution @i@ is feasible and @j@ is not. 2) Solutions
 -- @i@ and @j@ are both infeasible but solution @i@ has a smaller overall constraint
--- violation. 3) Solutions @i@ and @j@ are feasible, and solution @i@ dominates solution @j@."
+-- violation. 3) Solutions @i@ and @j@ are feasible, and solution @i@ dominates solution @j@.”
 --
 -- Reference: (Deb, 2002).
 --
@@ -408,9 +407,9 @@ stepConstrainedNSGA2
 stepConstrainedNSGA2 constraints violation problems select crossover mutate stop input = do
   let dominates = constrainedDomination constraints violation (map fst problems)
   case input of
-    (Left rawgenomes) ->
+    (Left _) ->
         stepNSGA2'firstGeneration dominates problems select crossover mutate stop input
-    (Right rankedgenomes) ->
+    (Right _) ->
         stepNSGA2'nextGeneration dominates problems select crossover mutate stop input
 
 

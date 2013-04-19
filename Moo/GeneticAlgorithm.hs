@@ -74,6 +74,7 @@ number generator and running the entire algorithm.
 
 To solve constrained optimization problems, modify initialization and
 selection operators (see "Moo.GeneticAlgorithm.Constraints").
+
 To solve multi-objective optimization problems, use NSGA-II algorithm
 (see "Moo.GeneticAlgorithm.Multiobjective").
 
