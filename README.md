@@ -74,8 +74,8 @@ Features
 
 `^` non-adaptive: any function which doesn't depend on generation number
 
-There are other possible encodings beyond binary and continuous
-represented as a list of values `:: [a]`.
+There are other possible encodings which are possible to represent
+with list-like genomes (`type Genome a = [a]`):
 
   * permutation encodings (`a` being an integer, or other `Enum` type)
   * tree encodings (`a` being a subtree type)
@@ -85,7 +85,7 @@ represented as a list of values `:: [a]`.
 Contributing
 ------------
 
-There are many ways you can help to develop Moo library:
+There are many ways you can help to developing the library:
 
   * I'm not a native speaker of English. If you are, please proof-read
     and correct the comments and documentation.
@@ -93,17 +93,20 @@ There are many ways you can help to develop Moo library:
   * Moo is design with possibility of implementing more genetic
     operators in mind. Write more operators (`SelectionOp`,
     `CrossoverOp`, `MutationOp`), and replacement strategies
-    (`StepGA`), In comments, please give a reference to an academic
+    (`StepGA`), In comments please give a reference to an academic
     work which introduces or studies the method. Explain when or why
     it should be used. Provide tests and examples if possible.
+
+  * Consider supporting other variants of genetic algorithms,
+    like `Moo.GeneticAlgorithm.Pertumation`.
 
   * Implementing some methods (like adaptive genetic algorithms) will
     require to change some library types. I don't have a clear idea
     yet how to introduce such methods into the library and if they are
     really necessary. Please discuss your approach first.
 
-  * Examples. Solutions of known problems with known optima and
-    interesting properties. Try to avoid examples which are too
+  * Contribute examples. Solutions of known problems with known optima
+    and interesting properties. Try to avoid examples which are too
     contrived.
 
 

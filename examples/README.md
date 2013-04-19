@@ -21,7 +21,7 @@ Examples of real-coded GAs:
   * [mop_minsum_maxprod.hs](mop_minsum_maxprod.hs) a simple multiobjective problem
     (basic NSGA-II)
 
-  * [mop_kursawe.hs](mop_kursawe.hs) Kursawe function (n=3), a multiobjective problem
+  * [mop_kursawe.hs](mop_kursawe.hs) Kursawe function, a multiobjective problem
     with a discontinuous and non-convex Pareto set
     (constrained NSGA-II)
 
@@ -29,7 +29,7 @@ Examples of real-coded GAs:
     a part of the unconstrained Pareto-optimal region is not feasible
     (constrained NSGA-II with niching)
 
-Examples of binary GA:
+Examples of binary GAs:
 
   * [knapsack.hs](knapsack.hs) 0-1 knapsack problem.
     (A basic GA with logging in IO and time limit)
