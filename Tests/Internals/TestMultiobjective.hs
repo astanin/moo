@@ -117,6 +117,6 @@ testMultiobjective =
                        ,([2.0,4.0],1.0),([2.0,4.0],1.0),([1.0,5.0],1.0)]
         let result = flip evalRandom (pureMT 1) $
                      loop (Generations 1)
-                     (stepNSGA2default mp noCrossover noMutation) gs
+                     (stepNSGA2bt mp noCrossover noMutation) gs
         assertEqual "solutions and ranking" expected result
     ]

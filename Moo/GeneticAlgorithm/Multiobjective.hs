@@ -9,8 +9,9 @@ module Moo.GeneticAlgorithm.Multiobjective
     , takeObjectiveValues
     -- * NSGA-II: A non-dominated sorting genetic algorithm
     , stepNSGA2
-    , stepNSGA2default
+    , stepNSGA2bt
     , stepConstrainedNSGA2
+    , stepConstrainedNSGA2bt
     ) where
 
 import Moo.GeneticAlgorithm.Constraints

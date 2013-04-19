@@ -11,7 +11,8 @@ NSGA-II. Evolutionary Computation, IEEE Transactions on, 6(2),
 
 Functions to be used:
 
-  'stepNSGA2', 'stepNSGA2default'
+  'stepNSGA2', 'stepNSGA2bt',
+  'stepConstrainedNSGA2', 'stepConstrainedNSGA2bt'
 
 The other functions are exported for testing only.
 
@@ -352,7 +353,7 @@ sortIndicesBy cmp xs = map snd $ sortBy (cmp `on` fst) (zip xs (iterate (+1) 0))
 --
 -- Deb et al. used a binary tournament selection, base on crowded
 -- comparison operator. To achieve the same effect, use
--- 'stepNSGA2default' (or 'stepNSGA2' with 'tournamentSelect'
+-- 'stepNSGA2bt' (or 'stepNSGA2' with 'tournamentSelect'
 -- @Minimizing 2 n@, where @n@ is the size of the population).
 --
 stepNSGA2
@@ -373,18 +374,28 @@ stepNSGA2 problems select crossover mutate stop input = do
 
 -- | A single step of NSGA-II algorithm with binary tournament selection.
 -- See also 'stepNSGA2'.
-stepNSGA2default
+stepNSGA2bt
     :: forall fn a . ObjectiveFunction fn a
     => MultiObjectiveProblem fn    -- ^ a list of @objective@ functions
     -> CrossoverOp a
     -> MutationOp a
     -> StepGA Rand a
-stepNSGA2default problems crossover mutate stop popstate =
+stepNSGA2bt problems crossover mutate stop popstate =
     let n = either length length popstate
         select = tournamentSelect Minimizing 2 n
     in  stepNSGA2 problems select crossover mutate stop popstate
 
 
+-- | A single step of the constrained NSGA-II algorithm, which uses a
+-- constraint-domination rule:
+--
+-- "A solution @i@ is said to constrain-dominate a solution @j@, if any of the
+-- following is true: 1) Solution @i@ is feasible and @j@ is not. 2) Solutions
+-- @i@ and @j@ are both infeasible but solution @i@ has a smaller overall constraint
+-- violation. 3) Solutions @i@ and @j@ are feasible, and solution @i@ dominates solution @j@."
+--
+-- Reference: (Deb, 2002).
+--
 stepConstrainedNSGA2
     :: forall fn a b c . (ObjectiveFunction fn a, Real b, Real c)
     => [Constraint a b]                     -- ^ constraints
@@ -402,6 +413,21 @@ stepConstrainedNSGA2 constraints violation problems select crossover mutate stop
     (Right rankedgenomes) ->
         stepNSGA2'nextGeneration dominates problems select crossover mutate stop input
 
+
+-- | A single step of the constrained NSGA-II algorithm with binary tournament
+-- selection. See also 'stepConstrainedNSGA2'.
+stepConstrainedNSGA2bt
+    :: forall fn a b c . (ObjectiveFunction fn a, Real b, Real c)
+    => [Constraint a b]                     -- ^ constraints
+    -> ([Constraint a b] -> Genome a -> c)  -- ^ non-negative degree of violation
+    -> MultiObjectiveProblem fn             -- ^ a list of @objective@ functions
+    -> CrossoverOp a
+    -> MutationOp a
+    -> StepGA Rand a
+stepConstrainedNSGA2bt constraints violation problems crossover mutate stop popstate =
+  let n = either length length popstate
+      tournament = tournamentSelect Minimizing 2 n
+  in  stepConstrainedNSGA2 constraints violation problems tournament crossover mutate stop popstate
 
 
 stepNSGA2'firstGeneration

@@ -33,7 +33,7 @@ popsize :: Int
 popsize = 50
 step :: StepGA Rand Double
 step = withDeathPenalty constraints $
-       stepNSGA2default mop noCrossover (gaussianMutate 0.1 0.5)
+       stepNSGA2bt mop noCrossover (gaussianMutate 0.1 0.5)
 
 
 main = do
