@@ -14,7 +14,11 @@
   - [X] time limit
   - [X] rename Fitness to Objective; clean-up minimizing and maximizing selection ops
   - [X] don't require to evalFitness for the initial population
-
+  - [X] NSGA-II
+  - [X] reduce boilerplate for the common default scenarios
+  - [X] common framework to run GAs in all examples (CLI)
+  - [X] constrained selection without penalties
+  - [X] death penalty
 
 ** TODO Tests [2/3]
   - [X] Continuous problem (Rosenbrock) [4/4]
@@ -44,10 +48,7 @@
     - [ ] loopIO
 
 
-** TODO: future releases [1/6]
+** TODO: future releases [4/6]
   - [ ] permutation GAs, TSP example
   - [X] minimizing SelectionOp's
   - [ ] time-dependent mutation
-  - [ ] NSGA-II
-  - [ ] reduce boilerplate for the common default scenarios
-  - [ ] common framework to run GAs in all examples (CLI)
