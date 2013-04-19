@@ -21,6 +21,10 @@ Examples of real-coded GAs:
   * [mop_minsum_maxprod.hs](mop_minsum_maxprod.hs) a simple multiobjective problem.
     (Basic NSGA-II example)
 
+  * [mop_kursawe.hs](mop_kursawe.hs) Kursawe function (n=3), a multiobjective problem
+    with a discontinuous and non-convex Pareto set.
+    (Constrained NSGA-II example)
+
   * [mop_constr2.hs](mop_constr2.hs) a constrained multiobjective problem from (Deb. 2002).
     A part of the unconstrained Pareto-optimal region is not feasible.
     (Constrained NSGA-II example with niching)
