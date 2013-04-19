@@ -395,7 +395,13 @@ stepConstrainedNSGA2
     -> MutationOp a
     -> StepGA Rand a
 stepConstrainedNSGA2 constraints violation problems select crossover mutate stop input = do
-  undefined
+  let dominates = constrainedDomination constraints violation (map fst problems)
+  case input of
+    (Left rawgenomes) ->
+        stepNSGA2'firstGeneration dominates problems select crossover mutate stop input
+    (Right rankedgenomes) ->
+        stepNSGA2'nextGeneration dominates problems select crossover mutate stop input
+
 
 
 stepNSGA2'firstGeneration
