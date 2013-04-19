@@ -8,8 +8,7 @@ Common utility functions.
 module Moo.GeneticAlgorithm.Utilities
   (
   -- * Non-deterministic functions
-    getRandomGenomes
-  , getRandomGenomesRs
+    getRandomGenomesRs
   , doCrossovers
   , doNCrossovers
 ) where
@@ -17,8 +16,10 @@ module Moo.GeneticAlgorithm.Utilities
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 
+
 import Control.Monad.Mersenne.Random
 import Control.Monad (replicateM)
+
 
 -- | Generate @n@ random genomes made of elements in the
 -- hyperrectangle ranges @[(from_i,to_i)]@. Return a list of genomes
@@ -34,17 +35,6 @@ randomGenomes rng n ranges =
     in  flip runRandom rng $
         replicateM n $ mapM getRandomR ranges'
 
--- | Generate @n@ uniform random genomes of length @len@, with genome
--- elements bounded by @range@. This corresponds to random uniform
--- sampling of points (genomes) from a hypercube with side @range@.
-getRandomGenomes :: (Random a, Ord a)
-                 => Int -- ^ @n@, how many genomes to generate
-                 -> Int -- ^ @len@, genome length
-                 ->  (a, a) -- ^ @range@ of genome bit values
-                 -> Rand ([Genome a]) -- ^ random genomes
-getRandomGenomes n len range = Rand $ \rng ->
-                               let (gs, rng') = randomGenomes rng n (replicate len range)
-                               in  R gs rng'
 
 -- | Generate @n@ uniform random genomes with individual genome
 -- elements bounded by @ranges@. This corresponds to random uniform

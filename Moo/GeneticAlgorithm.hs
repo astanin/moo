@@ -64,8 +64,8 @@ How to write a genetic algorithm
      'loopWithLog', or 'loopIO'.
 
   5. Write a function to generate an initial population; for random
-     uniform initialization use 'getRandomGenomes',
-     'getRandomGenomesRs' or 'getRandomBinaryGenomes'.
+     uniform initialization use 'getRandomGenomesRs'
+     or 'getRandomBinaryGenomes'.
 
 Library functions which need access to random number generator work in
 'Rand' monad.  You may use a high-level wrapper 'runGA' (or
@@ -123,7 +123,7 @@ crossover = unimodalCrossoverRP
 mutation = gaussianMutate 0.25 0.1
 step = nextGeneration Minimizing beale selection elitesize crossover mutation
 stop = IfObjective (\\values -> (minimum values) < tolerance)
-initialize = getRandomGenomes popsize 2 (-4.5, 4.5)
+initialize = getRandomGenomes popsize [(-4.5, 4.5), (-4.5, 4.5)]
 
 
 main = do
