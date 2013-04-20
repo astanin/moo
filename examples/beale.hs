@@ -19,7 +19,7 @@ crossover = unimodalCrossoverRP
 mutation = gaussianMutate 0.25 0.1
 step = nextGeneration Minimizing beale selection elitesize crossover mutation
 stop = IfObjective (\values -> (minimum values) < tolerance)
-initialize = getRandomGenomesRs popsize [(-4.5, 4.5), (-4.5, 4.5)]
+initialize = getRandomGenomes popsize [(-4.5, 4.5), (-4.5, 4.5)]
 
 
 main = do

@@ -41,7 +41,7 @@ constraints = [ 0 .<= xvar <=. 6
 
 
 popsize = 100
-initialize = getRandomGenomesRs popsize [(0,6),(0,6)]
+initialize = getRandomGenomes popsize [(0,6),(0,6)]
 select = withPopulationTransform (fitnessSharing dist 0.025 1 Minimizing) $
          withConstraints constraints (degreeOfViolation 1.0 0.0) Minimizing $
          tournamentSelect Minimizing 2 popsize

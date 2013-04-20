@@ -17,7 +17,7 @@ yvar [_,y] = y
 
 
 popsize = 100
-initialize = getRandomGenomesRs popsize (replicate 2 (-100,100))
+initialize = getRandomGenomes popsize (replicate 2 (-100,100))
 select = withPopulationTransform (fitnessSharing dist 1.0 1 Minimizing) $
          tournamentSelect Minimizing 2 popsize
 crossover = unimodalCrossoverRP

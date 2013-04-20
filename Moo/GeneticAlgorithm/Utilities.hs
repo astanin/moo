@@ -8,7 +8,7 @@ Common utility functions.
 module Moo.GeneticAlgorithm.Utilities
   (
   -- * Non-deterministic functions
-    getRandomGenomesRs
+    getRandomGenomes
   , doCrossovers
   , doNCrossovers
 ) where
@@ -40,11 +40,11 @@ randomGenomes rng n ranges =
 -- elements bounded by @ranges@. This corresponds to random uniform
 -- sampling of points (genomes) from a hyperrectangle with a bounding
 -- box @ranges@.
-getRandomGenomesRs :: (Random a, Ord a)
+getRandomGenomes :: (Random a, Ord a)
                          => Int  -- ^ @n@, how many genomes to generate
                          -> [(a, a)]  -- ^ ranges for individual genome elements
                          -> Rand ([Genome a])  -- ^ random genomes
-getRandomGenomesRs n ranges =
+getRandomGenomes n ranges =
     Rand $ \rng ->
         let (gs, rng') = randomGenomes rng n ranges
         in  R gs rng'

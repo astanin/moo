@@ -23,7 +23,7 @@ constraints = [ sum .>=. 1 ]
 popsize = 100
 
 
-initialize = getRandomGenomesRs popsize [(-10,10),(-5,5)]
+initialize = getRandomGenomes popsize [(-10,10),(-5,5)]
 select = tournamentSelect Minimizing 2 popsize
 crossover = unimodalCrossoverRP
 mutation = noMutation

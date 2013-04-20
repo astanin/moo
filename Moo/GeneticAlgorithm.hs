@@ -64,7 +64,7 @@ How to write a genetic algorithm
      'loopWithLog', or 'loopIO'.
 
   5. Write a function to generate an initial population; for random
-     uniform initialization use 'getRandomGenomesRs'
+     uniform initialization use 'getRandomGenomes'
      or 'getRandomBinaryGenomes'.
 
 Library functions which need access to random number generator work in

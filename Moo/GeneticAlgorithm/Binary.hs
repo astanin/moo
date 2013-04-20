@@ -55,7 +55,7 @@ import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
+import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 
 -- | How many bits are needed to represent a range of integer numbers
 -- @(from, to)@ (inclusive).
@@ -153,7 +153,7 @@ decodeWithCode decode (from, to) bits =
 getRandomBinaryGenomes :: Int -- ^ how many genomes to generate
                        -> Int -- ^ genome length
                        -> Rand ([Genome Bool])
-getRandomBinaryGenomes n len = getRandomGenomesRs n (replicate len (False,True))
+getRandomBinaryGenomes n len = getRandomGenomes n (replicate len (False,True))
 
 
 -- |Flips a random bit along the length of the genome with probability @p@.

@@ -21,7 +21,7 @@ module Moo.GeneticAlgorithm.Constraints
 
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
+import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 import Moo.GeneticAlgorithm.Selection (withPopulationTransform, bestFirst)
 
 
@@ -131,7 +131,7 @@ getConstrainedGenomesRs :: (Random a, Ord a, Real b)
 getConstrainedGenomesRs constraints n ranges
   | n <= 0            = return []
   | otherwise         = do
-  candidates <- getRandomGenomesRs n ranges
+  candidates <- getRandomGenomes n ranges
   let feasible = filter (isFeasible constraints) candidates
   let found = length feasible
   more <- getConstrainedGenomesRs constraints (n - found) ranges

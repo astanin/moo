@@ -13,7 +13,7 @@ module Moo.GeneticAlgorithm.Continuous
   -- * Types
     module Moo.GeneticAlgorithm.Types
   -- * Initialization
-  , getRandomGenomesRs
+  , getRandomGenomes
   -- * Selection
   , module Moo.GeneticAlgorithm.Selection
   -- * Crossover
@@ -40,7 +40,7 @@ import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
-import Moo.GeneticAlgorithm.Utilities (getRandomGenomesRs)
+import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 
 -- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
 -- each component let @x@ and @y@ be its values in the first and the

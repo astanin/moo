@@ -33,7 +33,7 @@ constraints = [ (-5.0) .<= (!!0) <=. 5.0
               , (-5.0) .<= (!!2) <=. 5.0 ]
 
 
-initialize = getRandomGenomesRs popsize (replicate 3 (-5.0, 5.0))
+initialize = getRandomGenomes popsize (replicate 3 (-5.0, 5.0))
 
 
 step :: StepGA Rand Double
