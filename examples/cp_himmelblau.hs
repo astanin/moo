@@ -42,7 +42,7 @@ constraints = [ 0 .<= xvar <=. 6
 
 popsize = 100
 initialize = getRandomGenomes popsize [(0,6),(0,6)]
-select = withPopulationTransform (fitnessSharing dist 0.025 1 Minimizing) $
+select = withFitnessSharing (distance2 `on` takeGenome) 0.025 1 Minimizing $
          withConstraints constraints (degreeOfViolation 1.0 0.0) Minimizing $
          tournamentSelect Minimizing 2 popsize
 step = withFinalDeathPenalty constraints $
@@ -50,10 +50,6 @@ step = withFinalDeathPenalty constraints $
        (simulatedBinaryCrossover 0.5)
        (gaussianMutate 0.05 0.025)
 
-
-dist = distGenotypes `on` takeGenome
-    where
-      distGenotypes [x1,y1] [x2,y2] = sqrt ((x1-x2)**2 + (y1-y2)**2)
 
 {-
 -- exampleMain takes care of command line options and pretty printing.

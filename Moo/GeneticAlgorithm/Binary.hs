@@ -22,6 +22,7 @@ To encode more than one variable, just concatenate their codes.
 module Moo.GeneticAlgorithm.Binary (
   -- * Types
     module Moo.GeneticAlgorithm.Types
+
   -- * Encoding
   , encodeGray
   , decodeGray
@@ -31,16 +32,31 @@ module Moo.GeneticAlgorithm.Binary (
   , decodeGrayReal
   , bitsNeeded
   , splitEvery
+
   -- * Initialization
   , getRandomBinaryGenomes
+
   -- * Selection
-  , module Moo.GeneticAlgorithm.Selection
+  , rouletteSelect
+  , tournamentSelect
+  -- ** Scaling and niching
+  , withPopulationTransform
+  , withScale
+  , rankScale
+  , withFitnessSharing
+  , hammingDistance
+  -- ** Sorting
+  , bestFirst
+
+
   -- * Crossover
   , module Moo.GeneticAlgorithm.Crossover
+
   -- * Mutation
   , pointMutate
   , asymmetricMutate
   , constFrequencyMutate
+
   -- * Control
   , module Moo.GeneticAlgorithm.Random
   , module Moo.GeneticAlgorithm.Run
@@ -48,6 +64,7 @@ module Moo.GeneticAlgorithm.Binary (
 
 import Codec.Binary.Gray.List
 import Data.Bits
+import Data.List (genericLength)
 
 import Moo.GeneticAlgorithm.Crossover
 import Moo.GeneticAlgorithm.Random
@@ -210,3 +227,13 @@ constFrequencyMutate m bits =
         p0to1 = fromRational $ 0.5 * (toRational m) / zeros
         p1to0 = fromRational $ 0.5 * (toRational m) / ones
     in  asymmetricMutate p0to1 p1to0 bits
+
+
+-- | Hamming distance between @x@ and @y@ is the number of coordinates
+-- for which @x_i@ and @y_i@ are different.
+--
+-- Reference: Hamming, Richard W. (1950), “Error detecting and error
+-- correcting codes”, Bell System Technical Journal 29 (2): 147–160,
+-- MR 0035935.
+hammingDistance :: (Eq a, Num i) => [a] -> [a] -> i
+hammingDistance xs ys = genericLength . filter id $ zipWith (/=) xs ys

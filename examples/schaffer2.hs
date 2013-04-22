@@ -18,17 +18,12 @@ yvar [_,y] = y
 
 popsize = 100
 initialize = getRandomGenomes popsize (replicate 2 (-100,100))
-select = withPopulationTransform (fitnessSharing dist 1.0 1 Minimizing) $
+select = withFitnessSharing (distance2 `on` takeGenome) 1.0 1 Minimizing $
          tournamentSelect Minimizing 2 popsize
 crossover = unimodalCrossoverRP
 mutate = gaussianMutate 0.05 0.1
 step = nextSteadyState (popsize `div` 100) Minimizing schafferN2
        select crossover mutate
-
-dist = distGenotypes `on` takeGenome
-    where
-      distGenotypes [x1,y1] [x2,y2] = sqrt ((x1-x2)**2 + (y1-y2)**2)
-
 
 
 {-

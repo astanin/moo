@@ -12,10 +12,22 @@ module Moo.GeneticAlgorithm.Continuous
   (
   -- * Types
     module Moo.GeneticAlgorithm.Types
+
   -- * Initialization
   , getRandomGenomes
+
   -- * Selection
-  , module Moo.GeneticAlgorithm.Selection
+  , rouletteSelect
+  , tournamentSelect
+  -- ** Scaling and niching
+  , withPopulationTransform
+  , withScale
+  , rankScale
+  , withFitnessSharing
+  , distance1, distance2, distanceInf
+  -- ** Sorting
+  , bestFirst
+
   -- * Crossover
   -- ** Neighborhood-based operators
   , blendCrossover
@@ -23,8 +35,10 @@ module Moo.GeneticAlgorithm.Continuous
   , unimodalCrossoverRP
   , simulatedBinaryCrossover
   , module Moo.GeneticAlgorithm.Crossover
+
   -- * Mutation
   , gaussianMutate
+
   -- * Control
   , module Moo.GeneticAlgorithm.Random
   , module Moo.GeneticAlgorithm.Run
@@ -41,6 +55,22 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
+
+
+-- | 1-norm distance: @sum |x_i - y-i|@.
+distance1 :: (Num a) => [a] -> [a] -> a
+distance1 xs ys = sum . map abs $ zipWith (-) xs ys
+
+
+-- | 2-norm distance: @(sum (x_i - y_i)^2)^(1/2)@.
+distance2 :: (Floating a) => [a] -> [a] -> a
+distance2 xs ys = sqrt . sum . map (^(2::Int)) $ zipWith (-) xs ys
+
+
+-- | Infinity norm distance: @max |x_i - y_i|@.
+distanceInf :: (Real a) => [a] -> [a] -> a
+distanceInf xs ys = maximum . map abs $ zipWith (-) xs ys
+
 
 -- | Blend crossover (BLX-alpha) for continuous genetic algorithms.  For
 -- each component let @x@ and @y@ be its values in the first and the

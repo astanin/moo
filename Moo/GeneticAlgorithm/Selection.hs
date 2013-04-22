@@ -12,7 +12,7 @@ module Moo.GeneticAlgorithm.Selection
   , withPopulationTransform
   , withScale
   , rankScale
-  , fitnessSharing
+  , withFitnessSharing
   -- ** Sorting
   , bestFirst
   ) where
@@ -31,7 +31,8 @@ import Data.Function (on)
 
 -- | Apply given scaling or other transform to population before selection.
 withPopulationTransform :: (Population a -> Population a) -> SelectionOp a -> SelectionOp a
-withPopulationTransform scale select = \pop -> select (scale pop)
+withPopulationTransform transform select = \pop -> select (transform pop)
+
 
 -- | Transform objective function values before seletion.
 withScale :: (Objective -> Objective) -> SelectionOp a -> SelectionOp a
@@ -59,6 +60,30 @@ rankScale problem pop =
           | otherwise           = (genome,rank+1) : ranks (rank+1) objective rest
       opposite Minimizing = Maximizing
       opposite Maximizing = Minimizing
+
+
+-- | A popular niching method proposed by D. Goldberg and
+-- J. Richardson in 1987. The shared fitness of the individual is inversely
+-- protoptional to its niche count.
+-- The method expects the objective function to be non-negative.
+--
+-- An extension for minimization problems is implemented by
+-- making the fitnes proportional to its niche count (rather than
+-- inversely proportional).
+--
+-- Reference: Chen, J. H., Goldberg, D. E., Ho, S. Y., & Sastry,
+-- K. (2002, July). Fitness inheritance in multiobjective
+-- optimization. In Proceedings of the Genetic and Evolutionary
+-- Computation Conference (pp. 319-326). Morgan Kaufmann Publishers
+-- Inc..
+withFitnessSharing ::
+    (Phenotype a -> Phenotype a -> Double)  -- ^ distance function
+    -> Double  -- ^ niche radius
+    -> Double  -- ^ niche compression exponent @alpha@ (usually 1)
+    -> ProblemType   -- ^ type of the optimization problem
+    -> (SelectionOp a -> SelectionOp a)
+withFitnessSharing dist r alpha ptype =
+    withPopulationTransform (fitnessSharing dist r alpha ptype)
 
 
 -- |Objective-proportionate (roulette-wheel) selection: select @n@
