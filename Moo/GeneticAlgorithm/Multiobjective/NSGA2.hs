@@ -33,7 +33,7 @@ import Moo.GeneticAlgorithm.Run (makeStoppable)
 import Control.Monad (forM_, (<=<), when, liftM)
 import Control.Monad.ST (ST)
 import Data.Array (array, (!), elems, listArray)
-import Data.Array.ST (STArray, runSTArray, newArray, readArray, writeArray, getElems)
+import Data.Array.ST (STArray, runSTArray, newArray, readArray, writeArray, getElems, getBounds)
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.STRef
@@ -187,19 +187,25 @@ nondominatedSortFast dominates gs =
       getElems delems
 
     buildFronts sp fronts i = do
+      maxI <- (snd . snd) `liftM` getBounds fronts
+      if (i >= maxI || i < 0) -- all fronts are singletons and the last is already built
+         then return fronts
+         else do
+
       fsz <- frontSize fronts i
       if fsz <= 0
          then return fronts
          else do
-           felems <- frontElems fronts i
-           forM_ felems $ \pi -> do   -- for each member p in F_i
-               dominated <- dominatedSet sp pi
-               forM_ dominated $ \qi -> do  -- modify each member from the set S_p
-                    nq <- liftM (+ (-1::Int)) $ readArray sp (qi, 0)  -- decrement n_q by one
-                    writeArray sp (qi, 0) nq
-                    when (nq <= 0) $  -- if n_q is zero, q is a member of the next front
-                         addToFront (i+1) fronts qi
-           buildFronts sp fronts (i+1)
+
+      felems <- frontElems fronts i
+      forM_ felems $ \pi -> do   -- for each member p in F_i
+          dominated <- dominatedSet sp pi
+          forM_ dominated $ \qi -> do  -- modify each member from the set S_p
+               nq <- liftM (+ (-1::Int)) $ readArray sp (qi, 0)  -- decrement n_q by one
+               writeArray sp (qi, 0) nq
+               when (nq <= 0) $  -- if n_q is zero, q is a member of the next front
+                    addToFront (i+1) fronts qi
+      buildFronts sp fronts (i+1)
 
     splitAll [] _ = []
     splitAll _ [] = []
