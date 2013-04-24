@@ -64,6 +64,12 @@ testMultiobjective =
         assertEqual "non-dominated fronts"
                     [[[4]],[[3],[3,3]],[[1]],[[2],[2,2]]]
                     (map (map fst) $ nondominatedSort dominatesFn genomes)
+    , "non-dominated sort (singleton fronts)" ~: do
+        let dominates1 = domination [Maximizing]
+        let genomes1 = map (\x -> ([x],[x])) [3,1,2]
+        assertEqual "singleton fronts"
+                    [[3],[2],[1]]
+                    (map (map (head . fst)) $ nondominatedSort dominates1 genomes1)
     , "calculate crowding distance" ~: do
         let inf = 1.0/0.0 :: Double
         assertEqual "two points" [inf, inf] $ crowdingDistances [[1],[2]]
