@@ -114,7 +114,7 @@ There are many ways you can help to developing the library:
 An example
 ----------
 
-Minimizing [Beale's function][test-functions]:
+Minimizing [Beale's function][test-functions] (optimal value f(3, 0.5) = 0):
 
 ```haskell
 import Moo.GeneticAlgorithm.Continuous
@@ -134,7 +134,7 @@ crossover = unimodalCrossoverRP
 mutation = gaussianMutate 0.25 0.1
 step = nextGeneration Minimizing beale selection elitesize crossover mutation
 stop = IfObjective (\values -> (minimum values) < tolerance)
-initialize = getRandomGenomes popsize 2 (-4.5, 4.5)
+initialize = getRandomGenomes popsize [(-4.5, 4.5), (-4.5, 4.5)]
 
 
 main = do
