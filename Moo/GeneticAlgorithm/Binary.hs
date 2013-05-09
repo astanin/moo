@@ -38,6 +38,7 @@ module Moo.GeneticAlgorithm.Binary (
 
   -- * Selection
   , rouletteSelect
+  , stochasticUniversalSampling
   , tournamentSelect
   -- ** Scaling and niching
   , withPopulationTransform

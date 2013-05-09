@@ -7,6 +7,7 @@ Selection operators for genetic algorithms.
 module Moo.GeneticAlgorithm.Selection
   (
     rouletteSelect
+  , stochasticUniversalSampling
   , tournamentSelect
   -- ** Scaling and niching
   , withPopulationTransform
@@ -27,6 +28,7 @@ import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
 import Data.List (sortBy)
 import Data.Function (on)
+
 
 
 -- | Apply given scaling or other transform to population before selection.
@@ -86,7 +88,7 @@ withFitnessSharing dist r alpha ptype =
     withPopulationTransform (fitnessSharing dist r alpha ptype)
 
 
--- |Objective-proportionate (roulette-wheel) selection: select @n@
+-- |Objective-proportionate (roulette wheel) selection: select @n@
 -- random items with each item's chance of being selected is
 -- proportional to its objective function (fitness).
 -- Objective function should be non-negative.
@@ -112,6 +114,30 @@ tournamentSelect problem size n xs = replicateM n tournament1
     contestants <- randomSample size xs
     let winner = head $ bestFirst problem contestants
     return winner
+
+-- | Stochastic universal sampling (SUS) is a selection technique
+-- similar to roulette wheel selection. It gives weaker members a fair
+-- chance to be selected, which is proportinal to their
+-- fitness. Objective function should be non-negative.
+stochasticUniversalSampling :: Int  -- ^ how many genomes to select
+                            -> SelectionOp a
+stochasticUniversalSampling n phenotypes = do
+    let total = sum . map takeObjectiveValue $ phenotypes
+    let step = total / (fromIntegral n)
+    start <- getRandomR (0, step)
+    let stops = [start + (fromIntegral i)*step | i <- [0..(n-1)]]
+    let cumsums = scanl1 (+) (map takeObjectiveValue phenotypes)
+    let ranges = zip (0:cumsums) cumsums
+    -- for every stop select a phenotype with left cumsum <= stop < right cumsum
+    return $ selectAtStops [] phenotypes stops ranges
+  where
+    selectAtStops selected _ [] _ = selected  -- no more stop points
+    selectAtStops selected [] _ _ = selected  -- no more phenotypes
+    selectAtStops selected phenotypes@(x:xs) stops@(s:ss) ranges@((l,r):lrs)
+       | (l <= s && s < r) = selectAtStops (x:selected) phenotypes ss ranges  -- select a phenotype
+       | s >= r = selectAtStops selected xs stops lrs  -- skip a phenotype AND the range
+       | s < l  = error "stochasticUniformSampling: stop < leftSum"  -- should never happen
+    selectAtStops _ _ _ _ = error "stochasticUniversalSampling: unbalanced ranges?"  -- should never happen
 
 -- | Sort population by decreasing objective function (also known as
 -- fitness for maximization problems). The genomes with the highest

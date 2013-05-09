@@ -18,6 +18,7 @@ module Moo.GeneticAlgorithm.Continuous
 
   -- * Selection
   , rouletteSelect
+  , stochasticUniversalSampling
   , tournamentSelect
   -- ** Scaling and niching
   , withPopulationTransform
