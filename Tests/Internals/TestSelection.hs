@@ -3,6 +3,7 @@ module Tests.Internals.TestSelection where
 
 import Test.HUnit
 import System.Random.Mersenne.Pure64 (pureMT)
+import Control.Monad (replicateM)
 
 
 import Moo.GeneticAlgorithm.Types
@@ -24,15 +25,24 @@ testSelection =
         let resultMax = flip evalRandom (pureMT 1) $
                         tournamentSelect Maximizing 2 3 $
                         map dummyGenome [2,3]
-        let resultMany = flip evalRandom (pureMT 1) $
-                         tournamentSelect Maximizing 2 10 $
-                         map dummyGenome [1..10]
         assertEqual "4 times best of 3" [2,2,2,2] $
                     map takeObjectiveValue resultMin
         assertEqual "3 times best of 2" [3,3,3] $
                     map takeObjectiveValue resultMax
-        assertEqual "10 times best of 4 (seed 1)" [10,10,9,9,10,9,9,9,3,7] $
-                    map takeObjectiveValue resultMany
+    , "tournamentSelect (10 times best of 4, seed 1)" ~: do
+        let times = 10
+        let tsize = 4
+        let genomes = map dummyGenome [1..10]
+        let resultMany = flip evalRandom (pureMT 1) $
+                         tournamentSelect Maximizing tsize times $
+                         genomes
+        let objVals = map takeObjectiveValue resultMany
+        -- take the same samples again with the same see
+        let samples = flip evalRandom (pureMT 1) $
+                           replicateM times (randomSample tsize genomes)
+        assertEqual "maximum is selected every time" (replicate times True)  $
+                    zipWith (\selected xs -> selected == (maximum . map takeObjectiveValue $ xs))
+                            objVals samples
     , "rouletteSelect" ~: do
        let gs = map dummyGenome [1, 9]
        let tries = 100 * 1000 :: Int
