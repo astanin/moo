@@ -120,6 +120,7 @@ Test-Suite moo-tests
     , mtl
     , time
     , array
+    , containers
 
 source-repository head
   type:     git

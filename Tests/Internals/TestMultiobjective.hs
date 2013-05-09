@@ -5,6 +5,7 @@ import Test.HUnit
 import Control.Monad (forM_)
 import Data.Function (on)
 import Data.List (sortBy)
+import qualified Data.Set as Set
 
 
 import Moo.GeneticAlgorithm.Types
@@ -142,5 +143,5 @@ testMultiobjective =
         let result = flip evalRandom (pureMT 1) $
                      loop (Generations 1)
                      (stepNSGA2bt mp noCrossover noMutation) gs
-        assertEqual "solutions and ranking" expected result
+        assertEqual "solutions and ranking" (Set.fromList expected) (Set.fromList result)
     ]
