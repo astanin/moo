@@ -30,6 +30,7 @@ Features
     |                       |            optional niching (fitness sharing)   |
     |-----------------------+-------------------------------------------------|
     |Selection              |            roulette                             |
+    |                       |            stochastic universal sampling        |
     |                       |            tournament                           |
     |                       |            optional elitism                     |
     |                       |            optionally constrained               |
@@ -42,7 +43,7 @@ Features
     |                       +----------------------+--------------------------|
     |                       |                      | BLX-α (blend)            |
     |                       |                      | SBX (simulated binary)   |
-    |                       |                      | UNDX (unimodal normal    |
+    |                       |                      | UNDX (unimodal normally  |
     |                       |                      | distributed)             |
     |-----------------------+----------------------+--------------------------|
     |Mutation               | point                | Gaussian                 |
@@ -85,25 +86,22 @@ with list-like genomes (`type Genome a = [a]`):
 Contributing
 ------------
 
-There are many ways you can help to developing the library:
+There are many ways you can help developing the library:
 
   * I'm not a native speaker of English. If you are, please proof-read
-    and correct the comments and documentation.
+    and correct the comments and the documentation.
 
-  * Moo is design with possibility of implementing more genetic
-    operators in mind. Write more operators (`SelectionOp`,
-    `CrossoverOp`, `MutationOp`), and replacement strategies
-    (`StepGA`), In comments please give a reference to an academic
+  * Moo is designed with possibility of implementing custom genetic
+    operators in mind. If you write new operators (`SelectionOp`,
+    `CrossoverOp`, `MutationOp`) or replacement strategies
+    (`StepGA`), consider contributing them to the library.
+    In the comments please give a reference to an academic
     work which introduces or studies the method. Explain when or why
     it should be used. Provide tests and examples if possible.
 
-  * Consider supporting other variants of genetic algorithms,
-    like `Moo.GeneticAlgorithm.Pertumation`.
-
   * Implementing some methods (like adaptive genetic algorithms) will
-    require to change some library types. I don't have a clear idea
-    yet how to introduce such methods into the library and if they are
-    really necessary. Please discuss your approach first.
+    require to change some library types. Please discuss your approach
+    first.
 
   * Contribute examples. Solutions of known problems with known optima
     and interesting properties. Try to avoid examples which are too
