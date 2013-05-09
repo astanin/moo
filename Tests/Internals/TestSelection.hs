@@ -49,6 +49,13 @@ testSelection =
        let numOfNines = length . filter (==9.0) . map takeObjectiveValue
                         . flip evalRandom (pureMT 1) $ rouletteSelect tries $ gs
        assertEqual "9 is selected from [1,9] 90% of time" 90 (numOfNines `div` 1000)
+    , "stochasticUniversalSampling" ~: do
+        let gs = map dummyGenome [2,1]
+        let selected = flip evalRandom (pureMT 1) $
+                       stochasticUniversalSampling 12 gs
+        assertEqual "counts are fitness proportional" [4, 8] $
+             map length [ (filter ((==1) . takeObjectiveValue) selected)
+                        , (filter ((==2) . takeObjectiveValue) selected) ]
     , "rankScale" ~: do
         let expected = [([30.0],1.0),([10.0],2.0),([2.0],3.0),([0.0],4.0)]
         let expectedMax = [([0.0],1.0),([2.0],2.0),([10.0],3.0),([30.0],4.0)]
