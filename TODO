@@ -20,6 +20,12 @@
   - [X] constrained selection without penalties
   - [X] death penalty
 
+
+** API usability
+  - [ ] withProbability to operate on arbitrary (x -> Rand x), otherwise identity
+  - [ ] getConstrainedGenomes(Rs) remove Rs
+  - [ ] getConstrainedGenomes adapt for Binary
+
 ** TODO Tests [2/3]
   - [X] Continuous problem (Rosenbrock) [4/4]
     - [X] BLX
