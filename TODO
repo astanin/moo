@@ -21,40 +21,41 @@
   - [X] death penalty
 
 
-** API usability
+** TODO API usability [3/3]
   - [X] withProbability to operate on arbitrary (x -> Rand x), otherwise identity
   - [X] getConstrainedGenomes(Rs) remove Rs
-  - [ ] getConstrainedGenomes adapt for Binary
+  - [X] getConstrainedGenomes adapt for Binary
 
-** TODO Tests [2/3]
+
+** TODO Tests [1/4]
   - [X] Continuous problem (Rosenbrock) [4/4]
     - [X] BLX
     - [X] UNDX
     - [X] SBX
     - [X] Gaussian mutation
-  - [ ] Some binary problem [0/8]
+  - [-] Some binary problem [4/8]
     - [ ] gray encoding
     - [ ] gray real encoding
     - [ ] binary encoding
-    - [ ] point mutation
+    - [X] point mutation
     - [ ] constant frequency mutation
-    - [ ] 1-point crossover
-    - [ ] 2-point crossover
-    - [ ] uniform crossover
-  - [X] Stop conditions [4/5]
+    - [X] 1-point crossover
+    - [X] 2-point crossover
+    - [X] uniform crossover
+  - [-] Stop conditions [4/6]
     - [X] # of generations
     - [X] GensNoChange
     - [X] fitness condition
     - [X] Or
     - [ ] And
     - [ ] time limit
-  - [ ] Loop constructs [/]
+  - [ ] Loop constructs [0/3]
     - [ ] loop
     - [ ] loopWithLog
     - [ ] loopIO
 
 
-** TODO: future releases [4/6]
+** TODO: future releases [1/3]
   - [ ] permutation GAs, TSP example
   - [X] minimizing SelectionOp's
   - [ ] time-dependent mutation
