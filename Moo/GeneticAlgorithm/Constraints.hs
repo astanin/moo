@@ -9,7 +9,7 @@ module Moo.GeneticAlgorithm.Constraints
     , LeftHandSideInequality()
     , (.<), (.<=), (<.), (<=.)
     -- ** Constrained initalization
-    , getConstrainedGenomesRs
+    , getConstrainedGenomes
     -- ** Constrained selection
     , withDeathPenalty
     , withFinalDeathPenalty
@@ -123,18 +123,18 @@ isFeasible constraints genome = all ((takeGenome genome) `satisfiesConstraint`) 
 
 -- | Generate @n@ feasible random genomes with individual genome elements
 -- bounded by @ranges@.
-getConstrainedGenomesRs :: (Random a, Ord a, Real b)
+getConstrainedGenomes :: (Random a, Ord a, Real b)
     => [Constraint a b]   -- ^ constraints
     -> Int                -- ^ @n@, how many genomes to generate
     -> [(a, a)]           -- ^ ranges for individual genome elements
     -> Rand ([Genome a])  -- ^ random feasible genomes
-getConstrainedGenomesRs constraints n ranges
+getConstrainedGenomes constraints n ranges
   | n <= 0            = return []
   | otherwise         = do
   candidates <- getRandomGenomes n ranges
   let feasible = filter (isFeasible constraints) candidates
   let found = length feasible
-  more <- getConstrainedGenomesRs constraints (n - found) ranges
+  more <- getConstrainedGenomes constraints (n - found) ranges
   return $ feasible ++ more
 
 

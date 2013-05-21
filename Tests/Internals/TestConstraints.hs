@@ -36,7 +36,7 @@ testConstraints =
                           , (\([x,y]) -> x+y) .<. 5 ]
         let n = 200
         let genomes = flip evalRandom (pureMT 1) $
-                      getConstrainedGenomesRs constraints n (replicate 2 (-10,10::Int))
+                      getConstrainedGenomes constraints n (replicate 2 (-10,10::Int))
         assertEqual "exactly n genomes" n $
                     length genomes
         assertEqual "first constraint (>=)" True $

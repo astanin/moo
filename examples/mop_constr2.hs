@@ -29,7 +29,7 @@ constraints = [ 0.1 .<= x1 <=. 1.0
 
 
 
-initialize = getConstrainedGenomesRs constraints popsize [(0.1,1.0),(0.0,5.0)]
+initialize = getConstrainedGenomes constraints popsize [(0.1,1.0),(0.0,5.0)]
 tournament = tournamentSelect Minimizing 2 popsize
 
 
