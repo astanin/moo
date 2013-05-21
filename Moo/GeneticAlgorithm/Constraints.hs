@@ -10,6 +10,7 @@ module Moo.GeneticAlgorithm.Constraints
     , (.<), (.<=), (<.), (<=.)
     -- ** Constrained initalization
     , getConstrainedGenomes
+    , getConstrainedBinaryGenomes
     -- ** Constrained selection
     , withDeathPenalty
     , withFinalDeathPenalty
@@ -136,6 +137,16 @@ getConstrainedGenomes constraints n ranges
   let found = length feasible
   more <- getConstrainedGenomes constraints (n - found) ranges
   return $ feasible ++ more
+
+
+-- | Generate @n@ feasible random binary genomes.
+getConstrainedBinaryGenomes :: (Real b)
+    => [Constraint Bool b]  -- ^ constraints
+    -> Int                  -- ^ @n@, how many genomes to generate
+    -> Int                  -- ^ @L@, genome length
+    -> Rand [Genome Bool]   -- ^ random feasible genomes
+getConstrainedBinaryGenomes constraints n len =
+    getConstrainedGenomes constraints n (replicate len (False,True))
 
 
 -- | A simple estimate of the degree of (in)feasibility.

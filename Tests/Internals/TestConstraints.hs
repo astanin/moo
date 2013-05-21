@@ -1,6 +1,7 @@
 module Tests.Internals.TestConstraints where
 
 
+import Control.Monad (replicateM)
 import Test.HUnit
 import System.Random.Mersenne.Pure64 (pureMT)
 
@@ -9,7 +10,7 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Constraints
-
+import Moo.GeneticAlgorithm.Binary
 
 
 testConstraints =
@@ -31,20 +32,17 @@ testConstraints =
         assertEqual "strict double inequality" [False, False, True, False, False] $
                     map (isFeasible [0 .< head <. 2]) gs
     , "constrained initialization" ~: do
-        let constraints = [ (!!0) .>=. 0
-                          , (-1) .<= (!!1) <=. 1
-                          , (\([x,y]) -> x+y) .<. 5 ]
+        let fI = fromIntegral :: Int -> Double
+        let constraints = [ 1 .<= (fI . decodeBinary (0,255)) <=. 42 ]
         let n = 200
         let genomes = flip evalRandom (pureMT 1) $
-                      getConstrainedGenomes constraints n (replicate 2 (-10,10::Int))
+                      getConstrainedBinaryGenomes constraints n 8
         assertEqual "exactly n genomes" n $
                     length genomes
-        assertEqual "first constraint (>=)" True $
-                    all (\([x,_]) -> x >= 0) genomes
-        assertEqual "second constraint (<= .. <=)" True $
-                    all (\([_,y]) -> (-1) <= y && y <= 1) genomes
-        assertEqual "third constraint (<)" True $
-                    all (\([x,y]) -> (x+y) < 5) genomes
+        assertEqual "first constraint (<= .. <=)" True $
+                    flip all genomes $ \bits ->
+                        let x = fI $ decodeBinary (0,255) bits
+                        in (x >= 0) && (x <= (42::Double))
     , "constrained selection (minimizing)" ~: do
         let n = 10
         let tournament2 = tournamentSelect Minimizing 2 n
