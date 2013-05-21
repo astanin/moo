@@ -101,13 +101,10 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
-                      , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Statistics
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Types
-                      , Moo.GeneticAlgorithm.Utilities
   Build-Depends:
       moo
     , base < 5
