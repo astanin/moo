@@ -245,6 +245,6 @@ gaussianMutate :: Double  -- ^ probability @p@
                -> MutationOp Double
 gaussianMutate p sigma vars = mapM mutate vars
   where
-    mutate v  = withProbability p v $ \v -> do
-          n <- getNormal
-          return (v + sigma*n)
+    mutate = withProbability p $ \v -> do
+               n <- getNormal
+               return (v + sigma*n)

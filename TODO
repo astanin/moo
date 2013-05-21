@@ -22,7 +22,7 @@
 
 
 ** API usability
-  - [ ] withProbability to operate on arbitrary (x -> Rand x), otherwise identity
+  - [X] withProbability to operate on arbitrary (x -> Rand x), otherwise identity
   - [ ] getConstrainedGenomes(Rs) remove Rs
   - [ ] getConstrainedGenomes adapt for Binary
 

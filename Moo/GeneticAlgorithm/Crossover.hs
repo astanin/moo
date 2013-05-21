@@ -41,7 +41,7 @@ onePointCrossover :: Double -> CrossoverOp a
 onePointCrossover _ []  = return ([],[])
 onePointCrossover _ [celibate] = return ([],[celibate])
 onePointCrossover p (g1:g2:rest) = do
-  (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 1
+  (h1,h2) <- withProbability p (nPointCrossover 1) (g1, g2)
   return ([h1,h2], rest)
 
 -- |Select two random points in two genomes, and swap everything in between.
@@ -50,7 +50,7 @@ twoPointCrossover :: Double -> CrossoverOp a
 twoPointCrossover _ []  = return ([], [])
 twoPointCrossover _ [celibate] = return ([],[celibate])
 twoPointCrossover p (g1:g2:rest) = do
-  (h1,h2) <- withProbability p (g1,g2) $ nPointCrossover 2
+  (h1,h2) <- withProbability p (nPointCrossover 2) (g1,g2)
   return ([h1,h2], rest)
 
 -- |Swap individual bits of two genomes with probability @p@.
@@ -61,4 +61,4 @@ uniformCrossover p (g1:g2:rest) = do
   (h1, h2) <- unzip `liftM` mapM swap (zip g1 g2)
   return ([h1,h2], rest)
   where
-    swap (x, y) = withProbability p (x,y) $ \(a,b) -> return (b,a)
+    swap = withProbability p (\(a,b) -> return (b,a))

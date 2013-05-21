@@ -177,7 +177,7 @@ getRandomBinaryGenomes n len = getRandomGenomes n (replicate len (False,True))
 -- |Flips a random bit along the length of the genome with probability @p@.
 -- With probability @(1 - p)@ the genome remains unaffected.
 pointMutate :: Double -> MutationOp Bool
-pointMutate p bits = withProbability p bits $ \bits -> do
+pointMutate p = withProbability p $ \bits -> do
        r <- getRandomR (0, length bits - 1)
        let (before, (bit:after)) = splitAt r bits
        return (before ++ (not bit:after))
@@ -190,8 +190,8 @@ asymmetricMutate :: Double   -- ^ probability of a @False@ bit to become @True@
                  -> MutationOp Bool
 asymmetricMutate prob0to1 prob1to0 = mapM flipbit
     where
-      flipbit False = withProbability prob0to1 False (return . not)
-      flipbit True  = withProbability prob1to0 True  (return . not)
+      flipbit False = withProbability prob0to1 (return . not) False
+      flipbit True  = withProbability prob1to0 (return . not) True
 
 
 -- Preserving the relative frequencies of ones and zeros:

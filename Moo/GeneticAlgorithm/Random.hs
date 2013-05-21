@@ -102,9 +102,9 @@ randomShuffle elements len g =
         lastGen (lst:[]) = lst
         lastGen gens = lastGen (drop 1 gens)
 
--- |Modify value with probability @p@.
-withProbability :: Double -> a -> (a -> Rand a) -> Rand a
-withProbability p x modify = do
+-- |Modify value with probability @p@. Return the unchanged value with probability @1-p@.
+withProbability :: Double -> (a -> Rand a) -> (a -> Rand a)
+withProbability p modify x = do
   t <- getDouble
   if t < p
      then modify x
