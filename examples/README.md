@@ -31,5 +31,10 @@ Examples of real-coded GAs:
 
 Examples of binary GAs:
 
-  * [knapsack.hs](knapsack.hs) 0-1 knapsack problem.
+  * [knapsack.hs](knapsack.hs) 0-1 knapsack problem
     (A basic GA with logging in IO and time limit)
+
+  * [fourbittrap.hs](fourbittrap.hs) concatenation of N-bit trap
+    functions is a difficult problem for genetic algorithms, and
+    requires to use large populations
+    (A basic GA with convergence check)
