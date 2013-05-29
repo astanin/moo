@@ -11,6 +11,16 @@ Moo
                     ||     ||
 
 
+Installation
+------------
+
+  * install Haskell Platform or GHC and cabal-install
+  * run `cabal update`
+  * run `cabal install moo`
+
+
+Build status: [![Build Status](https://drone.io/github.com/astanin/moo/status.png)](https://drone.io/github.com/astanin/moo/latest)
+
 
 Features
 --------
