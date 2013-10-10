@@ -72,6 +72,7 @@ Library
                       , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.Multiobjective.Metrics
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Utilities
@@ -102,6 +103,7 @@ Test-Suite moo-tests
                       , Moo.GeneticAlgorithm.Multiobjective
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
+                      , Moo.GeneticAlgorithm.Multiobjective.Metrics
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.Statistics
                       , Moo.GeneticAlgorithm.StopCondition
