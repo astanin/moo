@@ -16,8 +16,9 @@ description:        Moo library provides building blocks to build custom
                     one-point, two-point, and uniform crossover.
                     Continuous GAs: Gaussian mutation; BLX-α, UNDX, and
                     SBX crossover.
-                    Selection operators: roulette, and tournament;
-                    with optional niching and scaling.
+                    Selection operators: roulette, tournament, and
+                    stochastic universal sampling (SUS);
+                    with optional niching, ranking, and scaling.
                     Replacement strategies: generational with elitism
                     and steady state.
                     Constrained optimization: random constrained
