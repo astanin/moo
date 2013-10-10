@@ -56,7 +56,7 @@ doCrossovers []      _     = return []
 doCrossovers parents xover = do
   (children', parents') <- xover parents
   if null children'
-     then return []
+     then return parents'
      else do
        rest <- doCrossovers parents' xover
        return $ children' ++ rest
