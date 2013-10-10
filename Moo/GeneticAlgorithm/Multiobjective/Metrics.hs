@@ -6,7 +6,8 @@
 module Moo.GeneticAlgorithm.Multiobjective.Metrics where
 
 
-import Data.List (tails)
+import Data.List (tails, sortBy)
+import Data.Function (on)
 
 
 import Moo.GeneticAlgorithm.Types
@@ -32,7 +33,7 @@ hypervolume :: forall fn a . ObjectiveFunction fn a
 hypervolume mop refPoint solutions =
     let ptypes = map fst mop :: [ProblemType]
         points = map takeObjectiveValues solutions
-    in  wfgHypervolume ptypes refPoint points
+    in  wfgHypervolume_sort 0 ptypes refPoint points
 
 
 -- | Basic (non-optimized) WFG algorithm to calculate hypervolume.
@@ -48,6 +49,31 @@ wfgHypervolume ptypes worst pts =
                        (\(pt, rest) -> exclusiveHypervolume ptypes worst pt rest)
                        ptsAndTails
     in  sum exclusiveHvs
+
+
+-- | WFG algorithm to calculate hypervolume with sorting optimization.
+wfgHypervolume_sort :: Int            -- ^ index of the objective to sort
+                    -> [ProblemType]  -- ^ problem types
+                    -> Point          -- ^ reference point (the @worst@ point)
+                    -> [Point]        -- ^ a set of points
+                    -> Double
+wfgHypervolume_sort k ptypes worst pts
+    | null ptypes || length ptypes <= k || k < 0 =
+        wfgHypervolume_sort 0 ptypes worst pts  -- bad input, sort the first objective
+    | otherwise =
+        let ptype = ptypes !! k
+            pts' = sortBy (flip compare `on` get ptype k) pts
+        in  wfgHypervolume ptypes worst pts'
+    where
+      get :: ProblemType -> Int -> [Double] -> Double
+      get Minimizing k objvals
+          | length objvals > k = objvals !! k
+          | otherwise          = inf
+      get Maximizing k objvals
+          | length objvals > k = objvals !! k
+          | otherwise          = - inf
+      inf :: Double
+      inf = 1/0
 
 
 -- | Construct a limited set (a step of the WFG algorithm).
