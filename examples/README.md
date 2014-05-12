@@ -19,7 +19,7 @@ Examples of real-coded GAs:
     (GA with niching and constrained tournament selection)
 
   * [mop_minsum_maxprod.hs](mop_minsum_maxprod.hs) a simple multiobjective problem
-    (basic NSGA-II)
+    (basic NSGA-II, logging hypervolume evolution in IO)
 
   * [mop_kursawe.hs](mop_kursawe.hs) Kursawe function, a multiobjective problem
     with a discontinuous and non-convex Pareto set

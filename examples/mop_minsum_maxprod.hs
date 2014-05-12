@@ -38,11 +38,17 @@ step = withDeathPenalty constraints $
 
 main = do
   putStrLn $ "# population size: " ++ show popsize
-  result <- runGA
-            (return . take popsize . cycle $ genomes) $
-            (loop (Generations 100) step)
+  let initialize = return . take popsize . cycle $ genomes
+  putStrLn $ "# generation\thypervolume(18,0)"
+  result <- runIO initialize $
+            loopIO [logStats] (Generations 100) step
   putStrLn $ "# best:"
   printPareto result
+
+
+logStats = DoEvery 20 $ \i pop -> do
+             let multiphenotypes = evalAllObjectives mop pop
+             printf "# % 8d\t%.3f\n" i (hypervolume mop [18, 0] multiphenotypes)
 
 
 printPareto result = do
