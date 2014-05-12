@@ -135,7 +135,8 @@ withElite problem n select = \population -> do
     eliteGenomes = bestFirst problem
 
 -- | Run strict iterations of the genetic algorithm defined by @step@.
--- Return the result of the last step.
+-- Return the result of the last step.  Usually only the first two
+-- arguments are given, and the result is passed to 'runGA'.
 {-# INLINE loop #-}
 loop :: (Monad m)
      => Cond a
@@ -155,6 +156,8 @@ loop cond step genomes0 = go cond (Left genomes0)
          (ContinueGA pop) -> go (updateCond pop cond) (Right pop)
 
 -- | GA iteration interleaved with the same-monad logging hooks.
+-- Usually only the first three arguments are given, and the result is
+-- passed to 'runGA'.
 {-# INLINE loopWithLog #-}
 loopWithLog :: (Monad m, Monoid w)
      => LogHook a m w
@@ -185,7 +188,8 @@ loopWithLog hook cond step genomes0 = go cond 0 mempty (Left genomes0)
 
 -- | GA iteration interleaved with IO (for logging or saving the
 -- intermediate results); it takes and returns the updated random
--- number generator explicitly.
+-- number generator via an IORef. Usually only the first three
+-- arguments are given, and the result is passed to 'runIO'.
 {-# INLINE loopIO #-}
 loopIO
      :: [IOHook a]
