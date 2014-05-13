@@ -26,6 +26,7 @@ module Moo.GeneticAlgorithm.Types
     ) where
 
 import Moo.GeneticAlgorithm.Random
+import Control.Parallel.Strategies (parMap, rseq)
 
 -- | A genetic representation of an individual solution.
 type Genome a = [a]
@@ -71,10 +72,10 @@ data ProblemType = Minimizing | Maximizing deriving (Show, Eq)
 class ObjectiveFunction f a where
     evalObjective :: f -> [Genome a] -> Population a
 
--- | Evaluate fitness (cost) values genome per genome.
+-- | Evaluate fitness (cost) values genome per genome in parallel.
 instance (a1 ~ a2) =>
     ObjectiveFunction (Genome a1 -> Objective) a2 where
-        evalObjective f = map (\g -> (g, f g))
+        evalObjective f gs = parMap rseq (\g -> (g, f g)) gs
 
 -- | Evaluate all fitness (cost) values at once.
 instance (a1 ~ a2) =>

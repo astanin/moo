@@ -1,7 +1,7 @@
 name:               moo
 category:           AI, Algorithms, Optimisation, Optimization
 build-type:         Simple
-version:            1.0
+version:            1.1
 synopsis:           Genetic algorithm library
 description:        Moo library provides building blocks to build custom
                     genetic algorithms in Haskell. They can be used to
@@ -58,6 +58,8 @@ Library
                       , mtl >= 2
                       , time
                       , array
+                      , parallel >= 3.0
+
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
                       , Moo.GeneticAlgorithm.Binary
@@ -121,6 +123,7 @@ Test-Suite moo-tests
     , time
     , array
     , containers
+    , parallel >= 3.0
 
 source-repository head
   type:     git
