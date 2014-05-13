@@ -158,7 +158,7 @@ encodeWithCode code (from, to) n =
     let from' = min from to
         to' = max from to
         nbits = bitsNeeded (from', to')
-    in  code . take nbits . toList' $ n - from'
+    in  code . take nbits $ toList (n - from') ++ (repeat False)
 
 decodeWithCode :: (Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> [Bool] -> b
 decodeWithCode decode (from, to) bits =
