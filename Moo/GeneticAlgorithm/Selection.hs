@@ -28,6 +28,7 @@ import Control.Monad (liftM, replicateM)
 import Control.Arrow (second)
 import Data.List (sortBy)
 import Data.Function (on)
+import qualified Data.Vector as V
 
 
 
@@ -108,12 +109,16 @@ tournamentSelect :: ProblemType  -- ^ type of the optimization problem
                  -> Int -- ^ size of the tournament group
                  -> Int -- ^ how many tournaments to run
                  -> SelectionOp a
-tournamentSelect problem size n xs = replicateM n tournament1
+tournamentSelect problem size n xs = do
+    let popvec = V.fromList xs
+    let popsize = V.length popvec
+    groups <- replicateM n $ randomSampleIndices size popsize
+    return $ map (tournament1 problem popvec) groups
   where
-  tournament1 = do
-    contestants <- randomSample size xs
-    let winner = head $ bestFirst problem contestants
-    return winner
+    tournament1 problem popvec group =
+      let contestants = map (popvec V.!) group
+          best = head $ bestFirst problem contestants
+      in  best
 
 -- | Stochastic universal sampling (SUS) is a selection technique
 -- similar to roulette wheel selection. It gives weaker members a fair

@@ -59,6 +59,8 @@ Library
                       , time
                       , array
                       , parallel >= 3.0
+                      , vector
+                      , containers
 
     ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-orphans
     exposed-modules:    Moo.GeneticAlgorithm
@@ -124,6 +126,8 @@ Test-Suite moo-tests
     , array
     , containers
     , parallel >= 3.0
+    , vector
+    , containers
 
 source-repository head
   type:     git

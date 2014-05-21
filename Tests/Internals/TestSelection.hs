@@ -38,8 +38,9 @@ testSelection =
                          genomes
         let objVals = map takeObjectiveValue resultMany
         -- take the same samples again with the same see
-        let samples = flip evalRandom (pureMT 1) $
-                           replicateM times (randomSample tsize genomes)
+        let samples = map (map (genomes !!)) $
+                      flip evalRandom (pureMT 1) $
+                           replicateM times (randomSampleIndices tsize (length genomes))
         assertEqual "maximum is selected every time" (replicate times True)  $
                     zipWith (\selected xs -> selected == (maximum . map takeObjectiveValue $ xs))
                             objVals samples

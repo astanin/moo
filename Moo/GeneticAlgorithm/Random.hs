@@ -14,6 +14,7 @@ module Moo.GeneticAlgorithm.Random
     , getNormal
     -- * Random samples and shuffles
     , randomSample
+    , randomSampleIndices
     , shuffle
     -- * Building blocks
     , withProbability
@@ -29,6 +30,7 @@ import Data.Complex (Complex (..))
 import System.Random (RandomGen, Random(..))
 import System.Random.Mersenne.Pure64
 import qualified System.Random.Shuffle as S
+import qualified Data.Set as Set
 
 -- | Yield a new randomly selected value of type @a@ in the range @(lo, hi)@.
 -- See 'System.Random.randomR' for details.
@@ -68,6 +70,21 @@ randomSample n xs =
                 (x:rest) = drop k xs
             in  select rng' (n-1) (m-k-1) rest (x:acc)
 
+-- | Select @sampleSize@ numbers in the range from @0@ to @(populationSize-1)@.
+-- The function works best when @sampleSize@ is much smaller than @populationSize@.
+randomSampleIndices :: Int -> Int -> Rand [Int]
+randomSampleIndices sampleSize populationSize =
+    Rand $ \g ->
+        let (sampleSet, g') = buildSampleSet g sampleSize Set.empty
+        in  R (Set.toList sampleSet) g'
+  where
+    buildSampleSet g n s
+        | n <= 0 = (s, g)
+        | otherwise =
+            let (i, g') = randomR (0, populationSize-1) g
+            in  if (i `Set.member` s)
+                then buildSampleSet g' n s
+                else buildSampleSet g' (n-1) (Set.insert i s)
 
 -- | Randomly reorder the list.
 shuffle :: [a] -> Rand [a]
