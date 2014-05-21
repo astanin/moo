@@ -43,22 +43,22 @@ type S_n a = [a] -> [a]
 -- sortingFittnes ls == 1 is aquivalent to ls == sort ls
 sortingFittness :: (Ord a) => Problem a -> Genome Bool -> Double
 sortingFittness problem bools =
-			(fromIntegral . sortcount . makeFunktion problem bools) problem
-			/ (fromIntegral . twoOutOf . length) problem
-	where
-		sortcount :: (Ord a) => [a] -> Int
-		sortcount (x:xs) = (sum . map (sortcount' x)) xs + sortcount xs
-			where
-				sortcount' :: (Ord a) => a -> a -> Int
-				sortcount' x y
-					| x > y		= 0
-					| otherwise = 1
-				--sortcount' x y = (length . filter id . (\x -> [x])) (x <= y)
-		sortcount [] = 0
+      (fromIntegral . sortcount . makeFunktion problem bools) problem
+      / (fromIntegral . twoOutOf . length) problem
+  where
+    sortcount :: (Ord a) => [a] -> Int
+    sortcount (x:xs) = (sum . map (sortcount' x)) xs + sortcount xs
+      where
+        sortcount' :: (Ord a) => a -> a -> Int
+        sortcount' x y
+          | x > y   = 0
+          | otherwise = 1
+        --sortcount' x y = (length . filter id . (\x -> [x])) (x <= y)
+    sortcount [] = 0
 
-		twoOutOf :: Int -> Int
-		twoOutOf 1 = 0
-		twoOutOf n = n - 1 + twoOutOf (n-1)
+    twoOutOf :: Int -> Int
+    twoOutOf 1 = 0
+    twoOutOf n = n - 1 + twoOutOf (n-1)
 
 
 problem = concat $ replicate 1 "fNortOfe"
@@ -82,46 +82,46 @@ mutation = pointMutate 0.5
 elitesize = 1
 
 showGenome :: (Ord a, Show a) => Problem a -> Genome Bool -> String
-showGenome problem bools = "Genome " ++ showBits bools 
-						++ "\n(which eqals to " ++ (show . boolGenomeToIntGenome (length problem)) bools ++ ")"
-						++ "\nmakes " ++ show problem 
-						++ "\nto " ++ (show . makeFunktion problem bools) problem
-						++ "\n(Sortingfittness: " ++ show (sortingFittness problem bools) ++ ")"
-						where
-							showBits :: [Bool] -> String
-							showBits = concatMap (show . fromEnum) 
+showGenome problem bools = "Genome " ++ showBits bools
+            ++ "\n(which eqals to " ++ (show . boolGenomeToIntGenome (length problem)) bools ++ ")"
+            ++ "\nmakes " ++ show problem
+            ++ "\nto " ++ (show . makeFunktion problem bools) problem
+            ++ "\n(Sortingfittness: " ++ show (sortingFittness problem bools) ++ ")"
+            where
+              showBits :: [Bool] -> String
+              showBits = concatMap (show . fromEnum)
 
 geneticAlgorithm :: (Ord a, Show a) => Problem a -> IO (Population Bool)
 geneticAlgorithm problem = do
-	let fitness = sortingFittness problem
-	let nextGen = nextGeneration Maximizing fitness selection elitesize crossover mutation
-	runIO initializeBoolGenome $ loopIO
-		[DoEvery 1 (logStats problem), TimeLimit timeLimit]
-		(Or (Generations maxiters) (IfObjective (any (==1))))
-		nextGen
+  let fitness = sortingFittness problem
+  let nextGen = nextGeneration Maximizing fitness selection elitesize crossover mutation
+  runIO initializeBoolGenome $ loopIO
+    [DoEvery 1 (logStats problem), TimeLimit timeLimit]
+    (Or (Generations maxiters) (IfObjective (any (==1))))
+    nextGen
 
 -- Gnuplotreadable statistics for 1 Generation
 logStats :: (Ord a, Show a) => Problem a -> Int -> Population Bool -> IO ()
 logStats problem iterno pop = do
-	when (iterno == 0) $
-		putStrLn "# generation medianValue bestValue"
-	let gs = map takeGenome . bestFirst Maximizing $ pop  -- genomes
-	let best = head gs
-	let median = gs !! (length gs `div` 2)
-	let worst = last gs
-	putStrLn $ unwords	[ show iterno
-						, (take 6 . show . sortingFittness problem) best
-						, (take 6 . show . sortingFittness problem) median
-						, (take 6 . show . sortingFittness problem) worst
-						, show ((makeFunktion problem best) problem)
-						]
+  when (iterno == 0) $
+    putStrLn "# generation medianValue bestValue"
+  let gs = map takeGenome . bestFirst Maximizing $ pop  -- genomes
+  let best = head gs
+  let median = gs !! (length gs `div` 2)
+  let worst = last gs
+  putStrLn $ unwords  [ show iterno
+            , (take 6 . show . sortingFittness problem) best
+            , (take 6 . show . sortingFittness problem) median
+            , (take 6 . show . sortingFittness problem) worst
+            , show ((makeFunktion problem best) problem)
+            ]
 
 main :: IO()
 main = do
-	finalPop <- geneticAlgorithm problem
-	let winner = takeGenome . head . bestFirst Maximizing $ finalPop
-	putStrLn $ showGenome problem winner
-	return ()
+  finalPop <- geneticAlgorithm problem
+  let winner = takeGenome . head . bestFirst Maximizing $ finalPop
+  putStrLn $ showGenome problem winner
+  return ()
 
 
 
@@ -136,8 +136,8 @@ initializeBoolGenome = getRandomBinaryGenomes popsize genomesize
 -- the bigger d the more permutations are evaluated, so they are more equaly distributed
 intRange :: Int -> (Int, Int)
 intRange n = (0,d*n)
-	where
-		d = 10
+  where
+    d = 10
 
 boolsPerInt :: Int -> Int
 boolsPerInt = bitsNeeded . intRange
@@ -147,20 +147,20 @@ boolsPerInt = bitsNeeded . intRange
 -- If I want to solve this Problem, how long will my Genome of Bools need to be?
 boolGenomeLengthForProblem :: Problem a -> Int
 boolGenomeLengthForProblem problem = problemLength * boolsPerInt problemLength
-	where
-		problemLength = length problem
+  where
+    problemLength = length problem
 
 makeFunktion :: Problem a -> [Bool] -> S_n a
 makeFunktion problem boolGenome
-	| length boolGenome /= boolGenomeLengthForProblem problem	= error $ "Didn't get the correct number of bools for makeing a Funktion. \n Bools Needed: " ++ show (boolGenomeLengthForProblem problem) ++ "\n Bools gotten: " ++ show (length boolGenome)
-	| otherwise = (intGenomeToS_n . boolGenomeToIntGenome problemLength) boolGenome
-	where
-		problemLength = length problem
+  | length boolGenome /= boolGenomeLengthForProblem problem = error $ "Didn't get the correct number of bools for makeing a Funktion. \n Bools Needed: " ++ show (boolGenomeLengthForProblem problem) ++ "\n Bools gotten: " ++ show (length boolGenome)
+  | otherwise = (intGenomeToS_n . boolGenomeToIntGenome problemLength) boolGenome
+  where
+    problemLength = length problem
 
 boolGenomeToIntGenome :: Int -> [Bool] -> [Int]
 boolGenomeToIntGenome problemLength boolGenome
-	| length boolGenome `mod`  boolsPerInt problemLength /= 0	= error "Problem Converting [Bool] -> [Int] "
-	| otherwise	= map (decodeGray (intRange problemLength)) (splitEvery (boolsPerInt problemLength) boolGenome)
+  | length boolGenome `mod`  boolsPerInt problemLength /= 0 = error "Problem Converting [Bool] -> [Int] "
+  | otherwise = map (decodeGray (intRange problemLength)) (splitEvery (boolsPerInt problemLength) boolGenome)
 
 intGenomeToS_n :: (Ord a) => [a] -> S_n b
 intGenomeToS_n as = map snd . sortBy (comparing fst) . zip as
