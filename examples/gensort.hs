@@ -1,3 +1,5 @@
+{- An example of a genetic sorting algorithm
+   contributed by Jøhannes Lippmann <code@schauderbasis.de> -}
 import Moo.GeneticAlgorithm.Binary
 
 import Control.Arrow (first)
@@ -8,34 +10,34 @@ import Data.Ord (comparing)
 {-
 Sorting a list (of Characters) using a genetic algorythm.
 The output should be readable for human, but for a nice
-plot with gnuplot you can paste this in "plot_output"...
+plot with gnuplot you can paste this in "gensort.gnuplot"...
 
 set terminal postscript eps enhanced color font 'Helvetica,10'
 set xlabel 'Generations'
 set ylabel 'sorting fittnes'
-set output 'output.eps'
+set output 'gensort.eps'
 set key bottom box
 plot 'output.txt' using 1:2 with lines lc rgb 'red' lw 4 title 'best value',\
      'output.txt' using 1:3 with lines lc rgb 'dark-grey' title 'median value',\
      'output.txt' using 1:4 with lines lc rgb 'grey' title 'worst value'
 
-...and this in "runGensort.sh"...
+...and this in "gensort.sh"...
 
 #!/bin/bash
-ghc --make GenSort.hs
-time ./GenSort > output.txt
-gnuplot -p plot_output.plt
-filelength=$(wc -l < output.txt)
+ghc --make gensort.hs
+time ./gensort > gensort.txt
+gnuplot -p gensort.gnuplot
+filelength=$(wc -l < gensort.txt)
 echo "Final Generation: $(($filelength - 6))"
-tail -5 output.txt
+tail -5 gensort.txt
 
-... and run it with ./runGensort
+... and run it with ./gensort.sh
 -}
 
 -- list to be sorted
 type Problem a = [a]
 -- The Symetric Group of degree n: http://en.wikipedia.org/wiki/Symmetric_group
--- a memeber of S_n should change the order of the elements, not the elements itself 
+-- a memeber of S_n should change the order of the elements, not the elements itself
 type S_n a = [a] -> [a]
 
 -- sortingFittnes ls == 1 is aquivalent to ls == sort ls
