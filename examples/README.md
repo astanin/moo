@@ -38,3 +38,8 @@ Examples of binary GAs:
     functions is a difficult problem for genetic algorithms, and
     requires to use large populations
     (A basic GA with convergence check)
+
+Examples of integer-coded GAs:
+
+  * [ilp.hs](ilp.hs) an integer programming problem (a constrained GA
+    with genomes as lists of integers and a custom mutation operator)
