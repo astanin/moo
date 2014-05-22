@@ -59,13 +59,13 @@ testRosenbrock = TestList
       let maxiters = 500
       let problem = RealMinimize rosenbrock [(-20,20),(-20,20)] [1,1]
       let stop = Generations maxiters
-      let solver = solverReal problem 101 11 blxa stop
+      let solver = solverReal problem 400 11 blxa stop
       (pop, dist) <- runSolverReal problem solver
       let bestG = takeGenome . head $ bestFirst Minimizing pop
       pr ""
       pr $ "best:    " ++ (intercalate " " (map (printf "%.5f") bestG))
       pr $ "error:   " ++ (printf "%.5g" dist)
-      assertBool ("error >= " ++ show tolerance) (dist < tolerance)
+      assertBool ("error = " ++ show dist ++ " >= " ++ show tolerance) (dist < tolerance)
   , "Rosenbrock 2D GM/UNDX/GensNoChange 10" ~: do
       let maxiters = 5000
       let popsize = 101
