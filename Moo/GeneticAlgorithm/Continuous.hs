@@ -15,6 +15,7 @@ module Moo.GeneticAlgorithm.Continuous
 
   -- * Initialization
   , getRandomGenomes
+  , uniformGenomes
 
   -- * Selection
   , rouletteSelect
@@ -56,6 +57,30 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
 import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
+
+
+-- | Generate at most @popsize@ genomes uniformly distributed in @ranges@.
+uniformGenomes :: Int -> [(Double,Double)] -> [Genome Double]
+uniformGenomes popsize ranges =
+    let dims = map (uncurry subtract) ranges :: [Double]
+        ndims = length dims :: Int
+        vol = product dims
+        mdim = vol ** (1.0/fromIntegral ndims) :: Double
+        msamples = (fromIntegral popsize) ** (1.0/fromIntegral ndims) :: Double
+        ptsPerDim = map (\d -> round $ d*msamples/mdim) dims :: [Int]
+        ptsInLastDims = product $ drop 1 ptsPerDim :: Int
+        ptsInFirstDim = popsize `div` ptsInLastDims :: Int
+        ptsPerDim' = ptsInFirstDim : (drop 1 ptsPerDim) :: [Int]
+        linspaces = zipWith linspace ranges ptsPerDim' :: [[Double]]
+    in  sproduct [[]] linspaces
+  where
+    linspace :: (Double, Double) -> Int -> [Double]
+    linspace (lo, hi) n = map (\i -> (fromIntegral i)*(hi-lo)/fromIntegral (n-1)) [0..n-1]
+    sproduct :: [[Double]] -> [[Double]] ->  [[Double]]
+    sproduct gs [] = gs
+    sproduct gs (l:ls) =
+           let gs' = [x:g | g<-gs, x<-l]
+           in  sproduct gs' ls
 
 
 -- | 1-norm distance: @sum |x_i - y-i|@.

@@ -37,31 +37,6 @@ undx = unimodalCrossoverRP
 sbx = simulatedBinaryCrossover 2
 
 
-realUniformGenomes :: Int -> [(Double,Double)] -> [Genome Double]
-realUniformGenomes popsize ranges =
-    let dims = map (uncurry subtract) ranges :: [Double]
-        ndims = length dims :: Int
-        sd = sum dims
-        vol = product dims
-        mdim = vol ** (1.0/fromIntegral ndims) :: Double
-        msamples = (fromIntegral popsize) ** (1.0/fromIntegral ndims) :: Double
-        ptsPerDim = map (\d -> round $ d*msamples/mdim) dims :: [Int]
-        ptsInLastDims = product $ drop 1 ptsPerDim :: Int
-        ptsInFirstDim = popsize `div` ptsInLastDims :: Int
-        ptsPerDim' = ptsInFirstDim : (drop 1 ptsPerDim) :: [Int]
-        linspaces = zipWith linspace ranges ptsPerDim' :: [[Double]]
-    in  sproduct [[]] linspaces
-  where
-    linspace :: (Double, Double) -> Int -> [Double]
-    linspace (lo, hi) n = map (\i -> (fromIntegral i)*(hi-lo)/fromIntegral (n-1)) [0..n-1]
-
-    sproduct :: [[Double]] -> [[Double]] ->  [[Double]]
-    sproduct gs [] = gs
-    sproduct gs (l:ls) =
-           let gs' = [x:g | g<-gs, x<-l]
-           in  sproduct gs' ls
-
-
 data (ObjectiveFunction objectivefn a) => Solver objectivefn a = Solver {
       s'popsize :: Int
     , s'elitesize :: Int
@@ -90,7 +65,7 @@ runSolverReal :: RealProblem
               -- ^ final population and euclidean distance from the known solution
 runSolverReal problem solver = do
     let ptype = Minimizing
-    let init = return $ realUniformGenomes (s'popsize solver) (minimizeVarRange problem)
+    let init = return $ uniformGenomes (s'popsize solver) (minimizeVarRange problem)
     let step = nextGeneration  ptype (s'objective solver)
                (s'select solver) (s'elitesize solver)
                (s'crossover solver) (s'mutate solver)
