@@ -26,7 +26,6 @@
   - [X] getConstrainedGenomes(Rs) remove Rs
   - [X] getConstrainedGenomes adapt for Binary
 
-
 ** TODO Tests [1/4]
   - [X] Continuous problem (Rosenbrock) [4/4]
     - [X] BLX
@@ -55,7 +54,23 @@
     - [ ] loopIO
 
 
-** TODO: future releases [1/3]
+** TODO: future releases [1/7]
   - [ ] permutation GAs, TSP example
   - [X] minimizing SelectionOp's
-  - [ ] time-dependent mutation
+  - [ ] optimize UNDX (linalg)
+  - [ ] optimize SBX (linalg)
+  - [ ] parallel selection
+  - [ ] parallel crossover
+  - [ ] parallel mutation
+  - [ ] parallel objective evaluation
+  - [ ] migrate to mwc-random
+  - [ ] benchmark to compare operators' performance
+  - [ ] Laplace crossover (LX)
+  - [ ] heuristic crossover (HX)
+  - [ ] power mutation (PM)
+  - [ ] Makinen, Periaux and Toivanen mutation (MPTM)
+
+** TODO: breaking changes for future releases [0/2]
+  - [ ] non-list genomes
+  - [ ] time-dependent mutation (generation counter)
+  - [ ] Michalewicz non-uniform mutation (NUM), require time-dependend mutation
