@@ -72,7 +72,6 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
-import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 
 -- | How many bits are needed to represent a range of integer numbers
