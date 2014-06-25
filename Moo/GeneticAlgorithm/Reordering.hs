@@ -3,7 +3,7 @@ module Reordering
 	-- Types
 	module Moo.GeneticAlgorithm.Types
 	-- Mutations
-	,  swapMutate
+	, swapMutate
 	, listswapMutate
 	, revMutate
 	, blockSwapMutate
@@ -16,6 +16,7 @@ module Reordering
 	-- apply
 	, applyReordering
 	-- others
+	, pairs
 	, module Moo.GeneticAlgorithm.Run
 	) where
 import Moo.GeneticAlgorithm.Types
