@@ -3,48 +3,52 @@ import Data.List (sortBy)
 import Data.Ord (comparing)
 
 -- This one is neccescary for all the functions that should be in Reordering but are not (yet)
--- such as Selections 
+-- such as Selections
+
+
 import Moo.GeneticAlgorithm.Binary
 
+
+
+type Tour = [Int]
+citys :: Int
+citys = length costList
 
 -- how much does it cost to travel from a to b
 roadCost :: (Int, Int) -> Double
 roadCost (a,b) = (costList !! a) !! b
 
--- a matrix of dimension citys X citys
-costList :: [[Double]]
-costList =  [ [0.39987,0.99363,0.48044,0.74801,7.01106,0.53062,0.76280,0.31503,0.56092,2.36610]
-			, [0.20854,0.64304,0.97168,0.14401,5.90881,0.73724,0.38740,0.81714,0.44270,0.69404]
-			, [0.36724,0.34072,0.82010,3.78421,0.42394,0.44683,0.79694,0.66550,0.75300,0.66500]
-			, [0.15891,0.24411,0.35355,0.25769,2.19011,0.12094,0.49855,0.83530,0.44275,0.27326]
-			, [0.40955,3.57548,0.81909,0.87116,0.98246,0.90539,0.27536,0.26896,0.79010,0.97057]
-			, [0.90195,0.22583,0.91092,0.47696,0.72954,0.73374,0.41783,0.89910,0.89136,0.45286]
-			, [9.25324,8.08620,0.16877,3.15063,7.14468,0.79607,0.91033,0.89157,0.81961,0.34512]
-			, [0.41108,0.47445,0.55982,0.47753,0.79543,0.34781,0.92973,0.97550,6.37965,0.65307]
-			, [0.19750,0.55189,0.74052,0.55952,0.37908,0.57073,0.57096,0.63539,0.31313,0.50520]
-			, [0.11348,0.61098,2.84733,0.97944,0.49017,8.82357,0.62606,0.94343,0.81197,0.85248]
-			]
 
-type Tour = [Int]
-citys = 10
+returnFromTour :: Tour -> Tour
+returnFromTour tour = tour ++ [head tour]
 
 tourcost :: Tour -> Double
 tourcost tour =
-	sum . map roadCost . roads $ tour ++ [head tour]
-	where
-		roads :: Tour -> [(Int, Int)]
-		roads [] = []
-		roads [_] = []
-		roads (a:b:rest) = (a,b): roads (b:rest)
+	sum . map roadCost . pairs . returnFromTour $ tour
 
-popsize = 8
+-- best way: [8,1,5,7,6,9,2,0,3,4] and return to 3 (costs only 9.60587)
+-- a matrix of dimension n x n
+costList :: [[Double]]
+costList =  [ [1.39987,1.99363,1.48044,0.94801,1.01106,1.53062,1.76280,1.31503,1.56092,1.36610]
+			, [1.20854,1.64304,1.97168,1.14401,1.90881,0.93724,1.38740,1.81714,1.44270,1.69404]
+			, [0.96724,1.34072,1.82010,1.78421,1.42394,1.44683,1.79694,1.66550,1.75300,1.66500]
+			, [1.15891,1.24411,1.35355,1.25769,0.99011,1.12094,1.49855,1.83530,1.44275,1.27326]
+			, [1.40955,1.57548,1.81909,1.87116,1.98246,1.90539,1.27536,1.26896,0.99010,1.97057]
+			, [1.90195,1.22583,1.91092,1.47696,1.72954,1.73374,1.41783,0.99910,1.89136,1.45286]
+			, [1.25324,1.08620,1.16877,1.15063,1.14468,1.79607,1.91033,1.89157,1.81961,0.94512]
+			, [1.41108,1.47445,1.55982,1.47753,1.79543,1.34781,0.92973,1.97550,1.37965,1.65307]
+			, [1.19750,0.95189,1.74052,1.55952,1.37908,1.57073,1.57096,1.63539,1.31313,1.50520]
+			, [1.11348,1.61098,0.94733,1.97944,1.49017,1.82357,1.62606,1.94343,1.81197,1.85248]
+			]
+
+popsize = 10
 elitesize = 1
 
 selection = rouletteSelect (popsize - elitesize)
 crossover = edgeCrossover 2
 mutation = shiftMutate
 step = nextGeneration Minimizing tourcost selection elitesize crossover mutation
-stop =  Generations 100
+stop =  IfObjective (\values -> (minimum values) < 10)
 initialize = initializeIntGenome popsize 10
 
 
