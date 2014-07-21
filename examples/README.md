@@ -43,3 +43,30 @@ Examples of integer-coded GAs:
 
   * [ilp.hs](ilp.hs) an integer programming problem (a constrained GA
     with genomes as lists of integers and a custom mutation operator)
+
+
+How to build examples within Cabal sandbox
+------------------------------------------
+
+For sandboxed builds, if you initialized the sandbox in the top-level
+directory of the moo source distribution as
+
+    cabal sandbox init
+
+and compiled the library with
+
+    cabal install
+
+then
+
+  * In the `examples/` directory run
+
+        cabal sandbox init --sandbox=../.cabal-sandbox
+
+  * Build examples like
+
+        cabal exec ghc -- --make example_file.hs
+
+    instead of
+
+        ghc --make example_file.hs
