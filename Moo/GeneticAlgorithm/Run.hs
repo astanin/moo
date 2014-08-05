@@ -40,9 +40,9 @@ runGA initialize ga = do
 
 -- | Helper function to run the entire algorithm in the 'IO' monad.
 runIO :: Rand [Genome a]                  -- ^ function to create initial population
-      -> (IORef PureMT -> [Genome a] -> IO (Population a))
+      -> (IORef PureMT -> [Genome a] -> IO (Population a, Generation))
                                           -- ^ genetic algorithm, see also 'loopIO'
-      -> IO (Population a)                -- ^ final population
+      -> IO (Population a, Generation)    -- ^ final population
 runIO initialize gaIO = do
   rng <- newPureMT
   let (genomes0, rng') = runRandom initialize rng
@@ -202,23 +202,23 @@ loopIO
      -- ^ reference to the random number generator
      -> [Genome a]
      -- ^ initial population @pop0@
-     -> IO (Population a)
+     -> IO (Population a, Generation)
      -- ^ final population
 loopIO hooks cond step rngref genomes0 = do
   rng <- readIORef rngref
   start <- realToFrac `liftM` getPOSIXTime
-  (pop, rng') <- go start cond 0 rng (Left genomes0)
+  (pop, gen, rng') <- go start cond 0 rng (Left genomes0)
   writeIORef rngref rng'
-  return pop
+  return (pop, gen)
   where
     go start cond !i !rng !x = do
       stop <- (any id) `liftM` (mapM (runhook start i x) hooks)
       if (stop || either (const False) (evalCond cond) x)
-         then return (asPopulation x, rng)
+         then return (asPopulation x, i, rng)
          else do
            let (x', rng') = runRandom (step cond x) rng
            case x' of
-             (StopGA pop) -> return (pop, rng')
+             (StopGA pop) -> return (pop, i+1, rng')
              (ContinueGA pop) ->
                  do
                    let i' = i + 1
