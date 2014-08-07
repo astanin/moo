@@ -3,7 +3,8 @@
 module Moo.GeneticAlgorithm.Types
     (
     -- * Data structures
-      Genome
+      Generation
+    , Genome
     , Objective
     , Phenotype
     , Population
@@ -27,6 +28,9 @@ module Moo.GeneticAlgorithm.Types
 
 import Moo.GeneticAlgorithm.Random
 import Control.Parallel.Strategies (parMap, rseq)
+
+-- | A representation of the generation of the population.
+type Generation = Int
 
 -- | A genetic representation of an individual solution.
 type Genome a = [a]

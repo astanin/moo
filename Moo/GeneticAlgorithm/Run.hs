@@ -168,14 +168,14 @@ loopWithLog :: (Monad m, Monoid w)
      -- ^ @step@ function to produce the next generation
      -> [Genome a]
      -- ^ initial population
-     -> m (Population a, w)
+     -> m (Population a, Generation, w)
      -- ^ final population
 loopWithLog hook cond step genomes0 = go cond 0 mempty (Left genomes0)
   where
     go cond !i !w !x = do
       x' <- step cond x
       case x' of
-        (StopGA pop) -> return (pop, w)
+        (StopGA pop) -> return (pop, i, w)
         (ContinueGA pop) -> do
                          let w' = mappend w (runHook i pop hook)
                          let cond' = updateCond pop cond
