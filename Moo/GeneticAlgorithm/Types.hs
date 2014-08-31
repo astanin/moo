@@ -21,7 +21,6 @@ module Moo.GeneticAlgorithm.Types
     -- * Life cycle
     , StepGA
     , Cond(..)
-    , PopulationState
     , StepResult(..)
     ) where
 
@@ -148,10 +147,6 @@ data Cond a =
 >       |                                          v
 >   (genomes) <----- [ crossover ] <-------- (evaluted genomes)
 >
-
-PopulationState can represent either @genomes@ or @evaluated genomed@.
--}
-type PopulationState a = Either [Genome a] [Phenotype a]
 
 
 -- | A data type to distinguish the last and intermediate steps results.
