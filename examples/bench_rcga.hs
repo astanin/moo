@@ -9,7 +9,6 @@ Usage: @./bench_rcga -o bench_rcga.html@
 
 import Criterion
 import Criterion.Main
-import Criterion.Config
 import Moo.GeneticAlgorithm.Continuous
 import Data.Function (on)
 
@@ -82,33 +81,32 @@ doTimes 0 _ p = return p
 doTimes n action p = action p >>= doTimes (n-1) action
 
 
-main = defaultMainWith defaultConfig { cfgSamples = ljust 20 }
-       (return ())
+main = defaultMain
        [ bgroup "synthetic"
-         [ bench "tournament2-UNDX-GM" $ ga tournament2 undx gm
-         , bench "tournament2-blend-GM" $ ga tournament2 bx gm
-         , bench "tournament2-SBX0.5-GM" $ ga tournament2 sbx gm
-         , bench "tournament2-1point-GM" $ ga tournament2 p1x gm
-         , bench "SUS(rank)-1point-GM" $ ga rankSUS p1x gm
-         , bench "SUS-1point-GM" $ ga sus p1x gm
+         [ bench "tournament2-UNDX-GM"   $ nfIO $ ga tournament2 undx gm
+         , bench "tournament2-blend-GM"  $ nfIO $ ga tournament2 bx gm
+         , bench "tournament2-SBX0.5-GM" $ nfIO $ ga tournament2 sbx gm
+         , bench "tournament2-1point-GM" $ nfIO $ ga tournament2 p1x gm
+         , bench "SUS(rank)-1point-GM"   $ nfIO $ ga rankSUS p1x gm
+         , bench "SUS-1point-GM"         $ nfIO $ ga sus p1x gm
          ]
        , bgroup "selection"
-         [ bench "rank-roulette" $ runSelection rankRoulette
-         , bench "roulette" $ runSelection roulette
-         , bench "tournament2" $ runSelection tournament2
-         , bench "rank-SUS" $ runSelection rankSUS
-         , bench "SUS" $ runSelection sus
+         [ bench "rank-roulette" $ nfIO $ runSelection rankRoulette
+         , bench "roulette"      $ nfIO $ runSelection roulette
+         , bench "tournament2"   $ nfIO $ runSelection tournament2
+         , bench "rank-SUS"      $ nfIO $ runSelection rankSUS
+         , bench "SUS"           $ nfIO $ runSelection sus
          ]
        , bgroup "crossover"
-         [ bench "UNDX" $ runCrossover undx
-         , bench "blend" $ runCrossover bx
-         , bench "SBX-0.5" $ runCrossover sbx
-         , bench "uniform" $ runCrossover (uniformCrossover 0.5)
-         , bench "1-point" $ runCrossover p1x
-         , bench "noCrossover" $ runCrossover noCrossover
+         [ bench "UNDX"          $ nfIO $ runCrossover undx
+         , bench "blend"         $ nfIO $ runCrossover bx
+         , bench "SBX-0.5"       $ nfIO $ runCrossover sbx
+         , bench "uniform"       $ nfIO $ runCrossover (uniformCrossover 0.5)
+         , bench "1-point"       $ nfIO $ runCrossover p1x
+         , bench "noCrossover"   $ nfIO $ runCrossover noCrossover
          ]
        , bgroup "mutation"
-         [ bench "gaussian" $ runMutation gm
+         [ bench "gaussian"      $ nfIO $ runMutation gm
          ] ]
 
 
