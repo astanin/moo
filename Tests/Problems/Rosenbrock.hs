@@ -78,7 +78,7 @@ testRosenbrock = TestList
       let ga = loopWithLog log stop step
       let init = replicateM popsize . replicateM 2 $ getRandomR (-10,10)
 
-      (pop, hist) <- runGA init ga
+      (pop, _, hist) <- runGA init ga
 
       let best = takeGenome . head $ bestFirst Minimizing pop
       pr ""
