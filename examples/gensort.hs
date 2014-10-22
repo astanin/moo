@@ -95,10 +95,11 @@ geneticAlgorithm :: (Ord a, Show a) => Problem a -> IO (Population Bool)
 geneticAlgorithm problem = do
   let fitness = sortingFittness problem
   let nextGen = nextGeneration Maximizing fitness selection elitesize crossover mutation
-  runIO initializeBoolGenome $ loopIO
+  (pop, genNo) <- runIO initializeBoolGenome $ loopIO
     [DoEvery 1 (logStats problem), TimeLimit timeLimit]
     (Or (Generations maxiters) (IfObjective (any (==1))))
     nextGen
+  return pop
 
 -- Gnuplotreadable statistics for 1 Generation
 logStats :: (Ord a, Show a) => Problem a -> Int -> Population Bool -> IO ()

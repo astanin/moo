@@ -65,10 +65,11 @@ geneticAlgorithm things = do
   let fitness = totalValue things
   let nextGen = nextGeneration Maximizing fitness select elitesize
                           (onePointCrossover 0.5) (pointMutate 0.5)
-  runIO initialize $ loopIO
+  (pop, genNo) <-runIO initialize $ loopIO
          [DoEvery 10 logStats, TimeLimit 0.1]  -- stop after 100 ms
          (Generations maxBound)  -- effectively, forever; unless an IOHook condition triggers
          nextGen
+  return pop
 
   where
 

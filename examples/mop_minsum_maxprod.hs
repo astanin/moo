@@ -40,7 +40,7 @@ main = do
   putStrLn $ "# population size: " ++ show popsize
   let initialize = return . take popsize . cycle $ genomes
   putStrLn $ "# generation\thypervolume(18,0)"
-  result <- runIO initialize $
+  (result, genNo) <- runIO initialize $
             loopIO [logStats] (Generations 100) step
   putStrLn $ "# best:"
   printPareto result

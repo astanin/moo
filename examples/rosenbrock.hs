@@ -108,7 +108,7 @@ main = do
            _        -> printUsage
   case conf of
     (Just mutate, Just crossover) -> do
-       (pop, stats) <- geneticAlgorithm mutate crossover
+       (pop, _, stats) <- geneticAlgorithm mutate crossover
        printStats stats
        printBest pop
        -- exit status depends on convergence
