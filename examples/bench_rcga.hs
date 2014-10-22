@@ -50,14 +50,14 @@ ga select xover mutate = do
   pop <- runGA start $ loop stopCondition $
          nextGeneration Maximizing fitness select 0 xover mutate
   let best = head . bestFirst Maximizing $ pop
-  print best
+  return best
 
 
 -- apply selection operator the same number of times as in normal GA run
 runSelection select = do
   rng <- newPureMT
   let pop' = flip evalRandom rng $ doTimes generations select population0
-  putStr . (++" ") . show . minimum . map takeObjectiveValue $ pop'
+  return . (++" ") . show . minimum . map takeObjectiveValue $ pop'
 
 
 -- apply crossover operator the same number of times as in normal GA run
@@ -66,7 +66,7 @@ runCrossover crossover = do
   let genomes' = flip evalRandom rng $
                  doTimes generations
                  (flip doCrossovers crossover) genomes0
-  putStr . (++" ") . show . minimum . concat $ genomes'
+  return . (++" ") . show . minimum . concat $ genomes'
 
 
 -- apply mutation operator the same number of times as in normal GA run
@@ -74,7 +74,7 @@ runMutation mutate = do
   rng <- newPureMT
   let genomes' = flip evalRandom rng $
                  doTimes generations (mapM gm) genomes0
-  putStr . (++" ") . show . minimum . concat $ genomes'
+  return . (++" ") . show . minimum . concat $ genomes'
 
 
 doTimes 0 _ p = return p
