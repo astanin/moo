@@ -68,13 +68,13 @@ Library
                       , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
                       , Moo.GeneticAlgorithm.Multiobjective
+                      , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Random
                       , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Statistics
                       , Moo.GeneticAlgorithm.Types
     other-modules:      Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.LinAlg
-                      , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
                       , Moo.GeneticAlgorithm.Multiobjective.Metrics
                       , Moo.GeneticAlgorithm.Selection
