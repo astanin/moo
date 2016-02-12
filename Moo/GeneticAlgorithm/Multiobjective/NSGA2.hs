@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE Rank2Types, ConstraintKinds #-}
 {- |
 
 NSGA-II. A Fast Elitist Non-Dominated Sorting Genetic

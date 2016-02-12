@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
@@ -86,26 +87,26 @@ bitsNeeded (from, to) =
 -- binary sequence of minimal length. Use of Gray code means that a
 -- single point mutation leads to incremental change of the encoded
 -- value.
-encodeGray :: (FiniteBits b, Bits b, Integral b) => (b, b) -> b -> [Bool]
+encodeGray :: (Bits b, Integral b) => (b, b) -> b -> [Bool]
 encodeGray = encodeWithCode gray
 
 -- | Decode a binary sequence using Gray code to an integer in the
 -- range @(from, to)@ (inclusive). This is an inverse of 'encodeGray'.
 -- Actual value returned may be greater than @to@.
-decodeGray :: (FiniteBits b, Bits b, Integral b) => (b, b) -> [Bool] -> b
+decodeGray :: (Bits b, Integral b) => (b, b) -> [Bool] -> b
 decodeGray = decodeWithCode binary
 
 -- | Encode an integer number in the range @(from, to)@ (inclusive)
 -- as a binary sequence of minimal length. Use of binary encoding
 -- means that a single point mutation may lead to sudden big change
 -- of the encoded value.
-encodeBinary :: (FiniteBits b, Bits b, Integral b) => (b, b) -> b -> [Bool]
+encodeBinary :: (Bits b, Integral b) => (b, b) -> b -> [Bool]
 encodeBinary = encodeWithCode id
 
 -- | Decode a binary sequence to an integer in the range @(from, to)@
 -- (inclusive). This is an inverse of 'encodeBinary'.  Actual value
 -- returned may be greater than @to@.
-decodeBinary :: (FiniteBits b, Bits b, Integral b) => (b, b) -> [Bool] -> b
+decodeBinary :: (Bits b, Integral b) => (b, b) -> [Bool] -> b
 decodeBinary = decodeWithCode id
 
 -- | Encode a real number in the range @(from, to)@ (inclusive)
@@ -152,14 +153,14 @@ splitEvery :: Int -> [a] -> [[a]]
 splitEvery _ [] = []
 splitEvery n xs = let (nxs,rest) = splitAt n xs in nxs : splitEvery n rest
 
-encodeWithCode :: (FiniteBits b, Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> b -> [Bool]
+encodeWithCode :: (Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> b -> [Bool]
 encodeWithCode code (from, to) n =
     let from' = min from to
         to' = max from to
         nbits = bitsNeeded (from', to')
     in  code . take nbits $ toList (n - from') ++ (repeat False)
 
-decodeWithCode :: (FiniteBits b, Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> [Bool] -> b
+decodeWithCode :: (Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> [Bool] -> b
 decodeWithCode decode (from, to) bits =
     let from' = min from to
     in  (from' +) . fromList . decode $ bits
