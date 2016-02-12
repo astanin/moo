@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
@@ -87,26 +87,42 @@ bitsNeeded (from, to) =
 -- binary sequence of minimal length. Use of Gray code means that a
 -- single point mutation leads to incremental change of the encoded
 -- value.
+#if MIN_VERSION_base(4, 7, 0)
+encodeGray :: (FiniteBits b, Bits b, Integral b) => (b, b) -> b -> [Bool]
+#else
 encodeGray :: (Bits b, Integral b) => (b, b) -> b -> [Bool]
+#endif
 encodeGray = encodeWithCode gray
 
 -- | Decode a binary sequence using Gray code to an integer in the
 -- range @(from, to)@ (inclusive). This is an inverse of 'encodeGray'.
 -- Actual value returned may be greater than @to@.
+#if MIN_VERSION_base(4, 7, 0)
+decodeGray :: (FiniteBits b, Bits b, Integral b) => (b, b) -> [Bool] -> b
+#else
 decodeGray :: (Bits b, Integral b) => (b, b) -> [Bool] -> b
+#endif
 decodeGray = decodeWithCode binary
 
 -- | Encode an integer number in the range @(from, to)@ (inclusive)
 -- as a binary sequence of minimal length. Use of binary encoding
 -- means that a single point mutation may lead to sudden big change
 -- of the encoded value.
+#if MIN_VERSION_base(4, 7, 0)
+encodeBinary :: (FiniteBits b, Bits b, Integral b) => (b, b) -> b -> [Bool]
+#else
 encodeBinary :: (Bits b, Integral b) => (b, b) -> b -> [Bool]
+#endif
 encodeBinary = encodeWithCode id
 
 -- | Decode a binary sequence to an integer in the range @(from, to)@
 -- (inclusive). This is an inverse of 'encodeBinary'.  Actual value
 -- returned may be greater than @to@.
+#if MIN_VERSION_base(4, 7, 0)
+decodeBinary :: (FiniteBits b, Bits b, Integral b) => (b, b) -> [Bool] -> b
+#else
 decodeBinary :: (Bits b, Integral b) => (b, b) -> [Bool] -> b
+#endif
 decodeBinary = decodeWithCode id
 
 -- | Encode a real number in the range @(from, to)@ (inclusive)
@@ -153,14 +169,22 @@ splitEvery :: Int -> [a] -> [[a]]
 splitEvery _ [] = []
 splitEvery n xs = let (nxs,rest) = splitAt n xs in nxs : splitEvery n rest
 
+#if MIN_VERSION_base(4, 7, 0)
+encodeWithCode :: (FiniteBits b, Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> b -> [Bool]
+#else
 encodeWithCode :: (Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> b -> [Bool]
+#endif
 encodeWithCode code (from, to) n =
     let from' = min from to
         to' = max from to
         nbits = bitsNeeded (from', to')
     in  code . take nbits $ toList (n - from') ++ (repeat False)
 
+#if MIN_VERSION_base(4, 7, 0)
+decodeWithCode :: (FiniteBits b, Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> [Bool] -> b
+#else
 decodeWithCode :: (Bits b, Integral b) => ([Bool] -> [Bool]) -> (b, b) -> [Bool] -> b
+#endif
 decodeWithCode decode (from, to) bits =
     let from' = min from to
     in  (from' +) . fromList . decode $ bits
