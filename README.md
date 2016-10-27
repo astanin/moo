@@ -14,10 +14,31 @@ Moo
 Installation
 ------------
 
-  * install Haskell Platform or GHC and cabal-install
+### Installation from Hackage
+
+Hackage is a Haskell community's package archive. This is where the
+latest versions of packages are published first.
+To install Moo from Hackage use Cabal-Install:
+
+  * install Haskell Platform or GHC and Cabal-Install
   * run `cabal update`
   * run `cabal install moo`
 
+
+### Installation with Stack
+
+Stackage is a stable package archive. Stackage builds are supposed to
+be reproducible. Stackage also provides Long Term Support releases.
+To build Moo with Stackage dependencies, use the `stack` tool:
+
+  * install [`stack`](https://docs.haskellstack.org/)
+  * if necessary, install GHC: run `stack setup`
+  * run: `stack update`
+  * in the project source directory run: `stack build`
+  * to run tests: `stack test`
+
+
+### Build Status
 
 Build status: [![Build Status](https://drone.io/github.com/astanin/moo/status.png)](https://drone.io/github.com/astanin/moo/latest)
 
