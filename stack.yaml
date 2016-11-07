@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-1.15
+resolver: lts-7.8
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,11 +37,13 @@ resolver: lts-1.15
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- location:
+    git: https://github.com/jwaldmann/monad-mersenne-random
+    commit: d1f949fe60dc0c0cfbd310b339fe7fd5ecf4c5f5
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - gray-code-0.3.1
-- monad-mersenne-random-0.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}
