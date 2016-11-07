@@ -49,6 +49,7 @@ extra-source-files: README.md
 
 
 Library
+    hs-source-dirs: src
     build-depends:      base >=4 && < 5
                       , monad-mersenne-random
                       , mersenne-random-pure64
@@ -67,20 +68,19 @@ Library
                       , Moo.GeneticAlgorithm.Binary
                       , Moo.GeneticAlgorithm.Constraints
                       , Moo.GeneticAlgorithm.Continuous
+                      , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Multiobjective
-                      , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Run
-                      , Moo.GeneticAlgorithm.Statistics
-                      , Moo.GeneticAlgorithm.Types
-    other-modules:      Moo.GeneticAlgorithm.Crossover
-                      , Moo.GeneticAlgorithm.LinAlg
                       , Moo.GeneticAlgorithm.Multiobjective.NSGA2
                       , Moo.GeneticAlgorithm.Multiobjective.Types
-                      , Moo.GeneticAlgorithm.Multiobjective.Metrics
+                      , Moo.GeneticAlgorithm.Random
+                      , Moo.GeneticAlgorithm.Run
                       , Moo.GeneticAlgorithm.Selection
+                      , Moo.GeneticAlgorithm.Statistics
+                      , Moo.GeneticAlgorithm.Types
+    other-modules:      Moo.GeneticAlgorithm.LinAlg
+                      , Moo.GeneticAlgorithm.Multiobjective.Metrics
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Utilities
-                      , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Niching
 
 Test-Suite moo-tests
@@ -94,24 +94,6 @@ Test-Suite moo-tests
                       , Tests.Internals.TestSelection
                       , Tests.Internals.TestConstraints
                       , Tests.Problems.Rosenbrock
-                      , Moo.GeneticAlgorithm
-                      , Moo.GeneticAlgorithm.Binary
-                      , Moo.GeneticAlgorithm.Constraints
-                      , Moo.GeneticAlgorithm.Continuous
-                      , Moo.GeneticAlgorithm.Crossover
-                      , Moo.GeneticAlgorithm.Niching
-                      , Moo.GeneticAlgorithm.Run
-                      , Moo.GeneticAlgorithm.Random
-                      , Moo.GeneticAlgorithm.Utilities
-                      , Moo.GeneticAlgorithm.LinAlg
-                      , Moo.GeneticAlgorithm.Multiobjective
-                      , Moo.GeneticAlgorithm.Multiobjective.NSGA2
-                      , Moo.GeneticAlgorithm.Multiobjective.Types
-                      , Moo.GeneticAlgorithm.Multiobjective.Metrics
-                      , Moo.GeneticAlgorithm.Selection
-                      , Moo.GeneticAlgorithm.Statistics
-                      , Moo.GeneticAlgorithm.StopCondition
-                      , Moo.GeneticAlgorithm.Types
   Build-Depends:
       moo
     , base < 5
@@ -128,6 +110,10 @@ Test-Suite moo-tests
     , parallel >= 3.0
     , vector
     , containers
+
+Executable beale
+  main-is: examples/beale.hs
+  build-depends: base, moo
 
 source-repository head
   type:     git
