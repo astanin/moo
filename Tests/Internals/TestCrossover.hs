@@ -3,7 +3,7 @@ module Tests.Internals.TestCrossover where
 
 import Test.HUnit
 import System.Random.Mersenne.Pure64 (pureMT)
-import Data.List (group)
+import Data.List (group, transpose)
 
 
 import Moo.GeneticAlgorithm.Types
@@ -18,18 +18,22 @@ testCrossover =
         let genomes = [[1,1,1,1],[0,0,0,0]] :: [[Int]]
         let result4 = flip evalRand (pureMT 1) $
                       doNCrossovers 4 genomes (onePointCrossover 0.5)
-        let expected4 = [[0,0,1,1],[1,1,0,0],[0,0,0,1],[1,1,1,0]]
+        let expected4 = [[1,0,0,0],[0,1,1,1],[1,1,0,0],[0,0,1,1]]
         assertEqual "4 crossovers" expected4 result4
+        let genesums4 = map sum . transpose $ result4
+        assertEqual "gene-sums (4 genomes)" [2,2,2,2] genesums4
         let result3 = flip evalRand (pureMT 1) $
                       doNCrossovers 3 genomes (onePointCrossover 0.5)
-        let expected3 = [[0,0,1,1],[1,1,0,0],[0,0,0,1]]
+        let expected3 = [[1,0,0,0],[0,1,1,1],[1,1,0,0]]
         assertEqual "3 crossovers" expected3 result3
     , "do all crossovers" ~: do
         let genomes = [[1,1,1,1],[0,0,0,0]] :: [[Int]]
         let result = flip evalRand (pureMT 1) $
                      doCrossovers genomes (onePointCrossover 0.5)
-        let expected = [[1,1,1,0],[0,0,0,1]]
+        let expected = [[1,1,0,0],[0,0,1,1]]
         assertEqual "all crossovers (2 genomes)" expected result
+        let genesums2 = map sum . transpose $ result
+        assertEqual "gene-sums (2 genomes)" [1,1,1,1] genesums2
         let genomes3 = [[1,1,1,1],[0,0,0,0],[2,2,2,2]] :: [[Int]]
         -- genes from the last "celibate" genome are lost
         let result3 = filter (==2) . concat . map concat . flip map [0..100] $
