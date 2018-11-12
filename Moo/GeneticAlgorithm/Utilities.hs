@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {- |
 
 Common utility functions.
@@ -17,7 +16,6 @@ import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Random
 
 
-import Control.Monad.Mersenne.Random
 import Control.Monad (replicateM)
 
 
@@ -32,7 +30,7 @@ randomGenomes :: (Random a, Ord a)
 randomGenomes rng n ranges =
     let sortRange (r1,r2) = (min r1 r2, max r1 r2)
         ranges' = map sortRange ranges
-    in  flip runRandom rng $
+    in  flip runRand rng $
         replicateM n $ mapM getRandomR ranges'
 
 
@@ -43,11 +41,9 @@ randomGenomes rng n ranges =
 getRandomGenomes :: (Random a, Ord a)
                          => Int  -- ^ @n@, how many genomes to generate
                          -> [(a, a)]  -- ^ ranges for individual genome elements
-                         -> Rand ([Genome a])  -- ^ random genomes
+                         -> Rand [Genome a]  -- ^ random genomes
 getRandomGenomes n ranges =
-    Rand $ \rng ->
-        let (gs, rng') = randomGenomes rng n ranges
-        in  R gs rng'
+    liftRand $ \rng -> randomGenomes rng n ranges
 
 
 -- | Crossover all available parents. Parents are not repeated.
@@ -76,6 +72,6 @@ doNCrossovers n parents xover =
         | i <= 0     = return . take n . concat $ children
         | otherwise  = do
       (children', _) <- xover =<< shuffle parents
-      if (null children')
-          then doAnotherNCrossovers 0 children  -- no more children
-          else doAnotherNCrossovers (i - length children') (children':children)
+      if null children'
+      then doAnotherNCrossovers 0 children  -- no more children
+      else doAnotherNCrossovers (i - length children') (children':children)

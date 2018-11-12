@@ -50,7 +50,7 @@ extra-source-files: README.md
 
 Library
     build-depends:      base >=4 && < 5
-                      , monad-mersenne-random
+                      , MonadRandom
                       , mersenne-random-pure64
                       , gray-code >= 0.2.1
                       , random >= 0.1

@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 {- | Some extra facilities to work with 'Rand' monad and 'PureMT'
      random number generator.
 -}
@@ -20,27 +18,45 @@ module Moo.GeneticAlgorithm.Random
     , withProbability
     -- * Re-exports from random number generator packages
     , getBool, getInt, getWord, getInt64, getWord64, getDouble
-    , runRandom, evalRandom, newPureMT
+    , runRand, evalRand, newPureMT, liftRand
     , Rand, Random, PureMT
     ) where
 
 import Control.Monad (liftM)
-import Control.Monad.Mersenne.Random
+import qualified Control.Monad.Random.Strict as MonadRandom
+import Control.Monad.Random.Strict (liftRand, runRand, evalRand)
 import Data.Complex (Complex (..))
+import Data.Int (Int64)
+import Data.Word (Word64)
 import System.Random (RandomGen, Random(..))
 import System.Random.Mersenne.Pure64
 import qualified System.Random.Shuffle as S
 import qualified Data.Set as Set
 
+type Rand = MonadRandom.Rand PureMT
+
 -- | Yield a new randomly selected value of type @a@ in the range @(lo, hi)@.
 -- See 'System.Random.randomR' for details.
 getRandomR :: Random a => (a, a) -> Rand a
-getRandomR range = Rand $ \s -> let (r, s') = randomR range s in R r s'
+getRandomR range = liftRand $ \s -> randomR range s
 
 -- | Yield a new randomly selected value of type @a@.
 -- See 'System.Random.random' for details.
 getRandom :: Random a => Rand a
-getRandom = Rand $ \g -> let (r, g') = random g in R r g'
+getRandom = liftRand random
+
+getBool :: Rand Bool
+getBool = getRandom
+getDouble :: Rand Double
+getDouble = getRandom
+getWord :: Rand Word
+getWord = getRandom
+getInt :: Rand Int
+getInt = getRandom
+getInt64 :: Rand Int64
+getInt64 = getRandom
+getWord64 :: Rand Word64
+getWord64 = getRandom
 
 -- | Yield two randomly selected values which follow standard
 -- normal distribution.
@@ -60,7 +76,7 @@ getNormal = fst `liftM` getNormal2
 -- | Take at most n random elements from the list. Preserve order.
 randomSample :: Int -> [a] -> Rand [a]
 randomSample n xs =
-  Rand $ \g -> case select g n (length xs) xs [] of (xs', g') -> R xs' g'
+  liftRand $ \g -> select g n (length xs) xs []
   where
     select rng _ _ [] acc = (reverse acc, rng)
     select rng n m xs acc
@@ -74,9 +90,9 @@ randomSample n xs =
 -- The function works best when @sampleSize@ is much smaller than @populationSize@.
 randomSampleIndices :: Int -> Int -> Rand [Int]
 randomSampleIndices sampleSize populationSize =
-    Rand $ \g ->
+    liftRand $ \g ->
         let (sampleSet, g') = buildSampleSet g sampleSize Set.empty
-        in  R (Set.toList sampleSet) g'
+        in  (Set.toList sampleSet, g')
   where
     buildSampleSet g n s
         | n <= 0 = (s, g)
@@ -88,8 +104,7 @@ randomSampleIndices sampleSize populationSize =
 
 -- | Randomly reorder the list.
 shuffle :: [a] -> Rand [a]
-shuffle xs = Rand $ \g ->
-             let (xs', g') = randomShuffle xs (length xs) g in  R xs' g'
+shuffle xs = liftRand $ \g -> randomShuffle xs (length xs) g
 
 -- | Given a sequence (e1,...en) to shuffle, its length, and a random
 -- generator, compute the corresponding permutation of the input
