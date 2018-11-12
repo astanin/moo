@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, Rank2Types #-}
+{-# LANGUAGE GADTs #-}
 {- |
 
 Helper functions to run genetic algorithms and control iterations.
@@ -35,8 +36,8 @@ runGA :: Rand [Genome a]             -- ^ function to create initial population
       -> IO b                        -- ^ final population
 runGA initialize ga = do
   rng <- newPureMT
-  let (genomes0, rng') = runRandom initialize rng
-  return $ evalRandom (ga genomes0) rng'
+  let (genomes0, rng') = runRand initialize rng
+  return $ evalRand (ga genomes0) rng'
 
 -- | Helper function to run the entire algorithm in the 'IO' monad.
 runIO :: Rand [Genome a]                  -- ^ function to create initial population
@@ -45,7 +46,7 @@ runIO :: Rand [Genome a]                  -- ^ function to create initial popula
       -> IO (Population a)                -- ^ final population
 runIO initialize gaIO = do
   rng <- newPureMT
-  let (genomes0, rng') = runRandom initialize rng
+  let (genomes0, rng') = runRand initialize rng
   rngref <- newIORef rng'
   gaIO rngref genomes0
 
@@ -216,7 +217,7 @@ loopIO hooks cond step rngref genomes0 = do
       if (stop || either (const False) (evalCond cond) x)
          then return (asPopulation x, rng)
          else do
-           let (x', rng') = runRandom (step cond x) rng
+           let (x', rng') = runRand (step cond x) rng
            case x' of
              (StopGA pop) -> return (pop, rng')
              (ContinueGA pop) ->
@@ -242,8 +243,11 @@ loopIO hooks cond step rngref genomes0 = do
 
 -- | Logging to run every @n@th iteration starting from 0 (the first parameter).
 -- The logging function takes the current generation count and population.
-data (Monad m, Monoid w) => LogHook a m w =
-    WriteEvery Int (Int -> Population a -> w)
+data LogHook a m w where
+    WriteEvery :: (Monad m, Monoid w)
+               => Int
+               -> (Int -> Population a -> w)
+               -> LogHook a m w
 
 -- | Input-output actions, interactive and time-dependent stop conditions.
 data IOHook a

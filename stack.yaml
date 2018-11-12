@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-1.15
+resolver: nightly-2018-11-11
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,7 +41,6 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - gray-code-0.3.1
-- monad-mersenne-random-0.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}

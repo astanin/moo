@@ -56,14 +56,14 @@ ga select xover mutate = do
 -- apply selection operator the same number of times as in normal GA run
 runSelection select = do
   rng <- newPureMT
-  let pop' = flip evalRandom rng $ doTimes generations select population0
+  let pop' = flip evalRand rng $ doTimes generations select population0
   return . (++" ") . show . minimum . map takeObjectiveValue $ pop'
 
 
 -- apply crossover operator the same number of times as in normal GA run
 runCrossover crossover = do
   rng <- newPureMT
-  let genomes' = flip evalRandom rng $
+  let genomes' = flip evalRand rng $
                  doTimes generations
                  (flip doCrossovers crossover) genomes0
   return . (++" ") . show . minimum . concat $ genomes'
@@ -72,7 +72,7 @@ runCrossover crossover = do
 -- apply mutation operator the same number of times as in normal GA run
 runMutation mutate = do
   rng <- newPureMT
-  let genomes' = flip evalRandom rng $
+  let genomes' = flip evalRand rng $
                  doTimes generations (mapM gm) genomes0
   return . (++" ") . show . minimum . concat $ genomes'
 

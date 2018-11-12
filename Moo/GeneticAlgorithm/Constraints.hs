@@ -45,7 +45,7 @@ type ConstraintFunction a b = Genome a -> b
 -- function .>=. lowerBound
 -- lowerBound .<= function <=. upperBound
 -- @
-data (Real b) => Constraint a b
+data Constraint a b
     = LessThan (ConstraintFunction a b) b
     -- ^ strict inequality constraint,
     -- function value is less than the constraint value
@@ -78,7 +78,7 @@ data (Real b) => Constraint a b
 
 -- Left hand side of the double inequality defined in the form:
 -- @lowerBound .<= function <=. upperBound@.
-data (Real b) => LeftHandSideInequality a b
+data LeftHandSideInequality a b
     = LeftHandSideInequality (ConstraintFunction a b) (Bool, b)
     -- ^ boolean flag indicates if the bound is inclusive
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {- |
 
@@ -55,7 +55,6 @@ import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Selection
 import Moo.GeneticAlgorithm.Types
 import Moo.GeneticAlgorithm.Run
-import Moo.GeneticAlgorithm.Random
 import Moo.GeneticAlgorithm.Utilities (getRandomGenomes)
 
 
@@ -160,12 +159,14 @@ unimodalCrossover sigma_xi sigma_eta (x1:x2:x3:rest) = do
       if norm2 d > 1e-6
       then do -- distinct parents
         let exs = drop 1 . mkBasis $ d
-        (xi:etas) <- getNormals n
-        let xi' = sigma_xi * xi
-        let parCorr = xi' `scale` d
-        let etas' = map (dist3 * sigma_eta *) etas
-        let orthCorrs = zipWith scale etas' exs
-        return (parCorr, orthCorrs)
+        getNormals n >>= \case
+          (xi:etas) -> let
+              xi' = sigma_xi * xi
+              parCorr = xi' `scale` d
+              etas' = map (dist3 * sigma_eta *) etas
+              orthCorrs = zipWith scale etas' exs
+            in return (parCorr, orthCorrs)
+          _ -> error "Parameters too short"
       else do -- identical parents, direction d is undefined
         let exs = map (basisVector n) [0..n-1]
         etas <- getNormals n
