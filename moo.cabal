@@ -118,7 +118,7 @@ Test-Suite moo-tests
     , HUnit
     , random >= 0.1
     , random-shuffle >= 0.0.2
-    , monad-mersenne-random
+    , MonadRandom
     , mersenne-random-pure64
     , gray-code >= 0.2.1
     , mtl

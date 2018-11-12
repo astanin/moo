@@ -54,7 +54,7 @@ select = tournamentSelect Maximizing 2 (popsize-elitesize)
 randomProblem ::  IO Problem
 randomProblem = do
   rng <- newPureMT
-  return . flip evalRandom rng $ do
+  return . flip evalRand rng $ do
                       weights <- replicateM items $ getRandomR itemWeight
                       values <- replicateM items $ getRandomR itemValue
                       return $ zip weights values

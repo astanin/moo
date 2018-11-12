@@ -140,7 +140,7 @@ testMultiobjective =
         let expected = [([1.0,5.0],1.0),([5.0,1.0],1.0),([1.0,5.0],1.0)
                        ,([5.0,1.0],1.0),([3.0,3.0],1.0),([3.0,3.0],1.0)
                        ,([2.0,4.0],1.0),([2.0,4.0],1.0),([1.0,5.0],1.0)]
-        let result = flip evalRandom (pureMT 1) $
+        let result = flip evalRand (pureMT 1) $
                      loop (Generations 1)
                      (stepNSGA2bt mp noCrossover noMutation) gs
         assertEqual "solutions and ranking" (Set.fromList expected) (Set.fromList result)

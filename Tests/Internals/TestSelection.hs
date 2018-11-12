@@ -19,10 +19,10 @@ dummyGenome objval = ([], objval)
 testSelection =
     TestList
     [ "tournamentSelect" ~: do
-        let resultMin = flip evalRandom (pureMT 1) $
+        let resultMin = flip evalRand (pureMT 1) $
                         tournamentSelect Minimizing 3 4 $
                         map dummyGenome [3,2,4]
-        let resultMax = flip evalRandom (pureMT 1) $
+        let resultMax = flip evalRand (pureMT 1) $
                         tournamentSelect Maximizing 2 3 $
                         map dummyGenome [2,3]
         assertEqual "4 times best of 3" [2,2,2,2] $
@@ -33,13 +33,13 @@ testSelection =
         let times = 10
         let tsize = 4
         let genomes = map dummyGenome [1..10]
-        let resultMany = flip evalRandom (pureMT 1) $
+        let resultMany = flip evalRand (pureMT 1) $
                          tournamentSelect Maximizing tsize times $
                          genomes
         let objVals = map takeObjectiveValue resultMany
         -- take the same samples again with the same see
         let samples = map (map (genomes !!)) $
-                      flip evalRandom (pureMT 1) $
+                      flip evalRand (pureMT 1) $
                            replicateM times (randomSampleIndices tsize (length genomes))
         assertEqual "maximum is selected every time" (replicate times True)  $
                     zipWith (\selected xs -> selected == (maximum . map takeObjectiveValue $ xs))
@@ -48,11 +48,11 @@ testSelection =
        let gs = map dummyGenome [1, 9]
        let tries = 100 * 1000 :: Int
        let numOfNines = length . filter (==9.0) . map takeObjectiveValue
-                        . flip evalRandom (pureMT 1) $ rouletteSelect tries $ gs
+                        . flip evalRand (pureMT 1) $ rouletteSelect tries $ gs
        assertEqual "9 is selected from [1,9] 90% of time" 90 (numOfNines `div` 1000)
     , "stochasticUniversalSampling" ~: do
         let gs = map dummyGenome [2,1]
-        let selected = flip evalRandom (pureMT 1) $
+        let selected = flip evalRand (pureMT 1) $
                        stochasticUniversalSampling 12 gs
         assertEqual "counts are fitness proportional" [4, 8] $
              map length [ (filter ((==1) . takeObjectiveValue) selected)

@@ -73,5 +73,5 @@ doNCrossovers n parents xover =
         | otherwise  = do
       (children', _) <- xover =<< shuffle parents
       if null children'
-      then doAnotherNCrossovers 0 children  -- no more children
-      else doAnotherNCrossovers (i - length children') (children':children)
+        then doAnotherNCrossovers 0 children  -- no more children
+        else doAnotherNCrossovers (i - length children') (children':children)

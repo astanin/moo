@@ -35,7 +35,7 @@ testConstraints =
         let fI = fromIntegral :: Int -> Double
         let constraints = [ 1 .<= (fI . decodeBinary (0,255)) <=. 42 ]
         let n = 200
-        let genomes = flip evalRandom (pureMT 1) $
+        let genomes = flip evalRand (pureMT 1) $
                       getConstrainedBinaryGenomes constraints n 8
         assertEqual "exactly n genomes" n $
                     length genomes
@@ -53,10 +53,10 @@ testConstraints =
         let badvsugly = map (\x -> ([x], x)) [-1, -2]
         -- out of two solutions, one is feasible, the other is not
         let goodvsbad = map (\x -> ([x], x)) [0, -1]
-        let result = flip evalRandom (pureMT 1) $ ctournament badvsugly
+        let result = flip evalRand (pureMT 1) $ ctournament badvsugly
         assertEqual "lesser degree of violation is preferred"
                     (replicate n (-1.0)) $ (map (head . takeGenome) result)
-        let result = flip evalRandom (pureMT 1) $ ctournament goodvsbad
+        let result = flip evalRand (pureMT 1) $ ctournament goodvsbad
         assertEqual "feasible solution is preferred"
                     (replicate n (0.0)) $ (map (head . takeGenome) result)
     , "numberOfViolations" ~: do
