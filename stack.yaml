@@ -15,7 +15,10 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: nightly-2018-11-11
+
+# resolver: nightly-2018-11-11  # GHC 8.6.1
+resolver: lts-12.18  # GHC 8.4.4
+# resolver: lts-11.22  # GHC 8.2.2
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
