@@ -40,7 +40,7 @@ To build Moo with Stackage dependencies, use the `stack` tool:
 
 ### Build Status
 
-Build status: [![Build Status](https://drone.io/github.com/astanin/moo/status.png)](https://drone.io/github.com/astanin/moo/latest)
+[![Build Status](https://travis-ci.org/astanin/moo.svg?branch=master)](https://travis-ci.org/astanin/moo)
 
 
 Features
