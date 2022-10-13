@@ -80,7 +80,6 @@ Library
                       , Moo.GeneticAlgorithm.Selection
                       , Moo.GeneticAlgorithm.StopCondition
                       , Moo.GeneticAlgorithm.Utilities
-                      , Moo.GeneticAlgorithm.Crossover
                       , Moo.GeneticAlgorithm.Niching
 
 Test-Suite moo-tests
